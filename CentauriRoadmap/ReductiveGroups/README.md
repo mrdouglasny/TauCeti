@@ -79,9 +79,9 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
   `(f * g)(a) = ∑ f(a₁) g(a₂)`, identity the counit `ε`, inverse `f ∘ S`.
   - ⚠ Pitfall: `GroupLike k A` is **not** the points functor — for `GLₙ` the points are
     non-commutative, but group-like elements always form a commutative group.
-  - Prerequisite lemma: the antipode is an anti-homomorphism, `S(ab) = S(b) S(a)`
-    (currently a TODO in `HopfAlgebra/Basic.lean`); then algebra homs are closed under
-    convolution and `f ∘ S` is the inverse. Then prove functoriality in `R`.
+  - Ingredient already in Mathlib: the antipode is an anti-homomorphism, `S(ab) = S(b) S(a)`
+    (`HopfAlgebra.antipode_mul`). Use it to show algebra homs are closed under convolution
+    and that `f ∘ S` is the inverse; then prove functoriality in `R`.
 - **The bridges (first concrete targets — already compile as `sorry` in `Targets.lean`):**
   ```lean
   -- Γ(G) is an R-Hopf algebra, for G an affine group scheme over Spec R:
