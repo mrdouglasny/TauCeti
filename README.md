@@ -37,12 +37,20 @@ This split has teeth, not just prose:
 - **Humans** approve all human-governed PRs, own the roadmap and review machinery,
   and retain admin and merge rights.
 
-## Mathlib dependency
+## Mathlib dependency, and our stance toward it
 
 Pinned to Mathlib **master** (`lakefile.toml` requires `rev = "master"`; the exact
 commit is recorded in `lake-manifest.json`). Human stewards re-pin to known-good
-commits over time — several roadmap prerequisites are still in-flight Mathlib PRs.
-`lean-toolchain` tracks the pinned Mathlib's toolchain.
+commits over time. `lean-toolchain` tracks the pinned Mathlib's toolchain.
+
+**We do not wait on Mathlib.** Upstreaming is slow and uncertain — PRs sit open for
+months or close unmerged — so Centauri treats Mathlib as a stable foundation to build
+*on*, not a queue to block *behind*. If a prerequisite we need is not in Mathlib, we
+build it **here** and keep going. When a roadmap target depends on material that lives
+only in an open or closed Mathlib PR, the rule is: copy that material into `Centauri/`
+(sorry-free, attributed), and continue on top of it. If it later lands upstream, a
+steward can delete our copy and re-pin — but nothing in this library is ever paused
+waiting for that to happen.
 
 ## Building
 

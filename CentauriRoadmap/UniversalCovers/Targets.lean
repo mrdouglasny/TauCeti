@@ -3,13 +3,13 @@ import Mathlib
 /-!
 # Universal covers — target signatures
 
-The narrative roadmap is in `README.md`. Most targets here depend on Mathlib PRs
-that are not yet in the pinned commit (`#38292`, `#40135`), so they currently live
-as Lean *sketches* in `README.md` rather than as compiled declarations.
+The narrative roadmap is in `README.md`. The universal-cover stack is absent from
+Mathlib (see the README), so we are **building it here**, not waiting: Stage 0 ports
+the foundations into `Centauri/AlgebraicTopology/UniversalCover/`, sorry-free.
 
-When the pin advances to a commit containing those PRs, promote the sketches into
-`sorry`-stated targets here (this is human-owned roadmap territory, so `sorry` is
-allowed). The natural first promotion is Tier 1.3:
+Once those prerequisite types exist in `Centauri/`, state each milestone here with
+`sorry` (human-owned roadmap territory, so `sorry` is allowed) and hand it to the AIs
+to discharge in `Centauri/`. The natural first new theorem (Stage 1) is
 
   `Deck (UniversalCover.proj x₀) ≃* FundamentalGroup X x₀`.
 -/
