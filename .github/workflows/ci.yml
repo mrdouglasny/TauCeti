@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The two-library split is build convenience, not a trust boundary.
+      # This guard is what actually stops the AI-owned library from inheriting
+      # sorried declarations: Centauri/ may not import the roadmap/review trees.
+      - name: Import-boundary guard (Centauri/ ⊬ roadmap/review)
+        run: |
+          if grep -rIn -E '^[[:space:]]*import[[:space:]]+(CentauriRoadmap|CentauriReview)\b' Centauri/; then
+            echo "::error::Centauri/ must not import CentauriRoadmap or CentauriReview"
+            exit 1
+          fi
+
+      # No sorries in the AI-owned library. (The #print axioms allowlist audit
+      # is a planned CentauriReview/ follow-up; this is the cheap textual guard.)
+      - name: No-sorry guard (Centauri/ is sorry-free)
+        run: |
+          if grep -rIn -E '\b(sorry|admit|sorryAx)\b' Centauri/; then
+            echo "::error::Centauri/ must not contain sorry / admit / sorryAx"
+            exit 1
+          fi
+
+      - name: Build
+        uses: leanprover/lean-action@v1
+        with:
+          test: false
+          lint: false
+          use-mathlib-cache: true

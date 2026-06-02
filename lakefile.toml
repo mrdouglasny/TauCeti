@@ -1,0 +1,16 @@
+name = "centauri"
+defaultTargets = ["Centauri", "CentauriRoadmap"]
+
+[[require]]
+name = "mathlib"
+git = "https://github.com/leanprover-community/mathlib4"
+rev = "master"
+
+# AI-owned: all the mathematics. No sorries (enforced in CI).
+[[lean_lib]]
+name = "Centauri"
+
+# Human-owned: roadmaps and target signatures. Sorries are allowed here —
+# these are goals, not proofs. `Centauri` may not import this library (CI guard).
+[[lean_lib]]
+name = "CentauriRoadmap"
