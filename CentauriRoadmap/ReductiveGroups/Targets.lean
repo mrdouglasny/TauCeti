@@ -5,8 +5,7 @@ import Mathlib
 
 The narrative roadmap (the three "paved" models, the layer-by-layer build plan
 Layers 0–7, the worked examples, and the references) is in `README.md`. We build the
-whole tower here rather than waiting on Mathlib; the prior art is mathlib4#34897 and
-its `PLAN.md`.
+whole tower here rather than waiting on Mathlib.
 
 This file holds the **Layer 0** bridge targets between affine group schemes and Hopf
 algebras (Kevin Buzzard). They elaborate against the pinned Mathlib commit and are

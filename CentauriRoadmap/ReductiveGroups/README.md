@@ -7,11 +7,9 @@ Mathlib. **We are not waiting for it to appear upstream — we build it here**, 
 `Centauri/Algebra/AlgebraicGroup/` (foundations) and `Centauri/AlgebraicGeometry/`
 (the scheme-side dictionary).
 
-This roadmap continues the experiment in
-[mathlib4#34897](https://github.com/leanprover-community/mathlib4/pull/34897)
-("experiment: Claude defining reductive groups") and its `PLAN.md`. That PR is an
-honest sketch with **known bugs** — read it for both the design and the pitfalls
-(the relevant ones are flagged inline below).
+Early sketches in this area get the *types* roughly right but the *mathematics* subtly
+wrong; the common traps are flagged inline below (marked ⚠) so we avoid them from the
+start.
 
 ## Standing hypotheses
 
@@ -79,8 +77,8 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
 - **R-points as a group.** Generalize `AlgPoints R A := A →ₐ[k] R` for every `k`-algebra
   `R`; give it a group structure by **convolution** (not composition): multiplication
   `(f * g)(a) = ∑ f(a₁) g(a₂)`, identity the counit `ε`, inverse `f ∘ S`.
-  - ⚠ Pitfall (#34897): `GroupLike k A` is **not** the points functor — for `GLₙ` the
-    points are non-commutative, but group-like elements always form a commutative group.
+  - ⚠ Pitfall: `GroupLike k A` is **not** the points functor — for `GLₙ` the points are
+    non-commutative, but group-like elements always form a commutative group.
   - Prerequisite lemma: the antipode is an anti-homomorphism, `S(ab) = S(b) S(a)`
     (currently a TODO in `HopfAlgebra/Basic.lean`); then algebra homs are closed under
     convolution and `f ∘ S` is the inverse. Then prove functoriality in `R`.
@@ -97,8 +95,8 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
   equivalence with representable group functors. (Consume `CoalgCat/ComonEquivalence`,
   `Grp_`, `CommAlgCat`; the Toric route gives one direction once available.)
 - **Base change.** `K ⊗[k] A` as a Hopf algebra over `K` (use
-  `HopfAlgebra/TensorProduct.lean`; #34897 leaves this `sorry`). Geometric notions are all
-  defined after base change to `k̄`.
+  `HopfAlgebra/TensorProduct.lean`). Geometric notions are all defined after base change
+  to `k̄`.
 
 ### Layer 1 — representations = comodules
 - **Comodules** over a coalgebra/Hopf algebra `A`: a coaction `ρ : V → V ⊗ A` with
@@ -106,7 +104,7 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
   **finite-dimensional** comodules; tensor products, duals, the regular representation.
 - **The dictionary:** representation of `G` ⇆ `A`-comodule; matrix coefficients.
 - **Faithfulness done right:** a f.d. representation is faithful iff its **matrix
-  coefficients generate `A`** — *not* iff the coaction is injective (⚠ #34897).
+  coefficients generate `A`** — *not* iff the coaction is injective (⚠ common trap).
 - **Embedding theorem (hard):** every affine group scheme of finite type has a faithful
   f.d. representation, i.e. a closed immersion `G ↪ GLₙ`.
 - **Tannakian reconstruction:** recover `G` from its tensor category of representations
@@ -120,7 +118,7 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
   faithfully-flat descent; short exact sequences.
 - **Identity component `G°` and component group `π₀(G)`:** geometric connectedness
   (`A ⊗ k̄` has no nontrivial idempotents — *stronger* than over `k`); the
-  connected–étale sequence. (⚠ #34897's `IsConnected` should be the geometric notion.)
+  connected–étale sequence. (⚠ "connected" here must be the *geometric* notion.)
 
 ### Layer 3 — Jordan decomposition, diagonalizable groups, tori
 - **Jordan decomposition** of elements into semisimple and unipotent parts (geometric,
@@ -134,8 +132,8 @@ next layer's *types* expressible, state that layer's milestones in `Targets.lean
 - **Unipotent groups** (correct, geometric definition): `g ∈ G(k̄)` is unipotent iff
   `ρ_g − id` is nilpotent for **every** f.d. representation; equivalently `G` embeds in
   the upper-triangular unipotent `Uₙ`; equivalently `G` has no nontrivial characters.
-  - ⚠ #34897's `IsUnipotent` is *vacuous* (it tests nilpotence in the reduced ring `A`,
-    so only `g = 1` qualifies) — the correct definition needs comodule theory (Layer 1).
+  - ⚠ A naïve `IsUnipotent` that tests nilpotence in the reduced ring `A` is *vacuous*
+    (only `g = 1` qualifies) — the correct definition needs comodule theory (Layer 1).
 - **Lie–Kolchin**; solvable groups.
 - **The unipotent radical `R_u(G)`** (the hard core, SGA3/Borel level): the maximal
   connected normal unipotent closed subgroup, as a Hopf ideal, defined geometrically as
@@ -176,7 +174,7 @@ reductive where applicable by exhibiting root data **and** by complete reducibil
 exercise Cartier duality. (Kevin's caution: don't *develop the general theory* from
 `GLₙ` — but examples are exactly how we keep the definitions honest.)
 
-## Design notes (from Zulip and #34897)
+## Design notes (from Zulip)
 
 - **Functor of points is the notion of points** — not `GroupLike`, not just `k`-points.
 - **Faithful = matrix coefficients generate `A`**, not "coaction injective".
@@ -203,5 +201,3 @@ parabolic API before the full root-data classification exists — another reason
 - J. C. Jantzen, *Representations of Algebraic Groups*.
 - B. Conrad, *Reductive Group Schemes* (SGA3 exposition); **SGA3**, Exposé XIX.
 - B. Conrad, O. Gabber, G. Prasad, *Pseudo-reductive Groups* (relative theory).
-- Prior art: [mathlib4#34897](https://github.com/leanprover-community/mathlib4/pull/34897)
-  and its `PLAN.md`.
