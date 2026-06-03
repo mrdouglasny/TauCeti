@@ -1,4 +1,4 @@
-# Proxima Centauri
+# Tau Ceti
 
 Let's do lots of maths.
 
@@ -12,9 +12,9 @@ Humans can raise issues against the code, and leave implementation (and review) 
 
 | Path | Owner | Contents |
 | --- | --- | --- |
-| `Centauri/` | **AIs** | All the Lean mathematics. |
-| `CentauriRoadmap/` | **humans** | Roadmaps in markdown, and sample Lean files where `sorry` is allowed. |
-| `CentauriReview/` | **humans** | Review rubrics and (eventually) review bots. |
+| `TauCeti/` | **AIs** | All the Lean mathematics. |
+| `TauCetiRoadmap/` | **humans** | Roadmaps in markdown, and sample Lean files where `sorry` is allowed. |
+| `TauCetiReview/` | **humans** | Review rubrics and (eventually) review bots. |
 | `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | **humans** | The rules of the game and the machinery that enforces them. |
 
 This division is managed via the `CODEOWERS` file and branch protection rules.
@@ -38,9 +38,9 @@ These review agents' token costs will be covered by some combination of philanth
 
 For now we depend on Mathlib's `master` branch. AIs are encouraged to make PRs that bump the pin to new commits on the `master` branch, and fix any resulting problems in the library.
 
-From Proxima Centauri's point of view, Mathlib is a long way away, so we don't plan around close coordination: if you're missing something in Mathlib that you need, just build it here. (This includes needing material from Mathlib PRs; it's fine to just vendor it here with appropriate attribution, there's no need to wait.)
+From Tau Ceti's point of view, Mathlib is a long way away, so we don't plan around close coordination: if you're missing something in Mathlib that you need, just build it here. (This includes needing material from Mathlib PRs; it's fine to just vendor it here with appropriate attribution, there's no need to wait.)
 
-Conversely, we don't anticipate actively pushing material from Proxima Centauri to Mathlib, even though we aspire to review standards here that are even higher than those at Mathlib. Mathlib contributors are of course welcome to adopt, curate, and modify material from Proxima Centauri, and submit it to Mathlib themselves. Everything here is Apache licensed.
+Conversely, we don't anticipate actively pushing material from Tau Ceti to Mathlib, even though we aspire to review standards here that are even higher than those at Mathlib. Mathlib contributors are of course welcome to adopt, curate, and modify material from Tau Ceti, and submit it to Mathlib themselves. Everything here is Apache licensed.
 
 ## Building
 
@@ -51,9 +51,9 @@ lake build
 
 ## Roadmaps
 
-Some initial example roadmaps live under `CentauriRoadmap/`:
+Some initial example roadmaps live under `TauCetiRoadmap/`:
 
-1. [Universal covers](CentauriRoadmap/UniversalCovers/README.md)
-2. [The Jacobian challenge](CentauriRoadmap/JacobianChallenge/README.md) 
-3. [Reductive algebraic groups](CentauriRoadmap/ReductiveGroups/README.md) 
-4. [Partial differential equations](CentauriRoadmap/PDE/README.md)
+1. [Universal covers](TauCetiRoadmap/UniversalCovers/README.md)
+2. [The Jacobian challenge](TauCetiRoadmap/JacobianChallenge/README.md) 
+3. [Reductive algebraic groups](TauCetiRoadmap/ReductiveGroups/README.md) 
+4. [Partial differential equations](TauCetiRoadmap/PDE/README.md)
