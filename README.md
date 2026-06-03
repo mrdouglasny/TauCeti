@@ -30,7 +30,7 @@ When a PR is opened, we will automatically launch some combination of frontier m
 
 The rubric will be **adversarial**, including instructions to find mis-formalizations, vacuous statements, and "pushing around the lump in the carpet". We'll name specific antipatterns to look for. We'll likely need to avoid letting a frontier model review itself.
 
-I suspec there should be multiple rubrics covering different aspects of review, and merging requires approval from everyone (or perhaps a soft cutoff for more subjective aspects of review).
+I suspect there should be multiple rubrics covering different aspects of review, and merging requires approval from everyone (or perhaps a soft cutoff for more subjective aspects of review).
 
 These review agents' token costs will be covered by some combination of philanthropic donations (in money or in kind), and perhaps eventually on a "billable hours" basis for significant contributors. That is, industrial or academic groups making significant pull requests should expect to donate tokens sufficient to power the review bots in proportion to their contributions. Likely small scale contributions can be reviewed "for free" out of this pool.
 
