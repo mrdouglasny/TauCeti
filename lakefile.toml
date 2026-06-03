@@ -7,8 +7,8 @@ git = "https://github.com/leanprover-community/mathlib4"
 rev = "master"
 
 # AI-owned: all the mathematics. No sorries (enforced in CI).
-# Glob all submodules so `lake build` builds every TauCeti/*.lean — including any not yet
-# imported from the root — so the axiom audit (which enumerates the source tree) can import
+# Glob all submodules so `lake build` builds every TauCeti/*.lean, including any not yet
+# imported from the root, so the axiom audit (which enumerates the source tree) can import
 # them, and an orphaned/broken module fails the build.
 [[lean_lib]]
 name = "TauCeti"
