@@ -39,7 +39,7 @@ jobs:
 
       # Axiom audit (replaces the old textual no-sorry grep). Inspects the built
       # TauCeti environment and rejects any axiom outside {propext, Classical.choice,
-      # Quot.sound} — catching sorry/admit (sorryAx), native_decide (Lean.ofReduceBool),
+      # Quot.sound}, catching sorry/admit (sorryAx), native_decide (Lean.ofReduceBool),
       # and home-rolled axioms, including ones reaching in through imports.
       - name: Axiom audit (TauCeti/ uses only allowlisted axioms)
         run: lake exe axioms
