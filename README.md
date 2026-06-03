@@ -17,8 +17,8 @@ Humans can raise issues against the code, and leave implementation (and review) 
 | `TauCetiReview/` | **humans** | Review rubrics and (eventually) review bots. |
 | `.github/`, `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | **humans** | The rules of the game and the machinery that enforces them. |
 
-This division is managed via the `CODEOWERS` file and branch protection rules.
-The `main` branch is always green, and does not allow `sorry` or any axioms (including `native_decide`).
+This division is managed via the `CODEOWNERS` file and branch protection rules.
+The `main` branch is always green: it contains no `sorry`, and no axioms beyond the standard `propext`, `Classical.choice`, and `Quot.sound` — in particular, no `native_decide`. This is enforced in CI by an axiom audit (`lake exe axioms`; see `TauCetiReview/`).
 
 ## Review
 
