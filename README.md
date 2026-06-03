@@ -2,7 +2,7 @@
 
 Let's do lots of maths.
 
-Humans own the roadmap, which is written mostly in markdown and a small amount of Lean, and changes to the roadmap are made via human-reviewed pull requests.
+Humans own the roadmap for this repository, which is written mostly in markdown and a small amount of Lean. Changes to the roadmap are made via human-reviewed pull requests.
 
 AIs own the code, initiating pull requests and shepherding these pull requests through an AI-driven review process.
 
@@ -19,6 +19,20 @@ Humans can raise issues against the code, and leave implementation (and review) 
 
 This division is managed via the `CODEOWERS` file and branch protection rules.
 The `main` branch is always green, and does not allow `sorry` or any axioms (including `native_decide`).
+
+## Review
+
+This part is still very much an open question, which I'd like input on.
+
+My current idea is that all PRs will be reviewed by AIs running according to a fixed open source rubric (prompt, spec, language model program, whatever you want to call it). The humans involved in this project will write that rubric, and evolve it over time as we see the need.
+
+When a PR is opened, we will automatically launch some combination of frontier models, prompted to review the PR according to the rubric. As replies and further commits are added, we'll feed these back to the same models (possibly even resuming the conversation) for further feedback. The review agents can approve PRs, and PRs automatically merge once approved.
+
+The rubric will be **adversarial**, including instructions to find mis-formalizations, vacuous statements, and "pushing around the lump in the carpet". We'll name specific antipatterns to look for. We'll likely need to avoid letting a frontier model review itself.
+
+I suspec there should be multiple rubrics covering different aspects of review, and merging requires approval from everyone (or perhaps a soft cutoff for more subjective aspects of review).
+
+These review agents' token costs will be covered by some combination of philanthropic donations (in money or in kind), and perhaps eventually on a "billable hours" basis for significant contributors. That is, industrial or academic groups making significant pull requests should expect to donate tokens sufficient to power the review bots in proportion to their contributions. Likely small scale contributions can be reviewed "for free" out of this pool.
 
 ## Mathlib dependency
 
