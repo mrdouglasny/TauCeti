@@ -13,4 +13,8 @@ namespace TauCeti
 /-- A tiny sanity check that the library compiles against Mathlib. -/
 theorem hello : 1 + 1 = 2 := by norm_num
 
+
+/-- A throwaway lemma, used only to exercise the review harness. -/
+theorem two_pos : 0 < 2 := by norm_num
+
 end TauCeti
