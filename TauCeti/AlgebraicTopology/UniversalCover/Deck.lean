@@ -50,9 +50,7 @@ variable {p}
 lemma mem_iff (φ : E ≃ₜ E) : φ ∈ Deck p ↔ ∀ e, p (φ e) = p e :=
   Iff.rfl
 
-set_option warning.simp.varHead false in
 /-- A deck transformation preserves the projection map pointwise. -/
-@[simp]
 lemma map_proj (φ : Deck p) (e : E) : p (φ.1 e) = p e :=
   φ.2 e
 
@@ -69,7 +67,7 @@ lemma mapsTo_fiber_symm (φ : Deck p) (b : B) :
 /-- A deck transformation restricts to a homeomorphism of every fibre of the projection,
 the restriction of its underlying homeomorphism along `Homeomorph.subtype`. -/
 def fiberEquiv (φ : Deck p) (b : B) : p ⁻¹' {b} ≃ₜ p ⁻¹' {b} :=
-  φ.1.subtype fun e => by simp [Set.mem_preimage, eq_comm]
+  φ.1.subtype fun e => by simp [Set.mem_preimage, eq_comm, map_proj]
 
 /-- On points, the fibre homeomorphism induced by a deck transformation is just evaluation
 of that transformation. -/
