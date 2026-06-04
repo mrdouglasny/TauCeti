@@ -134,8 +134,9 @@ private lemma convInv_mul_cancel (f : WithConv (H →ₐ[R] A)) : f⁻¹ * f = 1
   exact f.ofConv.commutes (counit h)
 
 /-- For a Hopf algebra `H` over `R` and a commutative `R`-algebra `A`, the convolution
-monoid of `R`-algebra homomorphisms `H →ₐ[R] A` (the functor of points of `Spec H`
-evaluated at `A`) is a group, with inverse `f ↦ f ∘ S`. -/
+monoid of `R`-algebra homomorphisms `H →ₐ[R] A` is a group, with inverse `f ↦ f ∘ S`. When
+`H` is moreover commutative, `Spec H` is an affine group scheme and this is the group
+structure on its functor of points evaluated at `A`. -/
 noncomputable instance instGroup : Group (WithConv (H →ₐ[R] A)) where
   inv_mul_cancel := convInv_mul_cancel
 
