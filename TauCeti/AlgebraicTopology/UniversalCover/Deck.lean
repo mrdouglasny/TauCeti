@@ -62,7 +62,10 @@ lemma mapsTo_fiber (φ : Deck p) (b : B) : Set.MapsTo φ.1 (p ⁻¹' {b}) (p ⁻
 /-- The inverse of a deck transformation also preserves each fibre of the projection. -/
 lemma mapsTo_fiber_symm (φ : Deck p) (b : B) :
     Set.MapsTo φ.1.symm (p ⁻¹' {b}) (p ⁻¹' {b}) := by
-  exact mapsTo_fiber (φ⁻¹ : Deck p) b
+  intro e he
+  simp only [Set.mem_preimage, Set.mem_singleton_iff] at he ⊢
+  rw [← map_proj φ (φ.1.symm e), Homeomorph.apply_symm_apply]
+  exact he
 
 /-- A deck transformation restricts to a homeomorphism of every fibre of the projection,
 the restriction of its underlying homeomorphism along `Homeomorph.subtype`. -/
