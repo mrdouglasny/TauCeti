@@ -2,8 +2,8 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.Topology.Algebra.ConstMulAction
-import Mathlib.Topology.Homeomorph.Defs
+import Mathlib.Topology.Homeomorph.Lemmas
+import TauCeti.Topology.Algebra.HomeomorphAction
 
 /-!
 # Deck transformations of a map
@@ -13,8 +13,10 @@ viewed as a subgroup of the homeomorphism group `E ≃ₜ E`. This is the first 
 piece needed by the universal-covers roadmap Stage 0.4: for a covering projection `p`, the
 subgroup `Deck p` will be the deck transformation group.
 
-The action of `Deck p` on the total space is inherited from the ambient homeomorphism
-group. Each deck transformation preserves `p`, hence preserves every fibre of `p`.
+The action of `Deck p` on the total space is inherited, by subgroup transfer, from the
+tautological action of the ambient homeomorphism group `E ≃ₜ E` on `E`
+(`TauCeti.Homeomorph.applyMulAction`). Each deck transformation preserves `p`, hence
+preserves every fibre of `p`.
 
 ## References
 
@@ -48,7 +50,9 @@ variable {p}
 lemma mem_iff (φ : E ≃ₜ E) : φ ∈ Deck p ↔ ∀ e, p (φ e) = p e :=
   Iff.rfl
 
+set_option warning.simp.varHead false in
 /-- A deck transformation preserves the projection map pointwise. -/
+@[simp]
 lemma map_proj (φ : Deck p) (e : E) : p (φ.1 e) = p e :=
   φ.2 e
 
@@ -62,60 +66,41 @@ lemma mapsTo_fiber_symm (φ : Deck p) (b : B) :
     Set.MapsTo φ.1.symm (p ⁻¹' {b}) (p ⁻¹' {b}) := by
   exact mapsTo_fiber (φ⁻¹ : Deck p) b
 
-/-- A deck transformation restricts to an equivalence of every fibre of the projection. -/
-def fiberEquiv (φ : Deck p) (b : B) : p ⁻¹' {b} ≃ p ⁻¹' {b} where
-  toFun e := ⟨φ.1 e.1, mapsTo_fiber φ b e.2⟩
-  invFun e := ⟨φ.1.symm e.1, mapsTo_fiber_symm φ b e.2⟩
-  left_inv e := by
-    ext
-    simp
-  right_inv e := by
-    ext
-    simp
+/-- A deck transformation restricts to a homeomorphism of every fibre of the projection,
+the restriction of its underlying homeomorphism along `Homeomorph.subtype`. -/
+def fiberEquiv (φ : Deck p) (b : B) : p ⁻¹' {b} ≃ₜ p ⁻¹' {b} :=
+  φ.1.subtype fun e => by simp [Set.mem_preimage, eq_comm]
 
-/-- On points, the fibre equivalence induced by a deck transformation is just evaluation of
-that transformation. -/
+/-- On points, the fibre homeomorphism induced by a deck transformation is just evaluation
+of that transformation. -/
 @[simp]
 lemma fiberEquiv_apply (φ : Deck p) (b : B) (e : p ⁻¹' {b}) :
     (fiberEquiv φ b e : E) = φ.1 e.1 :=
   rfl
 
-/-- On points, the inverse fibre equivalence induced by a deck transformation is evaluation
-of the inverse homeomorphism. -/
+/-- On points, the inverse fibre homeomorphism induced by a deck transformation is
+evaluation of the inverse homeomorphism. -/
 @[simp]
 lemma fiberEquiv_symm_apply (φ : Deck p) (b : B) (e : p ⁻¹' {b}) :
     ((fiberEquiv φ b).symm e : E) = φ.1.symm e.1 :=
   rfl
 
-/-- Deck transformations act on the total space by evaluation of their underlying
-homeomorphisms. -/
-instance instSMul : SMul (Deck p) E where
-  smul φ e := φ.1 e
-
+/-- On points, the action of a deck transformation is evaluation of its underlying
+homeomorphism. The action itself is inherited, by subgroup transfer, from the tautological
+action of `E ≃ₜ E` on `E`. -/
 @[simp]
 lemma smul_eq_apply (φ : Deck p) (e : E) : φ • e = φ.1 e :=
   rfl
 
-instance instMulAction : MulAction (Deck p) E where
-  one_smul e := by
-    simp [smul_eq_apply]
-  mul_smul φ ψ e := by
-    simp [smul_eq_apply]
+/-- If two deck transformations act the same on every point, they are equal. This reuses
+faithfulness of the ambient action of `E ≃ₜ E` on `E`. -/
+instance instFaithfulSMul : FaithfulSMul (Deck p) E :=
+  ⟨fun h => Subtype.ext <| eq_of_smul_eq_smul h⟩
 
-/-- The action of deck transformations preserves the projection. -/
-lemma proj_smul (φ : Deck p) (e : E) : p (φ • e) = p e :=
-  map_proj φ e
-
-/-- If two deck transformations have the same action on every point, they are equal. -/
-instance instFaithfulSMul : FaithfulSMul (Deck p) E where
-  eq_of_smul_eq_smul hφψ := by
-    ext e
-    simpa only [smul_eq_apply] using hφψ e
-
-/-- Each deck transformation acts continuously on the total space. -/
-instance instContinuousConstSMul : ContinuousConstSMul (Deck p) E where
-  continuous_const_smul φ := by
-    simpa only [smul_eq_apply] using φ.1.continuous
+/-- Each deck transformation acts continuously on the total space, reusing continuity of the
+ambient action of `E ≃ₜ E` on `E`. -/
+instance instContinuousConstSMul : ContinuousConstSMul (Deck p) E :=
+  ⟨fun φ => continuous_const_smul (φ : E ≃ₜ E)⟩
 
 end Deck
 
