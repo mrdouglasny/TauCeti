@@ -6,30 +6,42 @@ import Mathlib.RingTheory.Bialgebra.Convolution
 import Mathlib.RingTheory.HopfAlgebra.Basic
 
 /-!
-# The functor of points of an affine group scheme is group-valued
+# Convolution groups of algebra homomorphisms out of a Hopf algebra
 
-For a Hopf algebra `H` over `R`, the affine group scheme `Spec H` has functor of points
-`R-Alg ⥤ Grp`, `A ↦ H →ₐ[R] A`. This file equips that set of `R`-algebra homomorphisms
-with its group structure, for `A` a commutative `R`-algebra. The source `H` need only be a
-Hopf algebra; it is *not* required to be commutative.
+For an arbitrary Hopf algebra `H` over `R` and a commutative `R`-algebra `A`, the convolution
+monoid of `R`-algebra homomorphisms `H →ₐ[R] A` is a **group**, with inverse `f ↦ f ∘ S`,
+where `S` is the antipode of `H`. The source `H` need only be a Hopf algebra; it is *not*
+required to be commutative.
 
 Mathlib already constructs the convolution `Monoid` on `WithConv (H →ₐ[R] A)` for `H` a
 bialgebra (`Mathlib/RingTheory/Bialgebra/Convolution.lean`): multiplication is the
 convolution product `(f * g)(h) = ∑ f(h₍₁₎) * g(h₍₂₎)` and the unit is `algebraMap ∘ ε`.
 What is added here is the **inverse** and hence the **group** structure, available exactly
-when `H` carries an antipode `S`: the inverse of `f` is `f ∘ S`. This is the first concrete
-target of the reductive-groups roadmap (Layer 0, "R-points as a group"), which records
-that the group structure on the functor of points is by convolution with the counit as
-identity and `f ∘ S` as inverse.
+when `H` carries an antipode `S`: the inverse of `f` is `f ∘ S`.
+
+The construction is functorial in the value algebra: post-composition with an `R`-algebra
+homomorphism `φ : A →ₐ[R] B` gives a monoid homomorphism `mapValue φ` between the convolution
+monoids, preserving identities and composition. This part needs only the bialgebra structure
+on `H` (the convolution monoid), so it lives in its own `Bialgebra` section.
+
+## Application: affine group schemes
+
+When `H` is moreover *commutative*, `Spec H` is an affine group scheme, and the above is
+exactly the group structure on its functor of points `A ↦ (H →ₐ[R] A)`, with functoriality in
+`A` realizing the `R-Alg ⥤ Grp` structure. This is the first concrete target of the Tau Ceti
+reductive-groups roadmap (Layer 0, "R-points as a group"), which records that the group
+structure on the functor of points is by convolution, with the counit as identity and `f ∘ S`
+as inverse.
 
 ## Main results
 
-* `AlgHom.convInv_def`, `AlgHom.convInv_apply`: the convolution inverse of `f` is `f ∘ S`.
+* `AlgHom.convInv_apply`: pointwise, the convolution inverse of `f` sends `h` to `f (S h)`.
 * `AlgHom.instGroup`, `AlgHom.instCommGroup`: for `H` a Hopf algebra over `R` and `A` a
   commutative `R`-algebra, `WithConv (H →ₐ[R] A)` is a group, commutative when `H` is
   cocommutative.
-* `AlgHom.mapValue_id`, `AlgHom.mapValue_comp`: the functor of points is functorial in the
-  value algebra (`mapValue` preserves identities and composition).
+* `AlgHom.mapValue`: post-composition with `φ : A →ₐ[R] B` as a monoid homomorphism of
+  convolution monoids, with `AlgHom.mapValue_id`, `AlgHom.mapValue_comp` recording its
+  functoriality in the value algebra.
 
 ## References
 
@@ -90,8 +102,9 @@ noncomputable instance : Inv (WithConv (H →ₐ[R] A)) where
   inv f := toConv (antipodeComp f.ofConv)
 
 /-- The convolution inverse of `f` is `f ∘ S`, where `S` is the antipode: definitionally,
-`f⁻¹ = toConv (antipodeComp f.ofConv)`. -/
-lemma convInv_def (f : WithConv (H →ₐ[R] A)) :
+`f⁻¹ = toConv (antipodeComp f.ofConv)`. This is `private` because its right-hand side names the
+private `antipodeComp`; the public pointwise characterization is `convInv_apply`. -/
+private lemma convInv_def (f : WithConv (H →ₐ[R] A)) :
     f⁻¹ = toConv (antipodeComp f.ofConv) := rfl
 
 /-- Pointwise, the convolution inverse of `f` sends `h` to `f (S h)`, where `S` is the
@@ -126,11 +139,18 @@ evaluated at `A`) is a group, with inverse `f ↦ f ∘ S`. -/
 noncomputable instance instGroup : Group (WithConv (H →ₐ[R] A)) where
   inv_mul_cancel := convInv_mul_cancel
 
+end Hopf
+
+section Bialgebra
+
+variable [Semiring H] [_root_.Bialgebra R H] [CommSemiring A] [Algebra R A]
 variable {B : Type*} [CommSemiring B] [Algebra R B]
 
-/-- The functor of points `A ↦ (H →ₐ[R] A)` of `Spec H` is functorial in the value algebra:
-an `R`-algebra homomorphism `φ : A →ₐ[R] B` induces, by post-composition, a group
-homomorphism between the convolution groups of points. -/
+/-- Functoriality of `A ↦ (H →ₐ[R] A)` in the value algebra: an `R`-algebra homomorphism
+`φ : A →ₐ[R] B` induces, by post-composition, a monoid homomorphism between the convolution
+monoids. This needs only the bialgebra structure on `H`. When `H` is moreover a Hopf algebra,
+these convolution monoids are the convolution groups (`instGroup`); a `MonoidHom` between
+groups is automatically a group homomorphism, so no separate construction is needed there. -/
 noncomputable def mapValue (φ : A →ₐ[R] B) :
     WithConv (H →ₐ[R] A) →* WithConv (H →ₐ[R] B) where
   toFun f := toConv (φ.comp f.ofConv)
@@ -140,10 +160,12 @@ noncomputable def mapValue (φ : A →ₐ[R] B) :
   map_mul' f g := by
     rw [toConv_ofConv, toConv_ofConv, AlgHom.comp_convMul_distrib, toConv_ofConv, toConv_ofConv]
 
+/-- `mapValue φ` acts pointwise by post-composition: `(mapValue φ f) = φ ∘ f`. -/
 @[simp]
 lemma mapValue_apply (φ : A →ₐ[R] B) (f : WithConv (H →ₐ[R] A)) :
     mapValue φ f = toConv (φ.comp f.ofConv) := rfl
 
+/-- `mapValue` preserves the identity: `mapValue (𝟙 A)` is the identity monoid homomorphism. -/
 @[simp]
 lemma mapValue_id :
     mapValue (H := H) (AlgHom.id R A) = MonoidHom.id (WithConv (H →ₐ[R] A)) := by
@@ -152,13 +174,14 @@ lemma mapValue_id :
 
 variable {C : Type*} [CommSemiring C] [Algebra R C]
 
+/-- `mapValue` preserves composition: `mapValue (ψ ∘ φ) = mapValue ψ ∘ mapValue φ`. -/
 lemma mapValue_comp (ψ : B →ₐ[R] C) (φ : A →ₐ[R] B) :
     mapValue (H := H) (ψ.comp φ) = (mapValue ψ).comp (mapValue φ) := by
   refine MonoidHom.ext fun f => ?_
   rw [MonoidHom.comp_apply, mapValue_apply, mapValue_apply, mapValue_apply, toConv_ofConv,
     AlgHom.comp_assoc]
 
-end Hopf
+end Bialgebra
 
 section CommHopf
 
