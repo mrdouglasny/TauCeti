@@ -18,6 +18,9 @@ For a topological space `X` and basepoint `x₀ : X`, this file introduces the s
 of the compact-open topology on `C(I, X)`. It then develops the path-component machinery of
 `endpoint ⁻¹' U` that feeds the universal-cover construction.
 
+This file is adapted from the Mathlib draft
+[#38292](https://github.com/leanprover-community/mathlib4/pull/38292) by Kim Morrison.
+
 ## Main definitions
 
 * `BasedPath x₀`: the compact-open space of based paths out of `x₀`.
@@ -459,7 +462,7 @@ public theorem isOpenMap_endpoint [LocPathConnectedSpace X] (x₀ : X) :
 
 variable {x₀ : X}
 
-public theorem joinedIn_preimage_singleton_of_homotopic (x₀ : X) {y : X} {U : Set X}
+public theorem joinedIn_endpoint_preimage_of_homotopic (x₀ : X) {y : X} {U : Set X}
     (hy : y ∈ U) {p q : Path x₀ y} (h : Path.Homotopic p q) :
     JoinedIn (endpoint (x₀ := x₀) ⁻¹' U) (ofPath p) (ofPath q) := by
   rcases h with ⟨H⟩
@@ -491,7 +494,7 @@ public theorem joinedIn_preimage_of_append {U : Set X} {z : X} (γ : BasedPath x
   have h_start :
       JoinedIn (endpoint (x₀ := x₀) ⁻¹' U) γ (append γ γrefl) := by
     simpa [γrefl] using!
-      (joinedIn_preimage_singleton_of_homotopic (x₀ := x₀) (U := U) hγU
+      (joinedIn_endpoint_preimage_of_homotopic (x₀ := x₀) (U := U) hγU
         (p := γ.toPath.trans (Path.refl (endpoint γ))) (q := γ.toPath)
         (Path.Homotopic.trans_refl γ.toPath)).symm
   have h_move :
@@ -691,7 +694,7 @@ public theorem exists_open_nhd_pathComponent_preimage
     -- Join `α` to `append α ρ_final`, then deform `append α ρ_final` to `β` via `h_paste`.
     refine (joinedIn_preimage_of_append α hα ρ_final hρ_final_range).trans ?_
     obtain ⟨γ, hγ⟩ :=
-      (joinedIn_preimage_singleton_of_homotopic (x₀ := x₀) (U := ({endpoint β} : Set X))
+      (joinedIn_endpoint_preimage_of_homotopic (x₀ := x₀) (U := ({endpoint β} : Set X))
         (show endpoint β ∈ ({endpoint β} : Set X) from rfl)
         (show Path.Homotopic (α.toPath.trans ρ_final) β.toPath from h_paste)).mono
         (Set.preimage_mono (Set.singleton_subset_iff.mpr hβ_end_U))
@@ -795,22 +798,7 @@ end joinedInSLSC
 
 This is the heart of the sheet-injectivity argument: a path in the based-path space descends
 to a free homotopy of paths in `X` whose endpoint trace is a loop in `U`, which is killed by
-the SLSC hypothesis.
-
-## Proof sketch
-
-1. Uncurry the path `F : Path α β` in `BasedPath x₀` (which lives in
-   `endpoint ⁻¹' U`) to a continuous map `F' : I × I → X`, `F'(t, s) := (F t).1 s`.
-   So `F'(0, ·) = α`, `F'(1, ·) = β`, and `F'(·, 1)` is a loop `L : Path v v` trace
-   contained in `U`.
-2. Since `U` has the SLSC uniqueness property, the loop `L` is null-homotopic in `U` via
-   some `L ≃ refl v`.
-3. Combine `F'` with this null-homotopy to build a rel-endpoints homotopy between
-   `α.toPath` (with target cast to `v`) and `β.toPath`. The reparametrisation is
-   carried by the pair of coordinate helpers `joinedInSLSC_uFn` / `joinedInSLSC_vFn`
-   above, which rescale `(t, s) ∈ I × I` so that the bottom edge (`s = 0`) evaluates
-   to the free-homotopy `F'` and the top edge (`s = 1`) picks up the null-homotopy of
-   `L`, with a continuous interpolation between the two. -/
+the SLSC hypothesis. -/
 public theorem toPath_homotopic_of_joinedIn_slsc
     {U : Set X} (hU_slsc : IsPathHomotopyTrivial U)
     {α β : BasedPath x₀} (hα_end : endpoint α ∈ U)
@@ -909,6 +897,6 @@ public theorem pathComponent_preimage_saturated
     {p q : Path x₀ y} (h : Path.Homotopic p q) :
     pathComponentIn (endpoint (x₀ := x₀) ⁻¹' U) (ofPath p) =
       pathComponentIn (endpoint (x₀ := x₀) ⁻¹' U) (ofPath q) :=
-  pathComponentIn_congr (joinedIn_preimage_singleton_of_homotopic x₀ hy h).symm
+  pathComponentIn_congr (joinedIn_endpoint_preimage_of_homotopic x₀ hy h).symm
 
 end BasedPath

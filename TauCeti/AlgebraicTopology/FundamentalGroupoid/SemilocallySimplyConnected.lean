@@ -22,6 +22,10 @@ public import Mathlib.Topology.UnitInterval
 A topological space is semilocally simply connected if every point has a neighborhood
 such that loops in that neighborhood are nullhomotopic in the whole space.
 
+This file is adapted from the Mathlib drafts
+[#31449](https://github.com/leanprover-community/mathlib4/pull/31449) and
+[#31576](https://github.com/leanprover-community/mathlib4/pull/31576) by Kim Morrison.
+
 The definition adopted here coincides with Brazas' *unbased semilocally simply connected*
 (Definition 2.2 in https://arxiv.org/abs/1102.0993). It is strictly stronger than the
 classical definition (Brazas, Definition 2.1) which requires the vanishing only at a fixed
@@ -42,7 +46,7 @@ relevant for covering space theory.
   such that any two paths in `U` between the same endpoints are homotopic.
 * `SemilocallySimplyConnectedAt.of_simplyConnected` - Simply connected spaces are semilocally
   simply connected at every point.
-* `Path.Homotopic.Quotient.discreteTopology` - In a semilocally simply connected,
+* `Path.Homotopic.Quotient.instDiscreteTopology` - In a semilocally simply connected,
   locally path-connected space, the quotient of paths by homotopy has the discrete topology.
 -/
 
@@ -157,9 +161,8 @@ public theorem SemilocallySimplyConnectedOn.mono (h : SemilocallySimplyConnected
   fun x hx ↦ h x (hst hx)
 
 /-- A subset `U` of a topological space `X` is *path-homotopy-trivial* if any two paths
-in `X` whose images lie in `U` and which share endpoints are homotopic in `X`. (Equivalently,
-by `paths_homotopic_iff_loops_nullhomotopic`, every loop with image in `U` is nullhomotopic
-in `X`.) This is the form of "`U` is simply connected" used in the universal-cover
+in `X` whose images lie in `U` and which share endpoints are homotopic in `X`.
+This is the form of "`U` is simply connected" used in the universal-cover
 construction: it is weaker than `IsSimplyConnected U` because the homotopy is not required
 to lie inside `U`. -/
 @[expose] public def IsPathHomotopyTrivial (U : Set X) : Prop :=
@@ -228,7 +231,7 @@ homotopic (so path homotopy classes are determined by endpoints).
 
 This is `semilocallySimplyConnectedSpace_iff_paths.mp` repackaged with the
 `IsPathHomotopyTrivial` abstraction, which is the form most downstream users consume. -/
-public theorem exists_uniquePath_neighborhood [SemilocallySimplyConnectedSpace X] (x : X) :
+public theorem exists_pathHomotopyTrivial_neighborhood [SemilocallySimplyConnectedSpace X] (x : X) :
     ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ IsPathHomotopyTrivial U :=
   semilocallySimplyConnectedSpace_iff_paths.mp ‹_› x
 
@@ -241,7 +244,7 @@ public theorem exists_pathConnected_slsc_neighborhood [SemilocallySimplyConnecte
   -- Take the path component of `x` in any SLSC neighborhood `V`. It is open by local
   -- path-connectedness, path-connected by construction, and inherits SLSC from `V` by
   -- composing the range subsets through `pathComponentIn_subset : pathComponentIn V x ⊆ V`.
-  obtain ⟨V, hV_open, hx_in_V, hV_slsc⟩ := exists_uniquePath_neighborhood x
+  obtain ⟨V, hV_open, hx_in_V, hV_slsc⟩ := exists_pathHomotopyTrivial_neighborhood x
   refine ⟨pathComponentIn V x, hV_open.pathComponentIn x, mem_pathComponentIn_self hx_in_V,
     isPathConnected_pathComponentIn hx_in_V, fun _ _ p q hp hq ↦ ?_⟩
   exact hV_slsc p q (hp.trans pathComponentIn_subset) (hq.trans pathComponentIn_subset)
@@ -489,7 +492,7 @@ public theorem TubeData.isOpen {x y : X} {n : ℕ}
 
 /-! ### Proof strategy for discrete topology on Path.Homotopic.Quotient
 
-The main theorem `Path.Homotopic.Quotient.discreteTopology` states that in a semilocally
+The main theorem `Path.Homotopic.Quotient.instDiscreteTopology` states that in a semilocally
 simply connected space, the quotient `Path.Homotopic.Quotient x y` carries the discrete topology.
 This is proved by showing that every homotopy class (singleton in the quotient) is open.
 
@@ -513,7 +516,7 @@ Given a path `p : Path x y`, we show that its homotopy class `{p' | Path.Homotop
    This ensures rungs can be constructed at interior points (where we need paths in the
    intersection).
 
-2. **The tube is open** (`tube_isOpen`):
+2. **The tube is open** (`TubeData.isOpen`):
    The set of paths `p'` such that `p'([tᵢ, tᵢ₊₁]) ⊆ Uᵢ` for all `i` is open in the
    compact-open topology on `Path x y`. This follows because each segment `[tᵢ, tᵢ₊₁]` is
    compact and each `Uᵢ` is open, so the tube is a finite intersection of sets of the form
@@ -919,8 +922,9 @@ public theorem Path.isOpen_setOf_homotopic [SemilocallySimplyConnectedSpace X]
   rw [mem_nhds_iff]
   refine ⟨T, fun p' hp' ↦ (hT_subset hp').trans hq, hT_open, hqT⟩
 
-/-- The quotient topology on `Path.Homotopic.Quotient x₀ x` induced from `Path x₀ x`
-(which itself inherits the compact-open topology via `C(I, X)`). -/
+/-- The quotient topology on `Path.Homotopic.Quotient x₀ x`. This instance is load-bearing:
+`Path.Homotopic.Quotient` is a `def` over `Quotient`, and instance search does not unfold it to
+find the generic `TopologicalSpace (Quotient _)` (removing this breaks `instDiscreteTopology`). -/
 public instance Path.Homotopic.Quotient.instTopologicalSpace (x₀ x : X) :
     TopologicalSpace (Path.Homotopic.Quotient x₀ x) :=
   inferInstanceAs (TopologicalSpace (Quotient _))
