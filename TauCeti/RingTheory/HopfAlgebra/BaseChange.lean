@@ -245,6 +245,50 @@ lemma map_comp_comul_apply (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K 
 
 end Map
 
+section HopfMap
+
+variable [HopfAlgebra k A]
+variable {B : Type*} [Semiring B] [HopfAlgebra k B]
+
+/-- A bialgebra homomorphism between Hopf algebras preserves the antipode. -/
+lemma bialgHom_antipode_apply (f : A →ₐc[k] B) (a : A) :
+    f (HopfAlgebraStruct.antipode k a) = HopfAlgebraStruct.antipode k (f a) := by
+  let u : A →ₗ[k] B := f
+  change u ((HopfAlgebra.antipode k : A →ₗ[k] A) a) =
+    (HopfAlgebra.antipode k : B →ₗ[k] B) (u a)
+  have hlinear : (HopfAlgebra.antipode k : B →ₗ[k] B).comp u =
+      u.comp (HopfAlgebra.antipode k : A →ₗ[k] A) := by
+    apply WithConv.toConv_injective
+    exact left_inv_eq_right_inv (a := WithConv.toConv u)
+      (b := WithConv.toConv ((HopfAlgebra.antipode k : B →ₗ[k] B).comp u))
+      (c := WithConv.toConv (u.comp (HopfAlgebra.antipode k : A →ₗ[k] A)))
+      (by
+        ext x
+        rw [(ℛ k x).convMul_apply, LinearMap.convOne_apply]
+        simpa [u, Coalgebra.Repr.induced, Algebra.smul_def,
+          CoalgHomClass.counit_comp_apply f x]
+          using HopfAlgebra.sum_antipode_mul_eq_smul ((ℛ k x).induced f))
+      (by
+        ext x
+        rw [(ℛ k x).convMul_apply, LinearMap.convOne_apply]
+        simpa [u, Algebra.smul_def, map_sum, map_mul, AlgHomClass.commutes f]
+          using congr_arg f (HopfAlgebra.sum_mul_antipode_eq_smul (ℛ k x)))
+  exact LinearMap.congr_fun hlinear.symm a
+
+/-- Scalar extension of a bialgebra homomorphism between Hopf algebras preserves antipodes. -/
+@[simp]
+lemma map_antipode (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
+    map (K := K) f (HopfAlgebraStruct.antipode K x) =
+      HopfAlgebraStruct.antipode K (map (K := K) f x) := by
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul r a => simp [bialgHom_antipode_apply f a]
+  | add x y hx hy =>
+      rw [map_add, map_add, map_add, hx, hy]
+      exact (map_add (HopfAlgebraStruct.antipode K) (map (K := K) f x) (map (K := K) f y)).symm
+
+end HopfMap
+
 end BaseChange
 
 end HopfAlgebra
