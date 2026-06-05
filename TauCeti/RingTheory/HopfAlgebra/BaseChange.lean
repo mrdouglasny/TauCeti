@@ -33,6 +33,8 @@ linear maps. -/
 lemma antipode_comp (f : A →ₐc[k] B) :
     (HopfAlgebra.antipode k : B →ₗ[k] B).comp (f : A →ₗ[k] B) =
       (f : A →ₗ[k] B).comp (HopfAlgebra.antipode k : A →ₗ[k] A) := by
+  -- The Hopf-algebra inverse uniqueness theorem is stated for linear maps. Naming the
+  -- underlying linear map makes the two coercions definitionally identical for that theorem.
   let u : A →ₗ[k] B := f
   change (HopfAlgebra.antipode k : B →ₗ[k] B).comp u =
     u.comp (HopfAlgebra.antipode k : A →ₗ[k] A)
@@ -60,6 +62,39 @@ lemma map_antipode (f : A →ₐc[k] B) (a : A) :
 
 end BialgHom
 
+namespace Bialgebra.TensorProduct
+
+variable {R S A B : Type*} [CommSemiring R] [CommSemiring S] [Semiring A] [Semiring B]
+variable [Bialgebra S A] [Bialgebra R B] [Algebra R A] [Algebra R S] [IsScalarTower R S A]
+
+/-- The tensor product of identity bialgebra homomorphisms is the identity. -/
+@[simp]
+lemma map_id :
+    Bialgebra.TensorProduct.map (BialgHom.id S A) (BialgHom.id R B) =
+      BialgHom.id S (A ⊗[R] B) := by
+  ext x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a b => simp
+  | add x y hx hy => simp [hx, hy]
+
+variable {C D E F : Type*} [Semiring C] [Semiring D] [Semiring E] [Semiring F]
+variable [Bialgebra S C] [Bialgebra R D] [Bialgebra S E] [Bialgebra R F]
+variable [Algebra R C] [Algebra R E] [IsScalarTower R S C] [IsScalarTower R S E]
+
+/-- Tensor product of bialgebra homomorphisms preserves composition. -/
+lemma map_comp (f₂ : C →ₐc[S] E) (f₁ : A →ₐc[S] C)
+    (g₂ : D →ₐc[R] F) (g₁ : B →ₐc[R] D) :
+    Bialgebra.TensorProduct.map (f₂.comp f₁) (g₂.comp g₁) =
+      (Bialgebra.TensorProduct.map f₂ g₂).comp (Bialgebra.TensorProduct.map f₁ g₁) := by
+  ext x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a b => simp
+  | add x y hx hy => simp [hx, hy]
+
+end Bialgebra.TensorProduct
+
 namespace HopfAlgebra
 
 variable (k K A : Type*) [CommSemiring k] [CommSemiring K] [Semiring A]
@@ -78,20 +113,12 @@ namespace BaseChange
 variable {k K A : Type*} [CommSemiring k] [CommSemiring K] [Semiring A]
 variable [Algebra k K]
 
-/-- The canonical algebra map from an algebra to its scalar extension. -/
-noncomputable def includeRight [Algebra k A] : A →ₐ[k] HopfAlgebra.baseChange k K A :=
-  Algebra.TensorProduct.includeRight
-
-@[simp]
-lemma includeRight_apply [Algebra k A] (a : A) :
-    includeRight (k := k) (K := K) a = (1 : K) ⊗ₜ[k] a :=
-  rfl
-
+/-- The canonical inclusion sends scalars from `k` through the scalar extension. -/
 @[simp]
 lemma includeRight_algebraMap [Algebra k A] (r : k) :
-    includeRight (k := k) (K := K) (A := A) (algebraMap k A r) =
+    Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) (algebraMap k A r) =
       algebraMap K (HopfAlgebra.baseChange k K A) (algebraMap k K r) := by
-  simp [includeRight, Algebra.TensorProduct.algebraMap_apply]
+  simp [Algebra.TensorProduct.algebraMap_apply]
 
 section CoalgebraStructOperations
 
@@ -101,7 +128,8 @@ variable [Algebra k A] [CoalgebraStruct k A]
 @[simp]
 lemma counit_includeRight (a : A) :
     Coalgebra.counit (R := K)
-        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
+        (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) a :
+          HopfAlgebra.baseChange k K A) =
       algebraMap k K (Coalgebra.counit (R := k) a) := by
   simp [Algebra.smul_def]
 
@@ -116,12 +144,13 @@ comultiplication of the original coalgebra. -/
 @[simp]
 lemma comul_includeRight (a : A) :
     Coalgebra.comul (R := K)
-        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
+        (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) a :
+          HopfAlgebra.baseChange k K A) =
       ∑ i ∈ (ℛ k a).index,
-        includeRight (k := k) (K := K) ((ℛ k a).left i) ⊗ₜ[K]
-          includeRight (k := k) (K := K) ((ℛ k a).right i) := by
-  rw [includeRight_apply, TensorProduct.comul_tmul]
-  simp [includeRight, ← (ℛ k a).eq,
+        Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) ((ℛ k a).left i) ⊗ₜ[K]
+          Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) ((ℛ k a).right i) := by
+  rw [Algebra.TensorProduct.includeRight_apply, TensorProduct.comul_tmul]
+  simp [← (ℛ k a).eq,
     TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul, TensorProduct.tmul_sum]
 
 end CoalgebraOperations
@@ -141,8 +170,10 @@ lemma antipode_tmul (r : K) (a : A) :
 @[simp]
 lemma antipode_includeRight (a : A) :
     HopfAlgebraStruct.antipode K
-        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
-      includeRight (k := k) (K := K) (HopfAlgebraStruct.antipode k a) := by
+        (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) a :
+          HopfAlgebra.baseChange k K A) =
+      Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A)
+        (HopfAlgebraStruct.antipode k a) := by
   simp
 
 end HopfOperations
@@ -167,8 +198,8 @@ lemma map_tmul (f : A →ₐc[k] B) (r : K) (a : A) :
 /-- Scalar extension sends the canonical inclusion of `a` to the canonical inclusion of `f a`. -/
 @[simp]
 lemma map_includeRight (f : A →ₐc[k] B) (a : A) :
-    map (K := K) f (includeRight (k := k) (K := K) a) =
-      includeRight (k := k) (K := K) (f a) := by
+    map (K := K) f (Algebra.TensorProduct.includeRight (R := k) (A := K) (B := A) a) =
+      Algebra.TensorProduct.includeRight (R := k) (A := K) (B := B) (f a) := by
   simp
 
 /-- Scalar extension sends the identity bialgebra homomorphism to the identity. -/
@@ -176,20 +207,12 @@ lemma map_includeRight (f : A →ₐc[k] B) (a : A) :
 lemma map_id :
     map (K := K) (BialgHom.id k A) =
       BialgHom.id K (HopfAlgebra.baseChange k K A) := by
-  ext x
-  induction x using TensorProduct.induction_on with
-  | zero => simp
-  | tmul r a => simp
-  | add x y hx hy => simp [hx, hy]
+  exact Bialgebra.TensorProduct.map_id
 
 /-- Scalar extension preserves composition of bialgebra homomorphisms. -/
 lemma map_comp (g : B →ₐc[k] C) (f : A →ₐc[k] B) :
     map (K := K) (g.comp f) = (map (K := K) g).comp (map (K := K) f) := by
-  ext x
-  induction x using TensorProduct.induction_on with
-  | zero => simp
-  | tmul r a => simp
-  | add x y hx hy => simp [hx, hy]
+  exact Bialgebra.TensorProduct.map_comp (BialgHom.id K K) (BialgHom.id K K) g f
 
 /-- Pointwise form of compatibility of scalar extension with composition. -/
 @[simp]
