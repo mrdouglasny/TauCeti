@@ -208,24 +208,6 @@ lemma map_toAlgHom (f : A →ₐc[k] B) :
   ext x
   simp [map]
 
-@[simp]
-lemma map_zero_apply (f : A →ₐc[k] B) : map (K := K) f 0 = 0 :=
-  map_zero _
-
-@[simp]
-lemma map_add_apply (f : A →ₐc[k] B) (x y : HopfAlgebra.baseChange k K A) :
-    map (K := K) f (x + y) = map (K := K) f x + map (K := K) f y :=
-  map_add _ _ _
-
-@[simp]
-lemma map_one_apply (f : A →ₐc[k] B) : map (K := K) f 1 = 1 :=
-  map_one _
-
-@[simp]
-lemma map_mul_apply (f : A →ₐc[k] B) (x y : HopfAlgebra.baseChange k K A) :
-    map (K := K) f (x * y) = map (K := K) f x * map (K := K) f y :=
-  map_mul _ _ _
-
 /-- Scalar extension of a bialgebra homomorphism preserves counits. -/
 @[simp]
 lemma counit_map (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
@@ -251,7 +233,7 @@ variable [HopfAlgebra k A]
 variable {B : Type*} [Semiring B] [HopfAlgebra k B]
 
 /-- A bialgebra homomorphism between Hopf algebras preserves the antipode. -/
-lemma bialgHom_antipode_apply (f : A →ₐc[k] B) (a : A) :
+private lemma bialgHom_antipode_apply (f : A →ₐc[k] B) (a : A) :
     f (HopfAlgebraStruct.antipode k a) = HopfAlgebraStruct.antipode k (f a) := by
   let u : A →ₗ[k] B := f
   change u ((HopfAlgebra.antipode k : A →ₗ[k] A) a) =
