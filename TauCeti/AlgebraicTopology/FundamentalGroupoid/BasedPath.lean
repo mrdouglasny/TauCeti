@@ -135,6 +135,8 @@ right endpoint cast to `endpoint (ofPath γ)` (`toPath_ofPath`). -/
 `s ∈ [½, 1]` traverses `δ` at double speed (`Path.trans_apply`). The new endpoint is the endpoint
 of `δ` (`endpoint_append`). This is the move used by `joinedIn_preimage_of_append` to slide a
 based path within a path component of `endpoint ⁻¹' U`. -/
+-- `append` is exposed so the exported endpoint and `toPath` normal-form lemmas can typecheck
+-- across the module boundary; their result types identify endpoints by unfolding this wrapper.
 @[expose] public noncomputable def append {y : X} (γ : BasedPath x₀)
     (δ : Path (endpoint γ) y) : BasedPath x₀ :=
   ofPath (γ.toPath.trans δ)
@@ -269,6 +271,8 @@ namespace BasedPath
 /-- The family of initial segments of a based path, defined as
 `ofPath (γ.toPath.initialSegmentFamily t)`. At `t = 0` this is the constant based path at `x₀`;
 at `t = 1` it is `γ` itself. Joint continuity in `t` is `continuous_initialSegmentFamily`. -/
+-- This wrapper is exposed for the same reason as `append`: exported endpoint and `toPath`
+-- normal forms need its body to align the endpoint-indexed path types.
 @[expose] public noncomputable def initialSegmentFamily {x₀ : X} (γ : BasedPath x₀) (t : I) :
     BasedPath x₀ :=
   ofPath (γ.toPath.initialSegmentFamily t)
