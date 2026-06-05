@@ -208,23 +208,6 @@ lemma map_toAlgHom (f : A →ₐc[k] B) :
   ext x
   simp [map]
 
-/-- Scalar extension of a bialgebra homomorphism preserves counits. -/
-@[simp]
-lemma counit_map (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
-    Coalgebra.counit (R := K) (map (K := K) f x) = Coalgebra.counit (R := K) x :=
-  CoalgHomClass.counit_comp_apply (map (K := K) f) x
-
-/-- Scalar extension of a bialgebra homomorphism preserves comultiplication. -/
-@[simp]
-lemma map_comp_comul_apply (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
-    TensorProduct.map (map (K := K) f : HopfAlgebra.baseChange k K A →ₗ[K]
-          HopfAlgebra.baseChange k K B)
-        (map (K := K) f : HopfAlgebra.baseChange k K A →ₗ[K]
-          HopfAlgebra.baseChange k K B)
-        (Coalgebra.comul (R := K) x) =
-      Coalgebra.comul (R := K) (map (K := K) f x) :=
-  CoalgHomClass.map_comp_comul_apply (map (K := K) f) x
-
 end Map
 
 section HopfMap
