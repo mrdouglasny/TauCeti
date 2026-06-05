@@ -285,7 +285,7 @@ at `t = 1` it is `γ` itself. Joint continuity in `t` is `continuous_initialSegm
     γ.initialSegmentFamily 1 = γ := by
   rw [initialSegmentFamily, Path.initialSegmentFamily_one, ofPath_cast, ofPath_toPath_self]
 
-public theorem toPath_initialSegmentFamily {x₀ : X} (γ : BasedPath x₀) (t : I) :
+@[simp] public theorem toPath_initialSegmentFamily {x₀ : X} (γ : BasedPath x₀) (t : I) :
     (γ.initialSegmentFamily t).toPath =
       (γ.toPath.initialSegmentFamily t).cast rfl (γ.toPath.initialSegmentFamily t).target := by
   change (ofPath (γ.toPath.initialSegmentFamily t)).toPath =
