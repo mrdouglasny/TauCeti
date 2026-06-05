@@ -78,16 +78,18 @@ lemma includeRight_algebraMap [Algebra k A] (r : k) :
       algebraMap K (HopfAlgebra.baseChange k K A) (algebraMap k K r) := by
   simp [includeRight, Algebra.TensorProduct.algebraMap_apply]
 
-section HopfOperations
+section CoalgebraStructOperations
 
-variable [HopfAlgebra k A]
+variable [Algebra k A] [CoalgebraStruct k A]
 
+/-- The counit on scalar extension evaluates on a pure tensor by multiplying the two counits. -/
 @[simp]
 lemma counit_tmul (r : K) (a : A) :
     Coalgebra.counit (R := K) (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
       Coalgebra.counit (R := k) a • Coalgebra.counit (R := K) r := by
   rw [TensorProduct.counit_tmul]
 
+/-- The counit of the canonical inclusion is obtained by extending scalars from `k` to `K`. -/
 @[simp]
 lemma counit_includeRight (a : A) :
     Coalgebra.counit (R := K)
@@ -95,6 +97,8 @@ lemma counit_includeRight (a : A) :
       algebraMap k K (Coalgebra.counit (R := k) a) := by
   simp [Algebra.smul_def]
 
+/-- The comultiplication on scalar extension is the tensor product comultiplication on pure
+tensors, followed by the tensor-tensor interchange map. -/
 @[simp]
 lemma comul_tmul (r : K) (a : A) :
     Coalgebra.comul (R := K) (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
@@ -102,6 +106,14 @@ lemma comul_tmul (r : K) (a : A) :
         (Coalgebra.comul (R := K) r ⊗ₜ[k] Coalgebra.comul (R := k) a) := by
   rw [TensorProduct.comul_tmul]
 
+end CoalgebraStructOperations
+
+section CoalgebraOperations
+
+variable [Algebra k A] [Coalgebra k A]
+
+/-- The comultiplication of the canonical inclusion is the scalar extension of the
+comultiplication of the original coalgebra. -/
 @[simp]
 lemma comul_includeRight (a : A) :
     Coalgebra.comul (R := K)
@@ -113,12 +125,20 @@ lemma comul_includeRight (a : A) :
   simp [includeRight, ← (ℛ k a).eq,
     TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul, TensorProduct.tmul_sum]
 
+end CoalgebraOperations
+
+section HopfOperations
+
+variable [HopfAlgebra k A]
+
+/-- The antipode on scalar extension applies the antipode in each tensor factor on pure tensors. -/
 @[simp]
 lemma antipode_tmul (r : K) (a : A) :
     HopfAlgebraStruct.antipode K (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
       HopfAlgebraStruct.antipode K r ⊗ₜ[k] HopfAlgebraStruct.antipode k a := by
   simp [TensorProduct.antipode_def]
 
+/-- The antipode commutes with the canonical inclusion into the scalar extension. -/
 @[simp]
 lemma antipode_includeRight (a : A) :
     HopfAlgebraStruct.antipode K
@@ -133,19 +153,19 @@ section Map
 variable [Bialgebra k A]
 variable {B C : Type*} [Semiring B] [Semiring C] [Bialgebra k B] [Bialgebra k C]
 
-/-- Scalar extension of a bialgebra homomorphism. For Hopf algebras, this is the same bundled
-morphism: bialgebra morphisms between Hopf algebras automatically commute with the unique
-antipodes. -/
+/-- Scalar extension of a bialgebra homomorphism. -/
 noncomputable def map (f : A →ₐc[k] B) :
     HopfAlgebra.baseChange k K A →ₐc[K] HopfAlgebra.baseChange k K B :=
   Bialgebra.TensorProduct.map (BialgHom.id K K) f
 
+/-- Scalar extension of a bialgebra homomorphism agrees with `f` on the right tensor factor
+and with the identity on scalars. -/
 @[simp]
 lemma map_tmul (f : A →ₐc[k] B) (r : K) (a : A) :
     map (K := K) f (r ⊗ₜ[k] a) = r ⊗ₜ[k] f a := by
-  rw [map, Bialgebra.TensorProduct.map_tmul]
-  rfl
+  simp [map]
 
+/-- Scalar extension sends the canonical inclusion of `a` to the canonical inclusion of `f a`. -/
 @[simp]
 lemma map_includeRight (f : A →ₐc[k] B) (a : A) :
     map (K := K) f (includeRight (k := k) (K := K) a) =
@@ -172,6 +192,7 @@ lemma map_comp (g : B →ₐc[k] C) (f : A →ₐc[k] B) :
   | tmul r a => simp
   | add x y hx hy => simp [hx, hy]
 
+/-- Pointwise form of compatibility of scalar extension with composition. -/
 @[simp]
 lemma map_comp_apply (g : B →ₐc[k] C) (f : A →ₐc[k] B)
     (x : HopfAlgebra.baseChange k K A) :
@@ -179,6 +200,7 @@ lemma map_comp_apply (g : B →ₐc[k] C) (f : A →ₐc[k] B)
   rw [map_comp]
   rfl
 
+/-- The underlying algebra homomorphism of scalar extension is the usual tensor-product map. -/
 @[simp]
 lemma map_toAlgHom (f : A →ₐc[k] B) :
     (map (K := K) f : HopfAlgebra.baseChange k K A →ₐ[K] HopfAlgebra.baseChange k K B) =
@@ -204,11 +226,13 @@ lemma map_mul_apply (f : A →ₐc[k] B) (x y : HopfAlgebra.baseChange k K A) :
     map (K := K) f (x * y) = map (K := K) f x * map (K := K) f y :=
   map_mul _ _ _
 
+/-- Scalar extension of a bialgebra homomorphism preserves counits. -/
 @[simp]
 lemma counit_map (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
     Coalgebra.counit (R := K) (map (K := K) f x) = Coalgebra.counit (R := K) x :=
   CoalgHomClass.counit_comp_apply (map (K := K) f) x
 
+/-- Scalar extension of a bialgebra homomorphism preserves comultiplication. -/
 @[simp]
 lemma map_comp_comul_apply (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
     TensorProduct.map (map (K := K) f : HopfAlgebra.baseChange k K A →ₗ[K]
