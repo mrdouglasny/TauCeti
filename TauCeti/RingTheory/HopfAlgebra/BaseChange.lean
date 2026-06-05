@@ -1,0 +1,228 @@
+/-
+Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+import Mathlib.RingTheory.HopfAlgebra.TensorProduct
+
+/-!
+# Base change of Hopf algebras
+
+This file supplies the small API around the scalar extension `K ⊗[k] A` of a Hopf algebra
+`A` over `k`. Mathlib already provides the Hopf algebra instance on tensor products of Hopf
+algebras in `Mathlib.RingTheory.HopfAlgebra.TensorProduct`; the declarations here name the
+base-change object and record the canonical inclusion, the induced Hopf operations, and
+functoriality in bialgebra maps.
+
+This is a prerequisite for the reductive-groups roadmap, Layer 0, "Base change":
+geometric properties of affine group schemes are defined after extending scalars, and on
+coordinate rings this is the Hopf algebra `K ⊗[k] A`.
+-/
+
+open scoped TensorProduct Coalgebra
+open Coalgebra
+
+namespace TauCeti
+
+namespace HopfAlgebra
+
+variable (k K A : Type*) [CommSemiring k] [CommSemiring K] [Semiring A]
+variable [Algebra k K] [Algebra k A]
+
+/-- The scalar extension `K ⊗[k] A` of a Hopf algebra `A` over `k` to a commutative
+`k`-algebra `K`.
+
+The underlying type only needs the algebra structures; when `A` is a Hopf algebra, Mathlib's
+tensor-product instance equips this type with the induced Hopf algebra structure over `K`. -/
+abbrev baseChange : Type _ :=
+  K ⊗[k] A
+
+namespace BaseChange
+
+variable {k K A : Type*} [CommSemiring k] [CommSemiring K] [Semiring A]
+variable [Algebra k K]
+
+/-- The canonical algebra map from an algebra to its scalar extension. -/
+noncomputable def includeRight [Algebra k A] : A →ₐ[k] HopfAlgebra.baseChange k K A :=
+  Algebra.TensorProduct.includeRight
+
+@[simp]
+lemma includeRight_apply [Algebra k A] (a : A) :
+    includeRight (k := k) (K := K) a = (1 : K) ⊗ₜ[k] a :=
+  rfl
+
+@[simp]
+lemma includeRight_one [Algebra k A] :
+    includeRight (k := k) (K := K) (A := A) 1 = 1 :=
+  rfl
+
+@[simp]
+lemma includeRight_zero [Algebra k A] :
+    includeRight (k := k) (K := K) (A := A) 0 = 0 :=
+  map_zero _
+
+@[simp]
+lemma includeRight_add [Algebra k A] (a b : A) :
+    includeRight (k := k) (K := K) (a + b) =
+      includeRight (k := k) (K := K) a + includeRight (k := k) (K := K) b :=
+  map_add _ _ _
+
+@[simp]
+lemma includeRight_mul [Algebra k A] (a b : A) :
+    includeRight (k := k) (K := K) (a * b) =
+      includeRight (k := k) (K := K) a * includeRight (k := k) (K := K) b :=
+  map_mul _ _ _
+
+@[simp]
+lemma includeRight_algebraMap [Algebra k A] (r : k) :
+    includeRight (k := k) (K := K) (A := A) (algebraMap k A r) =
+      algebraMap K (HopfAlgebra.baseChange k K A) (algebraMap k K r) := by
+  simp [includeRight, Algebra.TensorProduct.algebraMap_apply]
+
+section HopfOperations
+
+variable [HopfAlgebra k A]
+
+@[simp]
+lemma counit_tmul (r : K) (a : A) :
+    Coalgebra.counit (R := K) (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
+      Coalgebra.counit (R := k) a • Coalgebra.counit (R := K) r := by
+  rw [TensorProduct.counit_tmul]
+
+@[simp]
+lemma counit_includeRight (a : A) :
+    Coalgebra.counit (R := K)
+        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
+      algebraMap k K (Coalgebra.counit (R := k) a) := by
+  simp [Algebra.smul_def]
+
+@[simp]
+lemma comul_tmul (r : K) (a : A) :
+    Coalgebra.comul (R := K) (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
+      TensorProduct.AlgebraTensorModule.tensorTensorTensorComm k K k K K K A A
+        (Coalgebra.comul (R := K) r ⊗ₜ[k] Coalgebra.comul (R := k) a) := by
+  rw [TensorProduct.comul_tmul]
+
+@[simp]
+lemma comul_includeRight (a : A) :
+    Coalgebra.comul (R := K)
+        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
+      ∑ i ∈ (ℛ k a).index,
+        includeRight (k := k) (K := K) ((ℛ k a).left i) ⊗ₜ[K]
+          includeRight (k := k) (K := K) ((ℛ k a).right i) := by
+  rw [includeRight_apply, TensorProduct.comul_tmul]
+  simp [includeRight, ← (ℛ k a).eq,
+    TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul, TensorProduct.tmul_sum]
+
+@[simp]
+lemma antipode_tmul (r : K) (a : A) :
+    HopfAlgebraStruct.antipode K (r ⊗ₜ[k] a : HopfAlgebra.baseChange k K A) =
+      HopfAlgebraStruct.antipode K r ⊗ₜ[k] HopfAlgebraStruct.antipode k a := by
+  simp [TensorProduct.antipode_def]
+
+@[simp]
+lemma antipode_includeRight (a : A) :
+    HopfAlgebraStruct.antipode K
+        (includeRight (k := k) (K := K) a : HopfAlgebra.baseChange k K A) =
+      includeRight (k := k) (K := K) (HopfAlgebraStruct.antipode k a) := by
+  simp
+
+end HopfOperations
+
+section Map
+
+variable [Bialgebra k A]
+variable {B C : Type*} [Semiring B] [Semiring C] [Bialgebra k B] [Bialgebra k C]
+
+/-- Scalar extension of a bialgebra homomorphism. For Hopf algebras, this is the same bundled
+morphism: bialgebra morphisms between Hopf algebras automatically commute with the unique
+antipodes. -/
+noncomputable def map (f : A →ₐc[k] B) :
+    HopfAlgebra.baseChange k K A →ₐc[K] HopfAlgebra.baseChange k K B :=
+  Bialgebra.TensorProduct.map (BialgHom.id K K) f
+
+@[simp]
+lemma map_tmul (f : A →ₐc[k] B) (r : K) (a : A) :
+    map (K := K) f (r ⊗ₜ[k] a) = r ⊗ₜ[k] f a := by
+  rw [map, Bialgebra.TensorProduct.map_tmul]
+  rfl
+
+@[simp]
+lemma map_includeRight (f : A →ₐc[k] B) (a : A) :
+    map (K := K) f (includeRight (k := k) (K := K) a) =
+      includeRight (k := k) (K := K) (f a) := by
+  simp
+
+/-- Scalar extension sends the identity bialgebra homomorphism to the identity. -/
+@[simp]
+lemma map_id :
+    map (K := K) (BialgHom.id k A) =
+      BialgHom.id K (HopfAlgebra.baseChange k K A) := by
+  ext x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul r a => simp
+  | add x y hx hy => simp [hx, hy]
+
+/-- Scalar extension preserves composition of bialgebra homomorphisms. -/
+lemma map_comp (g : B →ₐc[k] C) (f : A →ₐc[k] B) :
+    map (K := K) (g.comp f) = (map (K := K) g).comp (map (K := K) f) := by
+  ext x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul r a => simp
+  | add x y hx hy => simp [hx, hy]
+
+@[simp]
+lemma map_comp_apply (g : B →ₐc[k] C) (f : A →ₐc[k] B)
+    (x : HopfAlgebra.baseChange k K A) :
+    map (K := K) (g.comp f) x = map (K := K) g (map (K := K) f x) := by
+  rw [map_comp]
+  rfl
+
+@[simp]
+lemma map_toAlgHom (f : A →ₐc[k] B) :
+    (map (K := K) f : HopfAlgebra.baseChange k K A →ₐ[K] HopfAlgebra.baseChange k K B) =
+      Algebra.TensorProduct.map (AlgHom.id K K) (f : A →ₐ[k] B) := by
+  ext x
+  simp [map]
+
+@[simp]
+lemma map_zero_apply (f : A →ₐc[k] B) : map (K := K) f 0 = 0 :=
+  map_zero _
+
+@[simp]
+lemma map_add_apply (f : A →ₐc[k] B) (x y : HopfAlgebra.baseChange k K A) :
+    map (K := K) f (x + y) = map (K := K) f x + map (K := K) f y :=
+  map_add _ _ _
+
+@[simp]
+lemma map_one_apply (f : A →ₐc[k] B) : map (K := K) f 1 = 1 :=
+  map_one _
+
+@[simp]
+lemma map_mul_apply (f : A →ₐc[k] B) (x y : HopfAlgebra.baseChange k K A) :
+    map (K := K) f (x * y) = map (K := K) f x * map (K := K) f y :=
+  map_mul _ _ _
+
+@[simp]
+lemma counit_map (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
+    Coalgebra.counit (R := K) (map (K := K) f x) = Coalgebra.counit (R := K) x :=
+  CoalgHomClass.counit_comp_apply (map (K := K) f) x
+
+@[simp]
+lemma map_comp_comul_apply (f : A →ₐc[k] B) (x : HopfAlgebra.baseChange k K A) :
+    TensorProduct.map (map (K := K) f : HopfAlgebra.baseChange k K A →ₗ[K]
+          HopfAlgebra.baseChange k K B)
+        (map (K := K) f : HopfAlgebra.baseChange k K A →ₗ[K]
+          HopfAlgebra.baseChange k K B)
+        (Coalgebra.comul (R := K) x) =
+      Coalgebra.comul (R := K) (map (K := K) f x) :=
+  CoalgHomClass.map_comp_comul_apply (map (K := K) f) x
+
+end Map
+
+end BaseChange
+
+end HopfAlgebra
+
+end TauCeti
