@@ -29,6 +29,20 @@ Stage 0.4, and the shape of the construction in Kim Morrison's mathlib4#40135.
 
 namespace TauCeti
 
+namespace SubMulAction
+
+variable {R M : Type*} [TopologicalSpace M] [SMul R M]
+
+/-- An invariant subset inherits continuity of scalar multiplication in the point from the
+ambient action. -/
+instance continuousConstSMul [ContinuousConstSMul R M] (s : SubMulAction R M) :
+    ContinuousConstSMul R s where
+  continuous_const_smul r :=
+    ((continuous_const_smul r).comp continuous_subtype_val).subtype_mk fun x =>
+      s.smul_mem r x.2
+
+end SubMulAction
+
 variable {E B : Type*} [TopologicalSpace E] (p : E → B)
 
 /-- The deck transformations of a map `p : E → B`, as the subgroup of homeomorphisms of `E`
@@ -182,13 +196,8 @@ lemma fiberHomeomorph_apply_eq_smul (φ : Deck p) (b : B) (e : p ⁻¹' {b}) :
 
 /-- On each fibre, scalar multiplication by a deck transformation is continuous. -/
 instance fiberContinuousConstSMul (b : B) :
-    ContinuousConstSMul (Deck p) (p ⁻¹' {b}) where
-  continuous_const_smul φ := by
-    have h : (fun e : p ⁻¹' {b} => φ • e) = fiberHomeomorph φ b := by
-      funext e
-      exact (fiberHomeomorph_apply_eq_smul φ b e).symm
-    rw [h]
-    exact (fiberHomeomorph φ b).continuous
+    ContinuousConstSMul (Deck p) (p ⁻¹' {b}) :=
+  TauCeti.SubMulAction.continuousConstSMul (fiberSubMulAction (p := p) b)
 
 -- `FaithfulSMul (Deck p) E` and `ContinuousConstSMul (Deck p) E` are inherited from the generic
 -- subgroup instances in `TauCeti.Topology.Algebra.HomeomorphAction`; `Deck p` is a `Subgroup`.
