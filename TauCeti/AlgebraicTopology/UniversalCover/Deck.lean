@@ -2,6 +2,7 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.GroupTheory.GroupAction.Basic
 import Mathlib.Topology.Homeomorph.Lemmas
 import TauCeti.Topology.Algebra.HomeomorphAction
 
@@ -21,7 +22,9 @@ preserves every fibre of `p`.
 ## References
 
 This file follows the deck-transformation target in the Tau Ceti universal-covers roadmap,
-Stage 0.4, and the shape of the construction in Kim Morrison's mathlib4#40135.
+Stage 0.4, and the shape of the construction in Kim Morrison's mathlib4#40135. The
+orbit-quotient projection API also supports the Stage 1 item 5 quotient-comparison target
+`UniversalCover x₀ / π₁(X, x₀) ≃ X`.
 -/
 
 namespace TauCeti
@@ -119,9 +122,14 @@ lemma eq_proj_of_orbitRel {e₁ e₂ : E} (h : MulAction.orbitRel (Deck p) E e�
     p e₁ = p e₂ :=
   eq_proj_of_mem_orbit (p := p) (MulAction.orbitRel_apply.mp h)
 
+/-- The deck-orbit relation refines the kernel relation of the projection map. -/
+lemma orbitRel_le_ker_proj :
+    MulAction.orbitRel (Deck p) E ≤ Setoid.ker p :=
+  fun _ _ h => eq_proj_of_orbitRel (p := p) h
+
 /-- The map induced by `p` on the quotient of `E` by the deck-orbit relation. -/
 def orbitRelQuotientProj : Quotient (MulAction.orbitRel (Deck p) E) → B :=
-  Quotient.lift p fun _ _ h => eq_proj_of_orbitRel (p := p) h
+  Quotient.lift p (orbitRel_le_ker_proj (p := p))
 
 /-- The descended projection sends the orbit class of a point to its image under `p`. -/
 @[simp]
@@ -141,23 +149,19 @@ classes is injective. Together with `Deck.orbit_subset_fiber`, this says precise
 fibres are the deck orbits. -/
 lemma orbitRelQuotientProj_injective_of_fiber_subset_orbit
     (h : ∀ {e₁ e₂ : E}, p e₁ = p e₂ → MulAction.orbitRel (Deck p) E e₁ e₂) :
-    Function.Injective (orbitRelQuotientProj (p := p)) := by
-  intro q₁ q₂ hq
-  induction q₁ using Quotient.inductionOn' with
-  | h e₁ =>
-    induction q₂ using Quotient.inductionOn' with
-    | h e₂ =>
-      exact Quotient.sound' (h hq)
+    Function.Injective (orbitRelQuotientProj (p := p)) :=
+  (Setoid.lift_injective_iff_ker_eq_of_le (orbitRel_le_ker_proj (p := p))).mpr <|
+    Setoid.ext fun _ _ => ⟨h, fun horbit => orbitRel_le_ker_proj (p := p) horbit⟩
 
 /-- When `p` is surjective and every fibre is a deck orbit, the projection descended to
 deck-orbit classes is an equivalence. -/
 noncomputable def orbitRelQuotientProjEquivOfFiberOrbit
-    (hp : Function.Surjective p)
-    (h : ∀ {e₁ e₂ : E}, p e₁ = p e₂ → MulAction.orbitRel (Deck p) E e₁ e₂) :
+  (hp : Function.Surjective p)
+  (h : ∀ {e₁ e₂ : E}, p e₁ = p e₂ → MulAction.orbitRel (Deck p) E e₁ e₂) :
     Quotient (MulAction.orbitRel (Deck p) E) ≃ B :=
-  Equiv.ofBijective (orbitRelQuotientProj (p := p))
-    ⟨orbitRelQuotientProj_injective_of_fiber_subset_orbit (p := p) h,
-      orbitRelQuotientProj_surjective (p := p) hp⟩
+  (Quotient.congrRight fun _ _ =>
+      ⟨fun horbit => orbitRel_le_ker_proj (p := p) horbit, h⟩).trans <|
+    Setoid.quotientKerEquivOfSurjective (f := p) hp
 
 -- `FaithfulSMul (Deck p) E` and `ContinuousConstSMul (Deck p) E` are inherited from the generic
 -- subgroup instances in `TauCeti.Topology.Algebra.HomeomorphAction`; `Deck p` is a `Subgroup`.
