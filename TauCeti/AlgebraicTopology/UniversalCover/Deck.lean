@@ -93,6 +93,26 @@ action of `E ≃ₜ E` on `E`. -/
 lemma smul_eq_apply (φ : Deck p) (e : E) : φ • e = φ.1 e :=
   rfl
 
+/-- The action of a deck transformation preserves the projection map pointwise. -/
+lemma proj_smul (φ : Deck p) (e : E) : p (φ • e) = p e := by
+  rw [smul_eq_apply]
+  exact map_proj φ e
+
+/-- Acting by a deck transformation keeps a point in the same fibre. -/
+lemma smul_mem_fiber (φ : Deck p) (e : E) : φ • e ∈ p ⁻¹' {p e} :=
+  proj_smul φ e
+
+/-- The deck orbit of a point is contained in its fibre. -/
+lemma orbit_subset_fiber (e : E) : MulAction.orbit (Deck p) e ⊆ p ⁻¹' {p e} := by
+  intro e' he'
+  rcases MulAction.mem_orbit_iff.mp he' with ⟨φ, rfl⟩
+  exact smul_mem_fiber φ e
+
+/-- If two points lie in the same deck orbit, then they have the same image under `p`. -/
+lemma eq_proj_of_mem_orbit {e₁ e₂ : E} (h : e₁ ∈ MulAction.orbit (Deck p) e₂) :
+    p e₁ = p e₂ :=
+  orbit_subset_fiber (p := p) e₂ h
+
 -- `FaithfulSMul (Deck p) E` and `ContinuousConstSMul (Deck p) E` are inherited from the generic
 -- subgroup instances in `TauCeti.Topology.Algebra.HomeomorphAction`; `Deck p` is a `Subgroup`.
 
