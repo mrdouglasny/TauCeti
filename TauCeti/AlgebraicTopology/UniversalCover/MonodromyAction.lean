@@ -27,7 +27,13 @@ variable {X : Type*} [TopologicalSpace X] {x : X}
 /-- The identity element of the fundamental group is represented by the constant path. -/
 lemma fundamentalGroup_toPath_one :
     (1 : FundamentalGroup X x).toPath = Path.Homotopic.Quotient.refl x :=
-  rfl
+  by
+    change CategoryTheory.End.asHom
+      (1 : CategoryTheory.End (FundamentalGroupoid.mk x)) =
+      Path.Homotopic.Quotient.refl x
+    rw [CategoryTheory.End.one_def, FundamentalGroupoid.id_eq_path_refl]
+    change Path.Homotopic.Quotient.mk (Path.refl x) = Path.Homotopic.Quotient.refl x
+    rw [Path.Homotopic.Quotient.mk_refl]
 
 /-- Mathlib's multiplication convention for fundamental-group loops as path homotopy classes.
 
@@ -36,7 +42,19 @@ multiplication follows categorical endomorphism multiplication. On path homotopy
 means `γ * δ` is represented by first traversing `δ`, then `γ`. -/
 lemma fundamentalGroup_toPath_mul (γ δ : FundamentalGroup X x) :
     (γ * δ).toPath = Path.Homotopic.Quotient.trans δ.toPath γ.toPath :=
-  rfl
+  by
+    change (γ * δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x) =
+      Path.Homotopic.Quotient.trans δ.toPath γ.toPath
+    calc
+      (γ * δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x)
+          = CategoryTheory.CategoryStruct.comp
+              (δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x)
+              (γ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x) := by
+            exact CategoryTheory.End.mul_def
+              (xs := (γ : CategoryTheory.End (FundamentalGroupoid.mk x)))
+              (ys := (δ : CategoryTheory.End (FundamentalGroupoid.mk x)))
+      _ = Path.Homotopic.Quotient.trans δ.toPath γ.toPath := by
+            rw [FundamentalGroupoid.comp_eq]
 
 /-- The map on fundamental groups is represented by mapping the underlying path homotopy class. -/
 lemma fundamentalGroup_map_toPath {Y : Type*} [TopologicalSpace Y] (f : C(X, Y))
