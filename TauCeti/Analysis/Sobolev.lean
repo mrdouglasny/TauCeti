@@ -1,1 +1,1 @@
-import TauCeti.Data.MultiIndex
+import TauCeti.Analysis.Sobolev.MultiIndex

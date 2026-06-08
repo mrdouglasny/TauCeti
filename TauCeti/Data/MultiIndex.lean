@@ -22,7 +22,7 @@ namespace TauCeti
 /-- A multiindex on `ι`, backed by Mathlib's finitely supported functions. -/
 structure MultiIndex (ι : Type*) : Type _ where
   /-- The finitely supported function represented by a multiindex. -/
-  toFinsupp : ι →₀ ℕ
+  private toFinsupp : ι →₀ ℕ
 
 namespace MultiIndex
 
@@ -40,10 +40,6 @@ noncomputable instance : Zero (MultiIndex ι) where
   zero := ⟨0⟩
 
 @[simp]
-lemma toFinsupp_zero : (0 : MultiIndex ι).toFinsupp = 0 :=
-  rfl
-
-@[simp]
 lemma zero_apply (i : ι) : (0 : MultiIndex ι) i = 0 :=
   rfl
 
@@ -52,20 +48,12 @@ noncomputable def order (α : MultiIndex ι) : ℕ :=
   Finsupp.degree α.toFinsupp
 
 @[simp]
-lemma order_def (α : MultiIndex ι) : α.order = Finsupp.degree α.toFinsupp :=
-  rfl
-
-@[simp]
 lemma order_zero : (0 : MultiIndex ι).order = 0 :=
   rfl
 
 /-- The first-order multiindex in the coordinate `i`. -/
 noncomputable def unit (i : ι) : MultiIndex ι :=
   ⟨Finsupp.single i 1⟩
-
-@[simp]
-lemma toFinsupp_unit (i : ι) : (unit i).toFinsupp = Finsupp.single i 1 :=
-  rfl
 
 @[simp]
 lemma unit_apply_self (i : ι) : unit i i = 1 :=
@@ -96,6 +84,7 @@ variable {k : ℕ}
 lemma coordinate_le_order (α : MultiIndex ι) (i : ι) : α i ≤ α.order :=
   Finsupp.le_degree i α.toFinsupp
 
+@[grind]
 lemma coordinate_le_of_mem_degreeLE (α : DegreeLE ι k) (i : ι) : α.1 i ≤ k :=
   le_trans (coordinate_le_order α.1 i) α.2
 
