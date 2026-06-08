@@ -113,6 +113,22 @@ lemma eq_proj_of_mem_orbit {e₁ e₂ : E} (h : e₁ ∈ MulAction.orbit (Deck p
     p e₁ = p e₂ :=
   orbit_subset_fiber (p := p) e₂ h
 
+/-- If two points are related by the deck orbit relation, then they have the same image under
+`p`. This is the quotient-facing form of `Deck.eq_proj_of_mem_orbit`. -/
+lemma eq_proj_of_orbitRel {e₁ e₂ : E} (h : MulAction.orbitRel (Deck p) E e₁ e₂) :
+    p e₁ = p e₂ :=
+  eq_proj_of_mem_orbit (p := p) (MulAction.orbitRel_apply.mp h)
+
+/-- The map induced by `p` on the quotient of `E` by the deck-orbit relation. -/
+def orbitRelQuotientProj : Quotient (MulAction.orbitRel (Deck p) E) → B :=
+  Quotient.lift p fun _ _ h => eq_proj_of_orbitRel (p := p) h
+
+/-- The descended projection sends the orbit class of a point to its image under `p`. -/
+@[simp]
+lemma orbitRelQuotientProj_mk (e : E) :
+    orbitRelQuotientProj (p := p) (Quotient.mk'' e) = p e :=
+  rfl
+
 -- `FaithfulSMul (Deck p) E` and `ContinuousConstSMul (Deck p) E` are inherited from the generic
 -- subgroup instances in `TauCeti.Topology.Algebra.HomeomorphAction`; `Deck p` is a `Subgroup`.
 
