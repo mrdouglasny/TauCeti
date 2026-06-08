@@ -22,6 +22,28 @@ namespace TauCeti
 
 open FundamentalGroup
 
+variable {X : Type*} [TopologicalSpace X] {x : X}
+
+/-- The identity element of the fundamental group is represented by the constant path. -/
+lemma fundamentalGroup_toPath_one :
+    (1 : FundamentalGroup X x).toPath = Path.Homotopic.Quotient.refl x :=
+  rfl
+
+/-- Mathlib's multiplication convention for fundamental-group loops as path homotopy classes.
+
+The fundamental group is the endomorphism group of a fundamental-groupoid object, so
+multiplication follows categorical endomorphism multiplication. On path homotopy classes this
+means `γ * δ` is represented by first traversing `δ`, then `γ`. -/
+lemma fundamentalGroup_toPath_mul (γ δ : FundamentalGroup X x) :
+    (γ * δ).toPath = Path.Homotopic.Quotient.trans δ.toPath γ.toPath :=
+  rfl
+
+/-- The map on fundamental groups is represented by mapping the underlying path homotopy class. -/
+lemma fundamentalGroup_map_toPath {Y : Type*} [TopologicalSpace Y] (f : C(X, Y))
+    (γ : FundamentalGroup X x) :
+    (map f x γ).toPath = γ.toPath.map f :=
+  FundamentalGroup.map_apply f x γ
+
 namespace IsCoveringMap
 
 variable {E X : Type*} [TopologicalSpace E] [TopologicalSpace X] {p : E → X}
@@ -41,7 +63,7 @@ lemma monodromyPerm_apply (γ : FundamentalGroup X x) (e : p ⁻¹' {x}) :
 @[simp]
 lemma monodromyPerm_one : monodromyPerm cov x 1 = 1 := by
   ext e
-  rw [monodromyPerm_apply]
+  rw [monodromyPerm_apply, fundamentalGroup_toPath_one]
   exact congr_arg Subtype.val (congr_fun cov.monodromy_refl e)
 
 /-- Monodromy is compatible with the multiplication convention on Mathlib's fundamental group.
@@ -53,7 +75,7 @@ convention, monodromy is a monoid homomorphism to permutations of the fibre. -/
 lemma monodromyPerm_mul (γ δ : FundamentalGroup X x) :
     monodromyPerm cov x (γ * δ) = monodromyPerm cov x γ * monodromyPerm cov x δ := by
   ext e
-  rw [monodromyPerm_apply]
+  rw [monodromyPerm_apply, fundamentalGroup_toPath_mul]
   exact congr_arg Subtype.val (cov.monodromy_trans_apply δ.toPath γ.toPath e)
 
 /-- The inverse loop acts by the inverse monodromy permutation. -/
@@ -98,16 +120,16 @@ lemma monodromy_smul_eq_monodromyPerm (γ : FundamentalGroup X x) (e : p ⁻¹' 
 /-- If a loop in the total space projects to a loop in the base, its monodromy fixes the
 starting point in the fibre. -/
 @[simp]
-lemma monodromyPerm_map_toPath (e : E) (γ : FundamentalGroup E e) :
+lemma monodromyPerm_map_self (e : E) (γ : FundamentalGroup E e) :
     monodromyPerm cov (p e) (map ⟨p, cov.continuous⟩ e γ) ⟨e, rfl⟩ = ⟨e, rfl⟩ := by
-  rw [monodromyPerm_apply]
+  rw [monodromyPerm_apply, fundamentalGroup_map_toPath]
   exact cov.monodromy_map γ.toPath
 
 /-- The monodromy action fixes the starting point of a lifted loop. -/
-lemma map_toPath_smul (e : E) (γ : FundamentalGroup E e) :
+lemma map_smul_self (e : E) (γ : FundamentalGroup E e) :
     letI := monodromyMulAction cov (p e)
     map ⟨p, cov.continuous⟩ e γ • (⟨e, by simp⟩ : p ⁻¹' {p e}) = ⟨e, by simp⟩ :=
-  monodromyPerm_map_toPath cov e γ
+  monodromyPerm_map_self cov e γ
 
 /-- A projected loop from the total space fixes its starting point under monodromy. -/
 lemma smul_eq_self_of_mem_map_range (e : E) {γ : FundamentalGroup X (p e)}
@@ -115,7 +137,7 @@ lemma smul_eq_self_of_mem_map_range (e : E) {γ : FundamentalGroup X (p e)}
     letI := monodromyMulAction cov (p e)
     γ • (⟨e, by simp⟩ : p ⁻¹' {p e}) = ⟨e, by simp⟩ := by
   rcases hγ with ⟨δ, rfl⟩
-  exact map_toPath_smul cov e δ
+  exact map_smul_self cov e δ
 
 /-- The image of the fundamental group of the total space is contained in the stabilizer of the
 chosen point in the fibre under the monodromy action. -/
