@@ -7,4 +7,5 @@ import TauCeti.Algebra.AlgebraicGroup.CommHopfAlgCat
 import TauCeti.Algebra.Coalgebra.ComoduleCat
 import TauCeti.AlgebraicGeometry.WeilDivisor
 import TauCeti.AlgebraicTopology.UniversalCover.Deck.Fiber
+import TauCeti.Analysis.PDE.UniformEllipticity
 import TauCeti.Basic
