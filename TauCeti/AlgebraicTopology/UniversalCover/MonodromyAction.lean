@@ -3,6 +3,7 @@ Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Topology.Homotopy.Lifting
+import TauCeti.AlgebraicTopology.FundamentalGroup
 
 /-!
 # The monodromy action on a fibre
@@ -21,54 +22,6 @@ group, and Stage 2 proposes the classification of connected covers through trans
 namespace TauCeti
 
 open FundamentalGroup
-
-variable {X : Type*} [TopologicalSpace X] {x : X}
-
-/-- The identity element of the fundamental group is represented by the constant path. -/
-lemma fundamentalGroup_toPath_one :
-    (1 : FundamentalGroup X x).toPath = Path.Homotopic.Quotient.refl x :=
-  by
-    -- `FundamentalGroup.toPath` is the endomorphism hom coerced through
-    -- `End.asHom`; Mathlib has no named `toPath_one` lemma, so expose that
-    -- definitional bridge before using the categorical identity lemma.
-    change CategoryTheory.End.asHom
-      (1 : CategoryTheory.End (FundamentalGroupoid.mk x)) =
-      Path.Homotopic.Quotient.refl x
-    rw [CategoryTheory.End.one_def, FundamentalGroupoid.id_eq_path_refl]
-    -- The previous rewrite leaves the raw quotient constructor, while
-    -- `Path.Homotopic.Quotient.refl` is a wrapper around the same class.
-    change Path.Homotopic.Quotient.mk (Path.refl x) = Path.Homotopic.Quotient.refl x
-    rw [Path.Homotopic.Quotient.mk_refl]
-
-/-- Mathlib's multiplication convention for fundamental-group loops as path homotopy classes.
-
-The fundamental group is the endomorphism group of a fundamental-groupoid object, so
-multiplication follows categorical endomorphism multiplication. On path homotopy classes this
-means `γ * δ` is represented by first traversing `δ`, then `γ`. -/
-lemma fundamentalGroup_toPath_mul (γ δ : FundamentalGroup X x) :
-    (γ * δ).toPath = Path.Homotopic.Quotient.trans δ.toPath γ.toPath :=
-  by
-    -- There is no named Mathlib lemma bridging `(γ * δ).toPath` to
-    -- endomorphism multiplication, so first expose the underlying hom in the
-    -- fundamental groupoid and then use the named category/path lemmas below.
-    change (γ * δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x) =
-      Path.Homotopic.Quotient.trans δ.toPath γ.toPath
-    calc
-      (γ * δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x)
-          = CategoryTheory.CategoryStruct.comp
-              (δ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x)
-              (γ : FundamentalGroupoid.mk x ⟶ FundamentalGroupoid.mk x) := by
-            exact CategoryTheory.End.mul_def
-              (xs := (γ : CategoryTheory.End (FundamentalGroupoid.mk x)))
-              (ys := (δ : CategoryTheory.End (FundamentalGroupoid.mk x)))
-      _ = Path.Homotopic.Quotient.trans δ.toPath γ.toPath := by
-            rw [FundamentalGroupoid.comp_eq]
-
-/-- The map on fundamental groups is represented by mapping the underlying path homotopy class. -/
-lemma fundamentalGroup_map_toPath {Y : Type*} [TopologicalSpace Y] (f : C(X, Y))
-    (γ : FundamentalGroup X x) :
-    (map f x γ).toPath = γ.toPath.map f :=
-  FundamentalGroup.map_apply f x γ
 
 namespace IsCoveringMap
 
@@ -132,6 +85,7 @@ noncomputable def monodromyMulAction : MulAction (FundamentalGroup X x) (p ⁻¹
   MulAction.compHom _ (monodromyPermHom cov x)
 
 /-- On points, the monodromy action is Mathlib's monodromy map. -/
+@[simp]
 lemma monodromy_smul_eq (γ : FundamentalGroup X x) (e : p ⁻¹' {x}) :
     letI := monodromyMulAction cov x
     γ • e = cov.monodromy γ.toPath e :=
@@ -148,10 +102,11 @@ starting point in the fibre. -/
 @[simp]
 lemma monodromyPerm_map_self (e : E) (γ : FundamentalGroup E e) :
     monodromyPerm cov (p e) (map ⟨p, cov.continuous⟩ e γ) ⟨e, rfl⟩ = ⟨e, rfl⟩ := by
-  rw [monodromyPerm_apply, fundamentalGroup_map_toPath]
+  rw [monodromyPerm_apply, FundamentalGroup.map_apply]
   exact cov.monodromy_map γ.toPath
 
 /-- The monodromy action fixes the starting point of a lifted loop. -/
+@[simp]
 lemma map_smul_self (e : E) (γ : FundamentalGroup E e) :
     letI := monodromyMulAction cov (p e)
     map ⟨p, cov.continuous⟩ e γ • (⟨e, by simp⟩ : p ⁻¹' {p e}) = ⟨e, by simp⟩ :=
