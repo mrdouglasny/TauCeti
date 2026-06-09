@@ -5,3 +5,4 @@
 -- grows, import the submodules of `TauCeti/` here.
 import TauCeti.Analysis.PDE.UniformEllipticity
 import TauCeti.Basic
+import TauCeti.LinearAlgebra.Matrix.SymmetricPart
