@@ -116,13 +116,6 @@ lemma skewAdjointPart_selfAdjointPart (A : Matrix n n ℝ) :
     (skewAdjointPart ℝ (selfAdjointPart ℝ A : Matrix n n ℝ) : Matrix n n ℝ) = 0 :=
   Matrix.IsSymm.coe_skewAdjointPart_eq_zero (isSymm_selfAdjointPart A)
 
-omit [Fintype n] [DecidableEq n] in
-/-- A matrix is the sum of its self-adjoint and skew-adjoint parts. -/
-@[simp]
-lemma selfAdjointPart_add_skewAdjointPart (A : Matrix n n ℝ) :
-    (selfAdjointPart ℝ A : Matrix n n ℝ) + (skewAdjointPart ℝ A : Matrix n n ℝ) = A := by
-  exact StarModule.selfAdjointPart_add_skewAdjointPart ℝ A
-
 /-- Transposing a real matrix does not change its quadratic form. -/
 @[simp]
 lemma toQuadraticForm'_transpose (A : Matrix n n ℝ) (ξ : EuclideanSpace ℝ n) :
