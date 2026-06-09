@@ -84,19 +84,13 @@ lemma selfAdjointPart_eq_self_of_isSymm {A : Matrix n n ℝ} (hA : A.IsSymm) :
   rw [selfAdjointPart_apply, hA.apply]
   ring
 
-/-- A matrix and its transpose have the same diagonal bilinear form. -/
-lemma dotProduct_transpose_mulVec_self [Fintype n] [NonUnitalCommSemiring R]
-    (A : Matrix n n R) (ξ : n → R) :
-    ξ ⬝ᵥ (Aᵀ *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) := by
-  simpa using _root_.Matrix.dotProduct_transpose_mulVec (A := A) ξ ξ
-
 /-- The self-adjoint part has the same diagonal bilinear form as the original matrix. -/
 @[simp]
 lemma dotProduct_selfAdjointPart_mulVec_self [Fintype n] (A : Matrix n n ℝ)
     (ξ : n → ℝ) :
     ξ ⬝ᵥ ((selfAdjointPart ℝ A : Matrix n n ℝ) *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) := by
   rw [selfAdjointPart_eq, smul_mulVec, dotProduct_smul, add_mulVec, dotProduct_add,
-    dotProduct_transpose_mulVec_self]
+    _root_.Matrix.dotProduct_transpose_mulVec]
   ring
 
 /-- The skew-adjoint part has zero diagonal bilinear form. -/
@@ -106,7 +100,7 @@ lemma dotProduct_skewAdjointPart_mulVec_self [Fintype n] (A : Matrix n n ℝ)
     ξ ⬝ᵥ ((skewAdjointPart ℝ A : Matrix n n ℝ) *ᵥ ξ) = 0 := by
   rw [skewAdjointPart_eq, smul_mulVec, dotProduct_smul, sub_mulVec]
   have htranspose : ξ ⬝ᵥ (Aᵀ *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) :=
-    dotProduct_transpose_mulVec_self A ξ
+    by simpa using _root_.Matrix.dotProduct_transpose_mulVec (A := A) ξ ξ
   rw [dotProduct_sub, htranspose]
   ring
 
