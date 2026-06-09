@@ -23,6 +23,8 @@ tensor-product and finite-dimensional APIs are built.
 
 * `TauCeti.Comodule.instGroupLike`: the right comodule on `R` attached to a group-like
   element.
+* `TauCeti.Comodule.groupLikeToSelf`: the canonical morphism from the `g`-trivial comodule
+  to the regular comodule.
 * `TauCeti.Comodule.instBase`: the trivial right comodule on `R` for a bialgebra.
 * `TauCeti.Comodule.baseToSelf`: the bialgebra unit as a comodule morphism
   `R ⟶ C`.
@@ -193,6 +195,28 @@ theorem ofCoinvariantFor_apply_one_isCoinvariantFor (g : GroupLike R C)
 
 end CoinvariantFor
 
+/-- A group-like element is coinvariant for itself in the regular comodule. -/
+theorem groupLike_isCoinvariantFor (g : GroupLike R C) :
+    IsCoinvariantFor (R := R) (C := C) g (g : C) := by
+  rw [IsCoinvariantFor]
+  simp
+
+/-- The canonical morphism from the `g`-trivial comodule to the regular right comodule. -/
+def groupLikeToSelf (g : GroupLike R C) : HomFromGroupLike (R := R) (C := C) (M := C) g :=
+  ofCoinvariantFor (R := R) (C := C) g (g : C) (groupLike_isCoinvariantFor R C g)
+
+/-- The map `groupLikeToSelf` sends a scalar to the corresponding multiple of `g`. -/
+@[simp]
+theorem groupLikeToSelf_apply (g : GroupLike R C) (r : R) :
+    groupLikeToSelf R C g r = r • (g : C) := by
+  simp [groupLikeToSelf]
+
+/-- The map `groupLikeToSelf` sends `1` to `g`. -/
+@[simp]
+theorem groupLikeToSelf_one (g : GroupLike R C) :
+    groupLikeToSelf R C g (1 : R) = (g : C) := by
+  simp
+
 end GroupLike
 
 section Bialgebra
@@ -219,7 +243,6 @@ theorem instBase_coact_apply (r : R) :
   rfl
 
 /-- The coaction of the trivial right comodule is Mathlib's left tensor inclusion. -/
-@[simp]
 theorem toLinearMap_includeLeft :
     (Algebra.TensorProduct.includeLeft : R →ₐ[R] R ⊗[R] C).toLinearMap =
       coact (R := R) (C := C) (M := R) := by
@@ -227,27 +250,25 @@ theorem toLinearMap_includeLeft :
 
 /-- The bialgebra unit is a morphism from the trivial right comodule to the regular right
 comodule. -/
-def baseToSelf : Hom R C R C where
-  toLinearMap := Algebra.linearMap R C
-  map_coact := by
-    ext
-    simp [Algebra.TensorProduct.one_def]
+def baseToSelf : Hom R C R C :=
+  groupLikeToSelf R C (1 : GroupLike R C)
 
 /-- The underlying linear map of `baseToSelf` is the algebra unit. -/
 @[simp]
 theorem baseToSelf_toLinearMap :
     (baseToSelf R C).toLinearMap = Algebra.linearMap R C :=
-  rfl
+  LinearMap.ext fun r => by
+    simp [baseToSelf, Algebra.smul_def]
 
 /-- The map `baseToSelf` sends a scalar to the corresponding scalar multiple of `1`. -/
 @[simp]
-theorem baseToSelf_apply (r : R) : baseToSelf R C r = algebraMap R C r :=
-  rfl
+theorem baseToSelf_apply (r : R) : baseToSelf R C r = algebraMap R C r := by
+  simp [baseToSelf, Algebra.smul_def]
 
 /-- The map `baseToSelf` sends `1` to `1`. -/
 @[simp]
 theorem baseToSelf_one : baseToSelf R C (1 : R) = (1 : C) :=
-  map_one (algebraMap R C)
+  groupLikeToSelf_one R C (1 : GroupLike R C)
 
 section Coinvariant
 
