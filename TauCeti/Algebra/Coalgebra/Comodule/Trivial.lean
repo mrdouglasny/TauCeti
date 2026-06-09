@@ -2,14 +2,15 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.RingTheory.Bialgebra.Basic
+import Mathlib.RingTheory.Bialgebra.GroupLike
 import TauCeti.Algebra.Coalgebra.Comodule.Hom
 
 /-!
 # Trivial comodules
 
-For a bialgebra `C` over `R`, every `R`-module `M` has a canonical right `C`-comodule
-structure whose coaction is `m ↦ m ⊗ 1`. This is the usual trivial comodule.
+For a coalgebra `C` over `R`, every group-like element `g : GroupLike R C` gives every
+`R`-module `M` a right `C`-comodule structure whose coaction is `m ↦ m ⊗ g`. For a
+bialgebra, the unit is group-like, giving the usual trivial comodule `m ↦ m ⊗ 1`.
 
 This is a small Layer 1 prerequisite for the reductive-groups roadmap target "Comodules over
 a coalgebra/Hopf algebra": the representation category of an affine group scheme needs the
@@ -18,15 +19,18 @@ comodule.
 
 ## Main definitions
 
+* `TauCeti.Comodule.GroupLikeTrivial`: a wrapper carrying the right coaction by a group-like
+  element.
+* `TauCeti.Comodule.groupLikeCoact`: the linear map `m ↦ m ⊗ g`.
 * `TauCeti.Comodule.Trivial`: a wrapper carrying the right coaction by the bialgebra unit.
-* `TauCeti.Comodule.trivialCoact`: the linear map `m ↦ m ⊗ 1`.
+* `TauCeti.Comodule.trivialCoact`: the specialization `m ↦ m ⊗ 1`.
 * `TauCeti.Comodule.Hom.toTrivial`: build a morphism into a trivial comodule from the
   concrete coaction-compatibility equation.
 
 ## References
 
-This follows the standard trivial-comodule construction over a bialgebra, using Mathlib's
-bialgebra unit laws.
+This follows the standard group-like-element trivial-comodule construction over a coalgebra,
+using Mathlib's group-like element API and the bialgebra fact that `1` is group-like.
 -/
 
 open scoped TensorProduct
@@ -39,6 +43,134 @@ namespace Comodule
 
 variable {R : Type u} {C : Type v} {M : Type w} {N : Type x}
 variable [CommSemiring R]
+
+section GroupLike
+
+variable [AddCommMonoid C] [Module R C] [Coalgebra R C]
+variable [AddCommMonoid M] [Module R M]
+variable [AddCommMonoid N] [Module R N]
+
+/-- A type synonym for an `R`-module equipped with the right coaction by a group-like
+element `g : GroupLike R C`.
+
+Use this wrapper when the same underlying module already has, or may later have, another
+comodule structure. -/
+def GroupLikeTrivial (_ : Type u) (_ : Type v) (M : Type w) (_ : GroupLike R C) :=
+  M
+
+namespace GroupLikeTrivial
+
+instance (g : GroupLike R C) : AddCommMonoid (GroupLikeTrivial R C M g) :=
+  inferInstanceAs (AddCommMonoid M)
+
+instance (g : GroupLike R C) : Module R (GroupLikeTrivial R C M g) :=
+  inferInstanceAs (Module R M)
+
+end GroupLikeTrivial
+
+/-- The coaction map associated to a group-like element: `m ↦ m ⊗ g`. -/
+def groupLikeCoact (g : GroupLike R C) : M →ₗ[R] M ⊗[R] C :=
+  (TensorProduct.mk R M C).flip g
+
+@[simp]
+lemma groupLikeCoact_apply (g : GroupLike R C) (m : M) :
+    groupLikeCoact (R := R) (C := C) (M := M) g m = m ⊗ₜ[R] (g : C) :=
+  rfl
+
+/-- Coaction by a group-like element is coassociative, as an equality of linear maps on the
+underlying module. -/
+@[simp]
+lemma groupLikeCoact_coassoc (g : GroupLike R C) :
+    TensorProduct.assoc R M C C ∘ₗ (groupLikeCoact (R := R) (C := C) (M := M) g).rTensor C ∘ₗ
+        groupLikeCoact (R := R) (C := C) (M := M) g =
+      Coalgebra.comul.lTensor M ∘ₗ groupLikeCoact (R := R) (C := C) (M := M) g := by
+  ext m
+  simp [groupLikeCoact]
+
+/-- Coaction by a group-like element satisfies the counit law, as an equality of linear maps
+on the underlying module. -/
+@[simp]
+lemma lTensor_counit_comp_groupLikeCoact (g : GroupLike R C) :
+    Coalgebra.counit.lTensor M ∘ₗ groupLikeCoact (R := R) (C := C) (M := M) g =
+      (TensorProduct.mk R M R).flip 1 := by
+  ext m
+  simp [groupLikeCoact]
+
+/-- The right comodule on an `R`-module obtained by coacting with a group-like element. -/
+instance instGroupLikeTrivial (g : GroupLike R C) :
+    Comodule R C (GroupLikeTrivial R C M g) where
+  coact := groupLikeCoact (R := R) (C := C) (M := GroupLikeTrivial R C M g) g
+  coassoc :=
+    groupLikeCoact_coassoc (R := R) (C := C) (M := GroupLikeTrivial R C M g) g
+  lTensor_counit_comp_coact :=
+    lTensor_counit_comp_groupLikeCoact (R := R) (C := C) (M := GroupLikeTrivial R C M g) g
+
+@[simp]
+lemma coact_groupLikeTrivial (g : GroupLike R C) :
+    coact (R := R) (C := C) (M := GroupLikeTrivial R C M g) =
+      groupLikeCoact (R := R) (C := C) (M := GroupLikeTrivial R C M g) g :=
+  rfl
+
+/-- In the group-like trivial comodule, the coaction of `m` is `m ⊗ g`. -/
+@[simp]
+lemma coact_groupLikeTrivial_apply (g : GroupLike R C) (m : GroupLikeTrivial R C M g) :
+    coact (R := R) (C := C) (M := GroupLikeTrivial R C M g) m = m ⊗ₜ[R] (g : C) :=
+  rfl
+
+namespace Hom
+
+section ToGroupLikeTrivial
+
+variable [Comodule R C M]
+
+/-- Build a comodule morphism into a group-like trivial comodule from the concrete
+compatibility condition with its coaction. -/
+def toGroupLikeTrivial (g : GroupLike R C) (f : M →ₗ[R] N)
+    (hf : ∀ m, TensorProduct.map f LinearMap.id (coact (R := R) (C := C) (M := M) m) =
+      f m ⊗ₜ[R] (g : C)) :
+    Hom R C M (GroupLikeTrivial R C N g) where
+  toLinearMap := f
+  map_coact := by
+    ext m
+    exact hf m
+
+@[simp]
+lemma toGroupLikeTrivial_apply (g : GroupLike R C) (f : M →ₗ[R] N)
+    (hf : ∀ m, TensorProduct.map f LinearMap.id (coact (R := R) (C := C) (M := M) m) =
+      f m ⊗ₜ[R] (g : C)) (m : M) :
+    toGroupLikeTrivial (R := R) (C := C) g f hf m = f m :=
+  rfl
+
+@[simp]
+lemma toGroupLikeTrivial_toLinearMap (g : GroupLike R C) (f : M →ₗ[R] N)
+    (hf : ∀ m, TensorProduct.map f LinearMap.id (coact (R := R) (C := C) (M := M) m) =
+      f m ⊗ₜ[R] (g : C)) :
+    (toGroupLikeTrivial (R := R) (C := C) g f hf).toLinearMap = f :=
+  rfl
+
+end ToGroupLikeTrivial
+
+/-- A linear map between group-like trivial comodules for the same group-like element is
+automatically a comodule morphism. -/
+def groupLikeTrivialMap (g : GroupLike R C) (f : M →ₗ[R] N) :
+    Hom R C (GroupLikeTrivial R C M g) (GroupLikeTrivial R C N g) :=
+  toGroupLikeTrivial (R := R) (C := C) g f fun m => by
+    simp
+
+@[simp]
+lemma groupLikeTrivialMap_apply (g : GroupLike R C) (f : M →ₗ[R] N)
+    (m : GroupLikeTrivial R C M g) :
+    groupLikeTrivialMap (R := R) (C := C) g f m = f m :=
+  rfl
+
+@[simp]
+lemma groupLikeTrivialMap_toLinearMap (g : GroupLike R C) (f : M →ₗ[R] N) :
+    (groupLikeTrivialMap (R := R) (C := C) g f).toLinearMap = f :=
+  rfl
+
+end Hom
+
+end GroupLike
 
 section BialgebraUnit
 
@@ -66,7 +198,7 @@ end Trivial
 
 /-- The coaction map of the trivial right comodule over a bialgebra: `m ↦ m ⊗ 1`. -/
 def trivialCoact : M →ₗ[R] M ⊗[R] C :=
-  (TensorProduct.mk R M C).flip 1
+  groupLikeCoact (R := R) (C := C) (M := M) (1 : GroupLike R C)
 
 @[simp]
 lemma trivialCoact_apply (m : M) : trivialCoact (R := R) (C := C) (M := M) m = m ⊗ₜ[R] 1 :=
@@ -78,18 +210,16 @@ module. -/
 lemma trivialCoact_coassoc :
     TensorProduct.assoc R M C C ∘ₗ (trivialCoact (R := R) (C := C) (M := M)).rTensor C ∘ₗ
         trivialCoact (R := R) (C := C) (M := M) =
-      Coalgebra.comul.lTensor M ∘ₗ trivialCoact (R := R) (C := C) (M := M) := by
-  ext m
-  simp [trivialCoact, Algebra.TensorProduct.one_def]
+      Coalgebra.comul.lTensor M ∘ₗ trivialCoact (R := R) (C := C) (M := M) :=
+  groupLikeCoact_coassoc (R := R) (C := C) (M := M) (1 : GroupLike R C)
 
 /-- The trivial coaction satisfies the counit law, as an equality of linear maps on the
 underlying module. -/
 @[simp]
 lemma lTensor_counit_comp_trivialCoact :
     Coalgebra.counit.lTensor M ∘ₗ trivialCoact (R := R) (C := C) (M := M) =
-      (TensorProduct.mk R M R).flip 1 := by
-  ext m
-  simp [trivialCoact]
+      (TensorProduct.mk R M R).flip 1 :=
+  lTensor_counit_comp_groupLikeCoact (R := R) (C := C) (M := M) (1 : GroupLike R C)
 
 /-- The trivial right comodule on an `R`-module, using the unit of a bialgebra. -/
 instance instTrivial : Comodule R C (Trivial R C M) where
