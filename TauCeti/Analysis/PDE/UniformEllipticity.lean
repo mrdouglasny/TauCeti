@@ -29,8 +29,8 @@ and Lax--Milgram arguments: constants are parameters, not hidden existential dat
   predicate.
 * `TauCeti.PDE.UniformlyEllipticOn.mono_set`: restriction to a smaller domain preserves the
   predicate.
-* `TauCeti.PDE.UniformlyEllipticOn.symmetricPart`: replacing coefficients by their
-  symmetric part preserves the same uniform ellipticity constants.
+* `TauCeti.PDE.UniformlyEllipticOn.selfAdjointPart`: replacing coefficients by their
+  self-adjoint part preserves the same uniform ellipticity constants.
 
 The vectors are `EuclideanSpace ℝ n`, matching the roadmap's bounded open subsets of
 `ℝⁿ`; this type is reducibly a finite `L²` product, so Mathlib's matrix-vector API applies
@@ -157,15 +157,14 @@ lemma upper_bound_transpose (h : UniformlyEllipticOn Ω a lam Lam) {x : X} (hx :
     _ ≤ Lam * ‖ξ‖ * ‖η‖ := h.upper_bound hx ξ η
     _ = Lam * ‖η‖ * ‖ξ‖ := by ring
 
-/-- The symmetric part of uniformly elliptic coefficients is uniformly elliptic with the same
+/-- The self-adjoint part of uniformly elliptic coefficients is uniformly elliptic with the same
 constants. -/
-lemma symmetricPart (h : UniformlyEllipticOn Ω a lam Lam) :
-    UniformlyEllipticOn Ω (fun x => TauCeti.Matrix.symmetricPart (a x)) lam Lam := by
+lemma selfAdjointPart (h : UniformlyEllipticOn Ω a lam Lam) :
+    UniformlyEllipticOn Ω (fun x => (selfAdjointPart ℝ (a x) : Matrix n n ℝ)) lam Lam := by
   refine of_bounds h.pos h.le (fun {x} hx ξ => ?_) (fun {x} hx η ξ => ?_)
-  · simpa using h.lower_bound hx ξ
-  · rw [show TauCeti.Matrix.symmetricPart (a x) = (2 : ℝ)⁻¹ • (a x + (a x)ᵀ) by
-        ext i j
-        simp [TauCeti.Matrix.symmetricPart],
+  · rw [TauCeti.Matrix.toQuadraticForm'_selfAdjointPart]
+    exact h.lower_bound hx ξ
+  · rw [TauCeti.Matrix.selfAdjointPart_eq,
       smul_mulVec, dotProduct_smul, add_mulVec, dotProduct_add]
     set C : ℝ := Lam * ‖η‖ * ‖ξ‖
     have hA : |η ⬝ᵥ (a x *ᵥ ξ)| ≤ C := h.upper_bound hx η ξ
