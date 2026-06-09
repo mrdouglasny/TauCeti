@@ -168,6 +168,23 @@ lemma groupLikeTrivialMap_toLinearMap (g : GroupLike R C) (f : M →ₗ[R] N) :
     (groupLikeTrivialMap (R := R) (C := C) g f).toLinearMap = f :=
   rfl
 
+@[simp]
+lemma groupLikeTrivialMap_id (g : GroupLike R C) :
+    groupLikeTrivialMap (R := R) (C := C) (M := M) (N := M) g LinearMap.id =
+      id R C (GroupLikeTrivial R C M g) := by
+  ext m
+  rfl
+
+/-- Group-like-trivial-comodule maps preserve composition of the underlying linear maps. -/
+@[simp]
+lemma groupLikeTrivialMap_comp (g : GroupLike R C) {P : Type*} [AddCommMonoid P]
+    [Module R P] (h : N →ₗ[R] P) (f : M →ₗ[R] N) :
+    groupLikeTrivialMap (R := R) (C := C) (M := M) (N := P) g (h.comp f) =
+      comp (groupLikeTrivialMap (R := R) (C := C) (M := N) (N := P) g h)
+        (groupLikeTrivialMap (R := R) (C := C) (M := M) (N := N) g f) := by
+  ext m
+  rfl
+
 end Hom
 
 end GroupLike
@@ -293,8 +310,7 @@ lemma trivialMap_toLinearMap (f : M →ₗ[R] N) :
 lemma trivialMap_id :
     trivialMap (R := R) (C := C) (M := M) (N := M) LinearMap.id =
       id R C (Trivial R C M) := by
-  ext m
-  rfl
+  exact groupLikeTrivialMap_id (R := R) (C := C) (M := M) (1 : GroupLike R C)
 
 /-- Trivial-comodule maps preserve composition of the underlying linear maps. -/
 @[simp]
@@ -303,8 +319,7 @@ lemma trivialMap_comp {P : Type*} [AddCommMonoid P] [Module R P] (g : N →ₗ[R
     trivialMap (R := R) (C := C) (M := M) (N := P) (g.comp f) =
       comp (trivialMap (R := R) (C := C) (M := N) (N := P) g)
         (trivialMap (R := R) (C := C) (M := M) (N := N) f) := by
-  ext m
-  rfl
+  exact groupLikeTrivialMap_comp (R := R) (C := C) (M := M) (N := N) (1 : GroupLike R C) g f
 
 end Hom
 
