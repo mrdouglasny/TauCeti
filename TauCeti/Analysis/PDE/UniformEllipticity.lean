@@ -64,6 +64,12 @@ open _root_.Matrix
 
 variable {X n : Type*} [Fintype n] [DecidableEq n]
 
+@[deprecated TauCeti.Matrix.toQuadraticForm'_eq_dotProduct (since := "2026-06-09")]
+alias toQuadraticForm'_eq_dotProduct := TauCeti.Matrix.toQuadraticForm'_eq_dotProduct
+
+@[deprecated TauCeti.Matrix.toQuadraticForm'_smul (since := "2026-06-09")]
+alias toQuadraticForm'_smul := TauCeti.Matrix.toQuadraticForm'_smul
+
 /-- The identity matrix has quadratic form `‖ξ‖²`. -/
 @[simp]
 lemma toQuadraticForm'_one (ξ : EuclideanSpace ℝ n) :
