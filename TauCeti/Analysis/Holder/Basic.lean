@@ -145,6 +145,25 @@ lemma sub_apply (f g : HolderMap α β r) (x : α) : (f - g) x = f x - g x := by
   change (f + -g : HolderMap α β r) x = f x - g x
   simp [sub_eq_add_neg]
 
+noncomputable instance : AddCommGroup (HolderMap α β r) where
+  add_assoc f g h := by
+    ext x
+    simp [add_assoc]
+  zero_add f := by
+    ext x
+    simp
+  add_zero f := by
+    ext x
+    simp
+  neg_add_cancel f := by
+    ext x
+    simp
+  add_comm f g := by
+    ext x
+    simp [add_comm]
+  nsmul := nsmulRec
+  zsmul := zsmulRec
+
 noncomputable instance [SeminormedRing 𝕜] [Module 𝕜 β] [IsBoundedSMul 𝕜 β] :
     SMul 𝕜 (HolderMap α β r) where
   smul c f :=
@@ -158,6 +177,27 @@ lemma smul_apply [SeminormedRing 𝕜] [Module 𝕜 β] [IsBoundedSMul 𝕜 β] 
     (f : HolderMap α β r) (x : α) :
     (c • f) x = c • f x :=
   rfl
+
+noncomputable instance [SeminormedRing 𝕜] [Module 𝕜 β] [IsBoundedSMul 𝕜 β] :
+    Module 𝕜 (HolderMap α β r) where
+  one_smul f := by
+    ext x
+    simp
+  mul_smul c d f := by
+    ext x
+    simp [mul_smul]
+  smul_zero c := by
+    ext x
+    simp
+  smul_add c f g := by
+    ext x
+    simp [smul_add]
+  add_smul c d f := by
+    ext x
+    simp [add_smul]
+  zero_smul f := by
+    ext x
+    simp
 
 /-- Restrict a bundled Hölder map to a subtype.  This is the form used for maps on a domain
 `Ω`, represented as functions on the type `Ω`. -/
@@ -271,7 +311,7 @@ lemma holderSeminorm_add_le (f g : HolderMap α β r) :
 
 /-- Scalar multiplication scales the Hölder seminorm by `‖c‖₊`. -/
 lemma holderSeminorm_smul [NormedRing 𝕜] [Module 𝕜 β] [NormSMulClass 𝕜 β]
-    [IsBoundedSMul 𝕜 β] (c : 𝕜) (f : HolderMap α β r) :
+    (c : 𝕜) (f : HolderMap α β r) :
     holderSeminorm (c • f) = ‖c‖₊ * f.holderSeminorm := by
   exact f.memHolder.nnHolderNorm_smul c
 
@@ -279,6 +319,8 @@ lemma holderSeminorm_smul [NormedRing 𝕜] [Module 𝕜 β] [NormSMulClass 𝕜
 lemma holderSeminorm_smul_le [SeminormedRing 𝕜] [Module 𝕜 β] [IsBoundedSMul 𝕜 β]
     (c : 𝕜) (f : HolderMap α β r) :
     holderSeminorm (c • f) ≤ ‖c‖₊ * f.holderSeminorm := by
+  -- The left side unfolds through the bundled `SMul` and coercion to the function
+  -- seminorm used by Mathlib's `HolderWith.nnholderNorm_le`.
   change nnHolderNorm r (c • (f : α → β)) ≤ ‖c‖₊ * nnHolderNorm r (f : α → β)
   simpa [mul_comm] using (f.holderWith.smul c).nnholderNorm_le
 
