@@ -64,7 +64,26 @@ lemma support_negPart (f : ι →₀ α) :
   · have hnonneg : 0 ≤ f i := not_lt.mp hi
     simp [Finsupp.mem_support_iff, hi, negPart_eq_zero.2 hnonneg]
 
+/-- Positive and negative parts of a finitely supported function have disjoint supports. -/
+lemma disjoint_support_posPart_negPart (f : ι →₀ α) :
+    Disjoint f⁺.support f⁻.support := by
+  rw [support_posPart, support_negPart, Finset.disjoint_left]
+  intro i hi h'i
+  exact (not_lt.mpr (Finset.mem_filter.mp hi).2.le) (Finset.mem_filter.mp h'i).2
+
 end Finsupp
+
+namespace AddMonoidHom
+
+/-- Additive homomorphisms send the positive-minus-negative decomposition to the same
+subtraction identity in the codomain. -/
+lemma map_posPart_sub_map_negPart {α β : Type*}
+    [AddCommGroup α] [LinearOrder α] [AddLeftMono α] [AddCommGroup β]
+    (φ : α →+ β) (a : α) :
+    φ a⁺ - φ a⁻ = φ a := by
+  simpa only [map_sub] using congrArg φ (_root_.posPart_sub_negPart a)
+
+end AddMonoidHom
 
 namespace AlgebraicGeometry
 
@@ -148,12 +167,8 @@ lemma posPart_coeff_ne_zero_imp_negPart_coeff_eq_zero
 
 /-- Positive and negative parts have disjoint supports. -/
 lemma disjoint_support_posPart_negPart (D : WeilDivisor X) :
-    Disjoint D⁺.support D⁻.support := by
-  rw [Finset.disjoint_left]
-  intro x hxpos hxneg
-  exact Finsupp.mem_support_iff.mp hxneg
-    (posPart_coeff_ne_zero_imp_negPart_coeff_eq_zero
-      (Finsupp.mem_support_iff.mp hxpos))
+    Disjoint D⁺.support D⁻.support :=
+  TauCeti.Finsupp.disjoint_support_posPart_negPart D
 
 /-- Equivalently, the original divisor plus its negative part is effective. -/
 lemma isEffective_self_add_negPart (D : WeilDivisor X) :
@@ -161,12 +176,6 @@ lemma isEffective_self_add_negPart (D : WeilDivisor X) :
   have h : D⁺ = D + D⁻ := sub_eq_iff_eq_add.mp (_root_.posPart_sub_negPart D)
   rw [← h]
   exact posPart_nonneg D
-
-/-- Taking positive and negative parts characterizes effective divisors. -/
-lemma isEffective_iff_negPart_eq_zero (D : WeilDivisor X) :
-    IsEffective D ↔ D⁻ = 0 := by
-  change (0 ≤ D) ↔ D⁻ = 0
-  exact negPart_eq_zero.symm
 
 /-- The positive part of a point difference is the left point when the points are distinct. -/
 @[simp]
