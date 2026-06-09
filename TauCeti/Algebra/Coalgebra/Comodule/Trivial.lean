@@ -20,7 +20,11 @@ trivial one.
 
 ## Main definitions
 
+* `TauCeti.Comodule.groupLike`: the right comodule on any `R`-module with coaction
+  `m ↦ m ⊗ g`, for a group-like element `g`.
 * `TauCeti.Comodule.trivial`: the bialgebraic trivial right comodule on an `R`-module.
+* `TauCeti.Comodule.Hom.ofGroupLike`: any linear map is a comodule morphism between
+  comodules attached to the same group-like element.
 * `TauCeti.Comodule.Hom.ofTrivial`: any linear map is a comodule morphism between trivial
   comodules.
 * `TauCeti.Comodule.Hom.trivialEquiv`: these comodule morphisms are equivalent to ordinary
@@ -55,8 +59,13 @@ variable [AddCommMonoid C] [Module R C] [Coalgebra R C]
 private def groupLikeCoact (g : GroupLike R C) : M →ₗ[R] M ⊗[R] C :=
   (TensorProduct.mk R M C).flip (g : C)
 
+/-- The right `C`-comodule structure on an `R`-module attached to a group-like element
+`g : GroupLike R C`, with coaction `m ↦ m ⊗ g`.
+
+This is not registered as a global instance: an `R`-module can carry many coactions, and the
+group-like coaction should be selected explicitly with `Comodule.groupLike`. -/
 @[implicit_reducible]
-private def groupLike (g : GroupLike R C) : Comodule R C M where
+def groupLike (g : GroupLike R C) : Comodule R C M where
   coact := groupLikeCoact (R := R) (C := C) (M := M) g
   coassoc := by
     ext m
@@ -65,19 +74,23 @@ private def groupLike (g : GroupLike R C) : Comodule R C M where
     ext m
     simp [groupLikeCoact]
 
+/-- The coaction attached to a group-like element sends `m` to `m ⊗ g`. -/
 @[simp]
-private theorem groupLike_coact_apply (g : GroupLike R C) (m : M) :
+theorem groupLike_coact_apply (g : GroupLike R C) (m : M) :
     letI : Comodule R C M := groupLike (R := R) (C := C) (M := M) g
     coact (R := R) (C := C) (M := M) m = m ⊗ₜ[R] (g : C) :=
   rfl
 
+/-- The coaction attached to a group-like element is the map `m ↦ m ⊗ g`. -/
 @[simp]
-private theorem groupLike_coact (g : GroupLike R C) :
+theorem groupLike_coact (g : GroupLike R C) :
     letI : Comodule R C M := groupLike (R := R) (C := C) (M := M) g
     coact (R := R) (C := C) (M := M) = (TensorProduct.mk R M C).flip (g : C) :=
   rfl
 
-private def Hom.ofGroupLike (g : GroupLike R C) (f : M →ₗ[R] N) :
+/-- A linear map is automatically a comodule morphism between the comodules attached to
+the same group-like element. -/
+def Hom.ofGroupLike (g : GroupLike R C) (f : M →ₗ[R] N) :
     letI : Comodule R C M := groupLike (R := R) (C := C) (M := M) g
     letI : Comodule R C N := groupLike (R := R) (C := C) (M := N) g
     Hom R C M N := by
