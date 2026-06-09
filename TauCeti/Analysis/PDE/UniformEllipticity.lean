@@ -8,6 +8,7 @@ import Mathlib.Analysis.Normed.Operator.NormedSpace
 import Mathlib.LinearAlgebra.Matrix.BilinearForm
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
 import Mathlib.Topology.Algebra.Module.FiniteDimensionBilinear
+import TauCeti.LinearAlgebra.Matrix.QuadraticForm
 import TauCeti.LinearAlgebra.Matrix.SymmetricPart
 
 /-!
