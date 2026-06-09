@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Analysis.InnerProductSpace.PiL2
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
+import Mathlib.LinearAlgebra.Matrix.Symmetric
 
 /-!
 # Uniform ellipticity for divergence-form PDE coefficients
@@ -26,10 +27,13 @@ and Lax--Milgram arguments: constants are parameters, not hidden existential dat
 
 * `TauCeti.PDE.UniformlyEllipticOn`: uniform lower and upper ellipticity bounds on a set.
 * `TauCeti.PDE.uniformlyEllipticOn_const_one`: the identity matrix is uniformly elliptic.
+* `TauCeti.PDE.symmetricPart`: the symmetric part `(A + Aᵀ) / 2` of a coefficient matrix.
 * `TauCeti.PDE.UniformlyEllipticOn.mono_constants`: weakening constants preserves the
   predicate.
 * `TauCeti.PDE.UniformlyEllipticOn.mono_set`: restriction to a smaller domain preserves the
   predicate.
+* `TauCeti.PDE.UniformlyEllipticOn.symmetricPart`: replacing coefficients by their
+  symmetric part preserves the same uniform ellipticity constants.
 
 The vectors are `EuclideanSpace ℝ n`, matching the roadmap's bounded open subsets of
 `ℝⁿ`; this type is reducibly a finite `L²` product, so Mathlib's matrix-vector API applies
@@ -42,20 +46,114 @@ namespace PDE
 
 open Matrix
 
-variable {X n : Type*} [Fintype n] [DecidableEq n]
+variable {X n : Type*}
 
 /-- Mathlib's matrix quadratic form is the dot-product expression `ξᵀ A ξ`. -/
-lemma toQuadraticForm'_eq_dotProduct (A : Matrix n n ℝ) (ξ : EuclideanSpace ℝ n) :
+lemma toQuadraticForm'_eq_dotProduct [Fintype n] [DecidableEq n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
     A.toQuadraticForm' ξ = ξ ⬝ᵥ (A *ᵥ ξ) := by
   rw [Matrix.toQuadraticForm',
     LinearMap.BilinMap.toQuadraticMap_apply, Matrix.toLinearMap₂'_apply']
 
 /-- The identity matrix has quadratic form `‖ξ‖²`. -/
 @[simp]
-lemma toQuadraticForm'_one (ξ : EuclideanSpace ℝ n) :
+lemma toQuadraticForm'_one [Fintype n] [DecidableEq n] (ξ : EuclideanSpace ℝ n) :
     (1 : Matrix n n ℝ).toQuadraticForm' ξ = ‖ξ‖ ^ 2 := by
   rw [toQuadraticForm'_eq_dotProduct, one_mulVec]
   simpa [dotProduct, sq] using (EuclideanSpace.real_norm_sq_eq ξ).symm
+
+/-- The symmetric part `(A + Aᵀ) / 2` of a real square matrix.
+
+For divergence-form elliptic operators, coercivity only sees this part of the coefficient
+matrix, while the skew part has zero quadratic form. -/
+noncomputable def symmetricPart (A : Matrix n n ℝ) : Matrix n n ℝ :=
+  (2 : ℝ)⁻¹ • (A + Aᵀ)
+
+/-- The skew-symmetric part `(A - Aᵀ) / 2` of a real square matrix. -/
+noncomputable def skewPart (A : Matrix n n ℝ) : Matrix n n ℝ :=
+  (2 : ℝ)⁻¹ • (A - Aᵀ)
+
+/-- Entrywise formula for the symmetric part of a matrix. -/
+@[simp]
+lemma symmetricPart_apply (A : Matrix n n ℝ) (i j : n) :
+    symmetricPart A i j = (2 : ℝ)⁻¹ * (A i j + A j i) := by
+  rfl
+
+/-- Entrywise formula for the skew-symmetric part of a matrix. -/
+@[simp]
+lemma skewPart_apply (A : Matrix n n ℝ) (i j : n) :
+    skewPart A i j = (2 : ℝ)⁻¹ * (A i j - A j i) := by
+  rfl
+
+/-- The symmetric part of a matrix is symmetric. -/
+lemma symmetricPart_isSymm (A : Matrix n n ℝ) : (symmetricPart A).IsSymm := by
+  exact (Matrix.isSymm_add_transpose_self A).smul _
+
+/-- The skew-symmetric part changes sign under transpose. -/
+@[simp]
+lemma skewPart_transpose (A : Matrix n n ℝ) : (skewPart A)ᵀ = -skewPart A := by
+  ext i j
+  simp [skewPart, sub_eq_add_neg]
+
+/-- A symmetric matrix is equal to its symmetric part. -/
+@[simp]
+lemma symmetricPart_eq_self_of_isSymm {A : Matrix n n ℝ} (hA : A.IsSymm) :
+    symmetricPart A = A := by
+  ext i j
+  rw [symmetricPart_apply, hA.apply]
+  ring
+
+/-- The symmetric and skew-symmetric parts add back to the original matrix. -/
+@[simp]
+lemma symmetricPart_add_skewPart (A : Matrix n n ℝ) : symmetricPart A + skewPart A = A := by
+  ext i j
+  simp [symmetricPart, skewPart]
+  ring
+
+/-- A matrix and its transpose have the same diagonal bilinear form. -/
+lemma dotProduct_transpose_mulVec_self [Fintype n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    ξ ⬝ᵥ (Aᵀ *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) := by
+  simpa using Matrix.dotProduct_transpose_mulVec (A := A) ξ ξ
+
+/-- The symmetric part has the same diagonal bilinear form as the original matrix. -/
+lemma dotProduct_symmetricPart_mulVec_self [Fintype n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    ξ ⬝ᵥ (symmetricPart A *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) := by
+  rw [symmetricPart, smul_mulVec, dotProduct_smul, add_mulVec, dotProduct_add,
+    dotProduct_transpose_mulVec_self]
+  ring
+
+/-- The skew-symmetric part has zero diagonal bilinear form. -/
+@[simp]
+lemma dotProduct_skewPart_mulVec_self [Fintype n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    ξ ⬝ᵥ (skewPart A *ᵥ ξ) = 0 := by
+  rw [skewPart, smul_mulVec, dotProduct_smul, sub_mulVec]
+  have htranspose : ξ ⬝ᵥ (Aᵀ *ᵥ ξ) = ξ ⬝ᵥ (A *ᵥ ξ) :=
+    dotProduct_transpose_mulVec_self A ξ
+  rw [dotProduct_sub, htranspose]
+  ring
+
+/-- The symmetric part has the same matrix quadratic form as the original matrix. -/
+@[simp]
+lemma toQuadraticForm'_symmetricPart [Fintype n] [DecidableEq n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    (symmetricPart A).toQuadraticForm' ξ = A.toQuadraticForm' ξ := by
+  simp [toQuadraticForm'_eq_dotProduct, dotProduct_symmetricPart_mulVec_self]
+
+/-- The skew-symmetric part has zero matrix quadratic form. -/
+@[simp]
+lemma toQuadraticForm'_skewPart [Fintype n] [DecidableEq n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    (skewPart A).toQuadraticForm' ξ = 0 := by
+  simp [toQuadraticForm'_eq_dotProduct]
+
+/-- The original matrix decomposes as symmetric plus skew-symmetric parts. -/
+lemma symmetricPart_add_skewPart_apply_mulVec [Fintype n] (A : Matrix n n ℝ)
+    (ξ : EuclideanSpace ℝ n) :
+    (symmetricPart A + skewPart A) *ᵥ ξ = A *ᵥ ξ := by
+  rw [symmetricPart_add_skewPart]
 
 /-- Uniform ellipticity and boundedness with explicit constants on a domain.
 
@@ -63,7 +161,8 @@ The predicate says that for every `x ∈ Ω`, the matrix `a x` has quadratic for
 by `λ‖ξ‖²` and bilinear form bounded above by `Λ‖η‖‖ξ‖`, uniformly in `x`, `η`, and `ξ`.
 The side conditions `0 < λ` and `λ ≤ Λ` are part of the predicate so later energy estimates can
 recover them directly. -/
-def UniformlyEllipticOn (Ω : Set X) (a : X → Matrix n n ℝ) (lam Lam : ℝ) : Prop :=
+def UniformlyEllipticOn [Fintype n] [DecidableEq n] (Ω : Set X) (a : X → Matrix n n ℝ)
+    (lam Lam : ℝ) : Prop :=
   0 < lam ∧ lam ≤ Lam ∧
     ∀ ⦃x⦄, x ∈ Ω →
       (∀ ξ : EuclideanSpace ℝ n,
@@ -71,7 +170,7 @@ def UniformlyEllipticOn (Ω : Set X) (a : X → Matrix n n ℝ) (lam Lam : ℝ) 
         ∀ η ξ : EuclideanSpace ℝ n, |η ⬝ᵥ (a x *ᵥ ξ)| ≤ Lam * ‖η‖ * ‖ξ‖
 
 /-- Characteristic restatement of uniform ellipticity and boundedness on a domain. -/
-lemma uniformlyEllipticOn_iff :
+lemma uniformlyEllipticOn_iff [Fintype n] [DecidableEq n] :
     UniformlyEllipticOn Ω a lam Lam ↔
       0 < lam ∧ lam ≤ Lam ∧
         ∀ ⦃x⦄, x ∈ Ω →
@@ -82,6 +181,7 @@ lemma uniformlyEllipticOn_iff :
 
 namespace UniformlyEllipticOn
 
+variable [Fintype n] [DecidableEq n]
 variable {Ω Ω' : Set X} {a : X → Matrix n n ℝ} {lam Lam lam' Lam' : ℝ}
 
 /-- The lower ellipticity constant is positive. -/
@@ -149,11 +249,44 @@ lemma of_bounds (hlam : 0 < lam) (hlamLam : lam ≤ Lam)
     UniformlyEllipticOn Ω a lam Lam :=
   ⟨hlam, hlamLam, fun {_} hx => ⟨hbounds hx, hupper hx⟩⟩
 
+/-- Replacing a coefficient field by its pointwise transpose preserves the same upper
+bilinear bound, with the arguments exchanged. -/
+lemma upper_bound_transpose (h : UniformlyEllipticOn Ω a lam Lam) {x : X} (hx : x ∈ Ω)
+    (η ξ : EuclideanSpace ℝ n) :
+    |η ⬝ᵥ ((a x)ᵀ *ᵥ ξ)| ≤ Lam * ‖η‖ * ‖ξ‖ := by
+  calc
+    |η ⬝ᵥ ((a x)ᵀ *ᵥ ξ)| = |ξ ⬝ᵥ (a x *ᵥ η)| := by
+      rw [Matrix.dotProduct_transpose_mulVec]
+    _ ≤ Lam * ‖ξ‖ * ‖η‖ := h.upper_bound hx ξ η
+    _ = Lam * ‖η‖ * ‖ξ‖ := by ring
+
+/-- The symmetric part of uniformly elliptic coefficients is uniformly elliptic with the same
+constants. The lower bound is unchanged because the skew part has zero quadratic form; the
+upper bound follows by averaging the bounds for `a` and `aᵀ`. -/
+lemma symmetricPart (h : UniformlyEllipticOn Ω a lam Lam) :
+    UniformlyEllipticOn Ω (fun x => PDE.symmetricPart (a x)) lam Lam := by
+  refine of_bounds h.pos h.le (fun {x} hx ξ => ?_) (fun {x} hx η ξ => ?_)
+  · simpa using h.lower_bound hx ξ
+  · rw [PDE.symmetricPart, smul_mulVec, dotProduct_smul, add_mulVec, dotProduct_add]
+    set C : ℝ := Lam * ‖η‖ * ‖ξ‖
+    have hA : |η ⬝ᵥ (a x *ᵥ ξ)| ≤ C := h.upper_bound hx η ξ
+    have hAT : |η ⬝ᵥ ((a x)ᵀ *ᵥ ξ)| ≤ C := h.upper_bound_transpose hx η ξ
+    calc
+      |(2 : ℝ)⁻¹ • (η ⬝ᵥ (a x *ᵥ ξ) + η ⬝ᵥ ((a x)ᵀ *ᵥ ξ))|
+          = (2 : ℝ)⁻¹ * |η ⬝ᵥ (a x *ᵥ ξ) + η ⬝ᵥ ((a x)ᵀ *ᵥ ξ)| := by
+            rw [smul_eq_mul, abs_mul, abs_of_nonneg]
+            · norm_num
+      _ ≤ (2 : ℝ)⁻¹ * (C + C) := by
+        exact mul_le_mul_of_nonneg_left ((abs_add_le _ _).trans (add_le_add hA hAT))
+          (by norm_num)
+      _ = C := by ring
+
 end UniformlyEllipticOn
 
 /-- The constant identity coefficient field is uniformly elliptic with any constants
 `λ ≤ 1 ≤ Λ` and `0 < λ`. This is the coefficient field of the Laplacian model problem. -/
-lemma uniformlyEllipticOn_const_one (Ω : Set X) {lam Lam : ℝ} (hlam : 0 < lam)
+lemma uniformlyEllipticOn_const_one [Fintype n] [DecidableEq n] (Ω : Set X) {lam Lam : ℝ}
+    (hlam : 0 < lam)
     (hlam_one : lam ≤ 1) (hone_Lam : 1 ≤ Lam) :
     UniformlyEllipticOn Ω (fun _ => (1 : Matrix n n ℝ)) lam Lam := by
   refine UniformlyEllipticOn.of_bounds hlam (hlam_one.trans hone_Lam) (fun {x} hx ξ => ?_)
@@ -172,7 +305,7 @@ lemma uniformlyEllipticOn_const_one (Ω : Set X) {lam Lam : ℝ} (hlam : 0 < lam
 
 /-- In particular, the identity coefficient field is uniformly elliptic with constants
 `λ = Λ = 1`. -/
-lemma uniformlyEllipticOn_const_one_one (Ω : Set X) :
+lemma uniformlyEllipticOn_const_one_one [Fintype n] [DecidableEq n] (Ω : Set X) :
     UniformlyEllipticOn Ω (fun _ => (1 : Matrix n n ℝ)) 1 1 :=
   uniformlyEllipticOn_const_one Ω zero_lt_one le_rfl le_rfl
 
