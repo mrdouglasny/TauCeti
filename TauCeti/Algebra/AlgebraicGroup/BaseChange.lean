@@ -185,6 +185,8 @@ lemma mapPoints_baseChangePointsIso_inv (φ : R →ₐ[K] S) :
         TauCeti.HopfAlgebra.mapPoints (R := k) (H := H)
           (CommAlgCat.ofHom (φ.restrictScalars k)) := by
   ext f h
+  -- `ext` for the bundled group morphisms reduces the statement to equality of the
+  -- underlying algebra maps, whose values are exposed by the pointwise API.
   change (((baseChangePointsIso (k := k) (K := K) (H := H) (R := S)).inv
       (TauCeti.HopfAlgebra.mapPoints (R := K) (H := K ⊗[k] H)
         (CommAlgCat.ofHom φ) f)).ofConv h) =
@@ -192,8 +194,8 @@ lemma mapPoints_baseChangePointsIso_inv (φ : R →ₐ[K] S) :
       (CommAlgCat.ofHom (φ.restrictScalars k))
       ((baseChangePointsIso (k := k) (K := K) (H := H) (R := R)).inv f)).ofConv h)
   rw [baseChangePointsIso_inv_apply]
-  rw [mapPoints_apply_apply]
-  rw [mapPoints_apply_apply]
+  rw [TauCeti.HopfAlgebra.mapPoints_apply_apply]
+  rw [TauCeti.HopfAlgebra.mapPoints_apply_apply]
   rw [baseChangePointsIso_inv_apply]
   rfl
 
@@ -205,6 +207,8 @@ lemma baseChangePointsIso_hom_mapPoints (φ : R →ₐ[K] S) :
           (CommAlgCat.ofHom (φ.restrictScalars k)) ≫
         (baseChangePointsIso (k := k) (K := K) (H := H) (R := S)).hom := by
   ext f h
+  -- The target is a base-changed point; after `ext`, evaluation at `1 ⊗ₜ[k] h`
+  -- is the stable definitional form supplied by the pointwise simp lemmas below.
   change ((TauCeti.HopfAlgebra.mapPoints (R := K) (H := K ⊗[k] H)
       (CommAlgCat.ofHom φ)
       ((baseChangePointsIso (k := k) (K := K) (H := H) (R := R)).hom f)).ofConv
@@ -212,10 +216,10 @@ lemma baseChangePointsIso_hom_mapPoints (φ : R →ₐ[K] S) :
     (((baseChangePointsIso (k := k) (K := K) (H := H) (R := S)).hom
       (TauCeti.HopfAlgebra.mapPoints (R := k) (H := H)
         (CommAlgCat.ofHom (φ.restrictScalars k)) f)).ofConv (1 ⊗ₜ[k] h))
-  rw [mapPoints_apply_apply]
+  rw [TauCeti.HopfAlgebra.mapPoints_apply_apply]
   rw [baseChangePointsIso_hom_apply_tmul]
   rw [baseChangePointsIso_hom_apply_tmul]
-  rw [mapPoints_apply_apply]
+  rw [TauCeti.HopfAlgebra.mapPoints_apply_apply]
   simp only [CommAlgCat.hom_ofHom, AlgHom.coe_restrictScalars', one_smul]
 
 end Naturality
