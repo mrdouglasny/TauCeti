@@ -26,6 +26,46 @@ negative/pole decomposition used before the scheme-theoretic divisor map is intr
 
 namespace TauCeti
 
+namespace Finsupp
+
+variable {ι α : Type*} [AddCommGroup α] [LinearOrder α]
+
+/-- Positive parts of finitely supported functions are computed pointwise. -/
+@[simp]
+lemma posPart_apply (f : ι →₀ α) (i : ι) : f⁺ i = (f i)⁺ := by
+  rw [posPart_def]
+  simp [posPart_def]
+
+/-- Negative parts of finitely supported functions are computed pointwise. -/
+@[simp]
+lemma negPart_apply (f : ι →₀ α) (i : ι) : f⁻ i = (f i)⁻ := by
+  rw [negPart_def]
+  simp [negPart_def]
+
+/-- The support of the positive part is the positive-coefficient locus inside the support. -/
+@[simp]
+lemma support_posPart (f : ι →₀ α) :
+    f⁺.support = f.support.filter fun i => 0 < f i := by
+  ext i
+  by_cases hi : 0 < f i
+  · simp [Finsupp.mem_support_iff, hi, ne_of_gt hi]
+  · have hnonpos : f i ≤ 0 := not_lt.mp hi
+    simp [Finsupp.mem_support_iff, hi, posPart_eq_zero.2 hnonpos]
+
+variable [AddLeftMono α]
+
+/-- The support of the negative part is the negative-coefficient locus inside the support. -/
+@[simp]
+lemma support_negPart (f : ι →₀ α) :
+    f⁻.support = f.support.filter fun i => f i < 0 := by
+  ext i
+  by_cases hi : f i < 0
+  · simp [Finsupp.mem_support_iff, hi, ne_of_lt hi]
+  · have hnonneg : 0 ≤ f i := not_lt.mp hi
+    simp [Finsupp.mem_support_iff, hi, negPart_eq_zero.2 hnonneg]
+
+end Finsupp
+
 namespace AlgebraicGeometry
 
 namespace WeilDivisor
@@ -39,58 +79,42 @@ coefficients become zero. -/
 @[simp]
 lemma coeff_posPart (D : WeilDivisor X) (x : X) :
     coeff D⁺ x = if 0 < coeff D x then coeff D x else 0 := by
-  -- Positive parts of finitely supported functions are defined pointwise by `max`.
   by_cases hx : 0 < coeff D x
-  · change max (D x) 0 = if 0 < D x then D x else 0
-    have hx' : 0 < D x := by simpa [coeff] using hx
-    rw [if_pos hx', max_eq_left hx'.le]
-  · change max (D x) 0 = if 0 < D x then D x else 0
-    have hx' : ¬ 0 < D x := by simpa [coeff] using hx
-    rw [if_neg hx', max_eq_right (not_lt.mp hx')]
+  · have hx' : 0 < D x := by simpa [coeff] using hx
+    rw [if_pos hx]
+    simpa [coeff] using
+      (TauCeti.Finsupp.posPart_apply D x).trans (posPart_eq_self.2 hx'.le)
+  · have hx' : ¬ 0 < D x := by simpa [coeff] using hx
+    rw [if_neg hx]
+    simpa [coeff] using
+      (TauCeti.Finsupp.posPart_apply D x).trans (posPart_eq_zero.2 (not_lt.mp hx'))
 
 /-- The coefficient of `D⁻`: negative coefficients of `D` are recorded by their absolute
 value, and all other coefficients become zero. -/
 @[simp]
 lemma coeff_negPart (D : WeilDivisor X) (x : X) :
     coeff D⁻ x = if coeff D x < 0 then -coeff D x else 0 := by
-  -- Negative parts of finitely supported functions unfold to the positive part of `-D`.
   by_cases hx : coeff D x < 0
-  · change max (-D x) 0 = if D x < 0 then -D x else 0
-    have hx' : D x < 0 := by simpa [coeff] using hx
-    rw [if_pos hx', max_eq_left (neg_nonneg.mpr hx'.le)]
-  · change max (-D x) 0 = if D x < 0 then -D x else 0
-    have hx' : ¬ D x < 0 := by simpa [coeff] using hx
-    rw [if_neg hx', max_eq_right (neg_nonpos.mpr (not_lt.mp hx'))]
+  · have hx' : D x < 0 := by simpa [coeff] using hx
+    rw [if_pos hx]
+    simpa [coeff] using
+      (TauCeti.Finsupp.negPart_apply D x).trans (negPart_eq_neg.2 hx'.le)
+  · have hx' : ¬ D x < 0 := by simpa [coeff] using hx
+    rw [if_neg hx]
+    simpa [coeff] using
+      (TauCeti.Finsupp.negPart_apply D x).trans (negPart_eq_zero.2 (not_lt.mp hx'))
 
 /-- The support of the positive part is the positive-coefficient locus inside the support. -/
 @[simp]
 lemma support_posPart (D : WeilDivisor X) :
     D⁺.support = D.support.filter fun x => 0 < coeff D x := by
-  ext x
-  by_cases hx : 0 < coeff D x
-  · have hx' : 0 < D x := by simpa [coeff] using hx
-    have hcoeff : D⁺ x = D x := by
-      simpa [coeff, hx'] using coeff_posPart D x
-    simp [Finsupp.mem_support_iff, hx, hcoeff, ne_of_gt hx']
-  · have hzero : D⁺ x = 0 := by
-      have hx' : ¬ 0 < D x := by simpa [coeff] using hx
-      simpa [coeff, hx'] using coeff_posPart D x
-    simp [Finsupp.mem_support_iff, hx, hzero]
+  simp [coeff]
 
 /-- The support of the negative part is the negative-coefficient locus inside the support. -/
 @[simp]
 lemma support_negPart (D : WeilDivisor X) :
     D⁻.support = D.support.filter fun x => coeff D x < 0 := by
-  ext x
-  by_cases hx : coeff D x < 0
-  · have hx' : D x < 0 := by simpa [coeff] using hx
-    have hcoeff : D⁻ x = -D x := by
-      simpa [coeff, hx'] using coeff_negPart D x
-    simp [Finsupp.mem_support_iff, hx, hcoeff, ne_of_lt hx', ne_of_gt (neg_pos.mpr hx')]
-  · have hzero : D⁻ x = 0 := by
-      have hx' : ¬ D x < 0 := by simpa [coeff] using hx
-      simpa [coeff, hx'] using coeff_negPart D x
-    simp [Finsupp.mem_support_iff, hx, hzero]
+  simp [coeff]
 
 /-- The positive part has support contained in the original support. -/
 lemma support_posPart_subset (D : WeilDivisor X) :
@@ -104,39 +128,13 @@ lemma support_negPart_subset (D : WeilDivisor X) :
   rw [support_negPart]
   exact Finset.filter_subset _ _
 
-/-- The positive part of a divisor is effective. -/
-@[simp]
-lemma isEffective_posPart (D : WeilDivisor X) : IsEffective D⁺ := by
-  exact posPart_nonneg D
-
-/-- The negative part of a divisor is effective. -/
-@[simp]
-lemma isEffective_negPart (D : WeilDivisor X) : IsEffective D⁻ := by
-  exact negPart_nonneg D
-
-/-- An effective divisor is equal to its positive part. -/
-lemma posPart_eq_self_of_isEffective {D : WeilDivisor X} (hD : IsEffective D) :
-    D⁺ = D := by
-  ext x
-  by_cases hx : 0 < coeff D x
-  · simp [hx]
-  · have hzero : coeff D x = 0 := le_antisymm (not_lt.mp hx) (hD x)
-    simp [hzero]
-
-/-- An effective divisor has no negative part. -/
-lemma negPart_eq_zero_of_isEffective {D : WeilDivisor X} (hD : IsEffective D) :
-    D⁻ = 0 := by
-  ext x
-  have hx : ¬ coeff D x < 0 := not_lt.mpr (hD x)
-  simp [hx]
-
 @[simp]
 lemma posPart_ofPoint (x : X) : (ofPoint x)⁺ = ofPoint x :=
-  posPart_eq_self_of_isEffective (isEffective_ofPoint x)
+  posPart_eq_self.2 (isEffective_ofPoint x)
 
 @[simp]
 lemma negPart_ofPoint (x : X) : (ofPoint x)⁻ = 0 :=
-  negPart_eq_zero_of_isEffective (isEffective_ofPoint x)
+  negPart_eq_zero.2 (isEffective_ofPoint x)
 
 /-- Positive and negative parts are pointwise disjoint. -/
 lemma posPart_coeff_ne_zero_imp_negPart_coeff_eq_zero
@@ -157,34 +155,18 @@ lemma disjoint_support_posPart_negPart (D : WeilDivisor X) :
     (posPart_coeff_ne_zero_imp_negPart_coeff_eq_zero
       (Finsupp.mem_support_iff.mp hxpos))
 
-/-- Coefficientwise form of `D = D⁺ - D⁻`. -/
-lemma coeff_posPart_sub_negPart (D : WeilDivisor X) (x : X) :
-    coeff (D⁺ - D⁻) x = coeff D x := by
-  rw [_root_.posPart_sub_negPart]
-
-/-- Equivalently, the positive part is the divisor plus the negative part. -/
-lemma posPart_eq_self_add_negPart (D : WeilDivisor X) :
-    D⁺ = D + D⁻ := by
-  rw [← sub_eq_iff_eq_add]
-  exact _root_.posPart_sub_negPart D
-
 /-- Equivalently, the original divisor plus its negative part is effective. -/
 lemma isEffective_self_add_negPart (D : WeilDivisor X) :
     IsEffective (D + D⁻) := by
-  rw [← posPart_eq_self_add_negPart]
-  exact isEffective_posPart D
+  have h : D⁺ = D + D⁻ := sub_eq_iff_eq_add.mp (_root_.posPart_sub_negPart D)
+  rw [← h]
+  exact posPart_nonneg D
 
 /-- Taking positive and negative parts characterizes effective divisors. -/
 lemma isEffective_iff_negPart_eq_zero (D : WeilDivisor X) :
     IsEffective D ↔ D⁻ = 0 := by
-  constructor
-  · exact negPart_eq_zero_of_isEffective
-  · intro h x
-    by_contra hx
-    have hneg : coeff D x < 0 := lt_of_not_ge hx
-    have hcoeff : coeff (negPart D) x = -coeff D x := by simp [hneg]
-    rw [h] at hcoeff
-    exact (ne_of_gt (neg_pos.mpr hneg)) hcoeff.symm
+  change (0 ≤ D) ↔ D⁻ = 0
+  exact negPart_eq_zero.symm
 
 /-- The positive part of a point difference is the left point when the points are distinct. -/
 @[simp]
