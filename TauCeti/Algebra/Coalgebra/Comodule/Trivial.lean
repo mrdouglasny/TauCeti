@@ -62,7 +62,7 @@ def groupLikeCoact (g : GroupLike R C) : R →ₗ[R] R ⊗[R] C :=
 
 The coaction sends `r : R` to `r ⊗ g`. This is a definition rather than a global instance,
 because the chosen group-like element is not inferable from the type `R`. -/
-@[reducible]
+@[implicit_reducible]
 def instGroupLike (g : GroupLike R C) : Comodule R C R where
   coact := groupLikeCoact R C g
   coassoc := by
