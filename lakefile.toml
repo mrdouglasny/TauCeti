@@ -4,7 +4,7 @@ defaultTargets = ["TauCeti"]
 [[require]]
 name = "mathlib"
 git = "https://github.com/leanprover-community/mathlib4"
-rev = "master"
+rev = "4df10ac0b6b449d1e532b6824b7c31af25b561e9"
 
 # AI-owned: all the mathematics. No sorries (enforced in CI).
 # Glob all submodules so `lake build` builds every TauCeti/*.lean, including any not yet
