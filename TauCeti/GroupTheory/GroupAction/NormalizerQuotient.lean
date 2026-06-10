@@ -166,7 +166,7 @@ noncomputable def subgroupQuotientOrbitHom (K : Subgroup G) (hHK : H ≤ K)
 
 This is a named action rather than a typeclass instance, because the containment proof
 `hHK : H ≤ K` is not inferable from the acting type `K ⧸ H.subgroupOf K`. -/
-@[reducible]
+@[implicit_reducible]
 noncomputable def subgroupQuotientMulAction (K : Subgroup G) (hHK : H ≤ K)
     [(H.subgroupOf K).Normal] :
     MulAction (K ⧸ H.subgroupOf K) (MulAction.orbitRel.Quotient H X) :=
@@ -184,6 +184,15 @@ lemma subgroupQuotientOrbitHom_mk (K : Subgroup G) (hHK : H ≤ K)
   rw [subgroupQuotientOrbitHom, QuotientGroup.lift_mk]
   rfl
 
+/-- The named subgroup-quotient action agrees with the descended permutation
+homomorphism. -/
+lemma subgroupQuotient_smul_eq_orbitHom (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] (q : K ⧸ H.subgroupOf K)
+    (x : MulAction.orbitRel.Quotient H X) :
+    letI := subgroupQuotientMulAction (X := X) H K hHK
+    q • x = subgroupQuotientOrbitHom H K hHK q x := by
+  rfl
+
 /-- On representatives, the descended subgroup-quotient action is the ambient action. -/
 @[simp]
 lemma subgroupQuotient_smul_mk (K : Subgroup G) (hHK : H ≤ K)
@@ -192,7 +201,7 @@ lemma subgroupQuotient_smul_mk (K : Subgroup G) (hHK : H ≤ K)
     (QuotientGroup.mk k : K ⧸ H.subgroupOf K) •
         (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
       Quotient.mk'' ((k : G) • x) := by
-  rw [subgroupQuotientMulAction]
+  rw [subgroupQuotient_smul_eq_orbitHom]
   exact subgroupQuotientOrbitHom_mk H K hHK k x
 
 /-- The action of `N_G(H)` on `X / H` descends to the quotient group `N_G(H) / H`. -/
