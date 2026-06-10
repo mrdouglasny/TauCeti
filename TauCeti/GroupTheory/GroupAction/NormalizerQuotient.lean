@@ -217,7 +217,9 @@ noncomputable instance normalizerQuotientMulAction :
       (MulAction.orbitRel.Quotient H X) :=
   subgroupQuotientMulAction (X := X) H (Subgroup.normalizer (H : Set G)) H.le_normalizer
 
-private lemma normalizerQuotient_smul_eq_orbitHom
+/-- The normalizer-quotient action agrees with the descended permutation homomorphism. -/
+@[simp]
+lemma normalizerQuotient_smul_eq_orbitHom
     (q : Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G)))
     (x : MulAction.orbitRel.Quotient H X) :
     q • x = normalizerQuotientOrbitHom H q x := by
