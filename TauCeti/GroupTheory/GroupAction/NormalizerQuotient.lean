@@ -184,6 +184,17 @@ lemma subgroupQuotientOrbitHom_mk (K : Subgroup G) (hHK : H ≤ K)
   rw [subgroupQuotientOrbitHom, QuotientGroup.lift_mk]
   rfl
 
+/-- On representatives, the descended subgroup-quotient action is the ambient action. -/
+@[simp]
+lemma subgroupQuotient_smul_mk (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] (k : K) (x : X) :
+    letI := subgroupQuotientMulAction (X := X) H K hHK
+    (QuotientGroup.mk k : K ⧸ H.subgroupOf K) •
+        (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
+      Quotient.mk'' ((k : G) • x) := by
+  rw [subgroupQuotientMulAction]
+  exact subgroupQuotientOrbitHom_mk H K hHK k x
+
 /-- The action of `N_G(H)` on `X / H` descends to the quotient group `N_G(H) / H`. -/
 noncomputable def normalizerQuotientOrbitHom :
     (Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G))) →*
@@ -218,7 +229,6 @@ lemma normalizerQuotient_smul_mk (n : Subgroup.normalizer (H : Set G)) (x : X) :
         Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G))) •
         (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
       Quotient.mk'' ((n : G) • x) := by
-  rw [normalizerQuotient_smul_eq_orbitHom]
-  exact normalizerQuotientOrbitHom_mk H n x
+  exact subgroupQuotient_smul_mk H (Subgroup.normalizer (H : Set G)) H.le_normalizer n x
 
 end TauCeti
