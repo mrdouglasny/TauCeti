@@ -11,8 +11,9 @@ import Mathlib.GroupTheory.QuotientGroup.Defs
 
 Let a group `G` act on a type `X`, and let `H ≤ G`. The normalizer `N_G(H)` acts on the
 orbit quotient `X / H`: a normalizing element sends each `H`-orbit to another `H`-orbit.
-Moreover, the subgroup `H`, viewed inside its normalizer, acts trivially on `X / H`, so the
-action descends to an action of the quotient group `N_G(H) / H`.
+More generally, if `H ≤ K` and `H` is normal as a subgroup of `K`, then this normalizer
+action restricts to `K` and descends to an action of `K / H` on `X / H`. Specializing to
+`K = N_G(H)` gives the normalizer-quotient action.
 
 This is the group-action bookkeeping needed by the universal-covers roadmap before the
 deck group of the cover attached to a subgroup `H ≤ π₁(X, x₀)` is identified with
@@ -25,6 +26,9 @@ covering-space hypotheses are involved.
   `X / H`.
 * `TauCeti.normalizerOrbitHom`: the corresponding homomorphism
   `N_G(H) →* Equiv.Perm (X / H)`.
+* `TauCeti.subgroupQuotientOrbitHom`: for `H ≤ K` and `H ⫳ K`, the descended homomorphism
+  `K / H →* Equiv.Perm (X / H)`.
+* `TauCeti.subgroupQuotientMulAction`: the descended action of `K / H` on `X / H`.
 * `TauCeti.normalizerQuotientOrbitHom`: the descended homomorphism
   `N_G(H) / H →* Equiv.Perm (X / H)`.
 * `TauCeti.normalizerQuotientMulAction`: the descended action of `N_G(H) / H` on
@@ -113,22 +117,85 @@ lemma subgroupOfNormalizer_le_ker_normalizerOrbitHom :
       refine Quotient.sound ?_
       exact ⟨⟨(h : G), hh⟩, rfl⟩
 
+/-- If `H` is normal in `K`, then `K` acts on the orbit quotient `X / H`. -/
+noncomputable def subgroupOrbitHom (K : Subgroup G) (hHK : H ≤ K) [(H.subgroupOf K).Normal] :
+    K →* Equiv.Perm (MulAction.orbitRel.Quotient H X) where
+  toFun k :=
+    normalizerOrbitHom (X := X) H
+      ⟨(k : G), Subgroup.le_normalizer_of_normal_subgroupOf hHK k.2⟩
+  map_one' := by
+    ext q
+    induction q using Quotient.inductionOn' with
+    | h x => simp
+  map_mul' k l := by
+    ext q
+    induction q using Quotient.inductionOn' with
+    | h x => simp [mul_smul]
+
+/-- On representatives, the restricted subgroup action on the orbit quotient is the ambient
+action. -/
+@[simp]
+lemma subgroupOrbitHom_apply_mk (K : Subgroup G) (hHK : H ≤ K) [(H.subgroupOf K).Normal]
+    (k : K) (x : X) :
+    subgroupOrbitHom (X := X) H K hHK k
+        (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
+      Quotient.mk'' ((k : G) • x) :=
+  rfl
+
+/-- Elements of `H`, viewed as elements of `K`, act trivially on `X / H`. -/
+lemma subgroupOf_le_ker_subgroupOrbitHom (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] :
+    H.subgroupOf K ≤ MonoidHom.ker (subgroupOrbitHom (X := X) H K hHK) := by
+  intro h hh
+  ext q
+  induction q using Quotient.inductionOn' with
+  | h x =>
+      simp only [Equiv.Perm.coe_one, id_eq]
+      refine Quotient.sound ?_
+      exact ⟨⟨(h : G), hh⟩, rfl⟩
+
+/-- The action of `K` on `X / H` descends to `K / H` when `H` is normal in `K`. -/
+noncomputable def subgroupQuotientOrbitHom (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] :
+    (K ⧸ H.subgroupOf K) →* Equiv.Perm (MulAction.orbitRel.Quotient H X) :=
+  QuotientGroup.lift (H.subgroupOf K)
+    (subgroupOrbitHom (X := X) H K hHK)
+    (subgroupOf_le_ker_subgroupOrbitHom (X := X) H K hHK)
+
+/-- The descended action of `K / H` on the subgroup-orbit quotient `X / H`, when `H ⫳ K`.
+
+This is a named action rather than a typeclass instance, because the containment proof
+`hHK : H ≤ K` is not inferable from the acting type `K ⧸ H.subgroupOf K`. -/
+@[reducible]
+noncomputable def subgroupQuotientMulAction (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] :
+    MulAction (K ⧸ H.subgroupOf K) (MulAction.orbitRel.Quotient H X) :=
+  MulAction.ofEndHom <|
+    (MulAction.toEndHom (M := Equiv.Perm (MulAction.orbitRel.Quotient H X))).comp
+      (subgroupQuotientOrbitHom (X := X) H K hHK)
+
+/-- On representatives, the descended subgroup-quotient action is the ambient action. -/
+@[simp]
+lemma subgroupQuotientOrbitHom_mk (K : Subgroup G) (hHK : H ≤ K)
+    [(H.subgroupOf K).Normal] (k : K) (x : X) :
+    subgroupQuotientOrbitHom H K hHK (QuotientGroup.mk k)
+        (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
+      Quotient.mk'' ((k : G) • x) := by
+  rw [subgroupQuotientOrbitHom, QuotientGroup.lift_mk]
+  rfl
+
 /-- The action of `N_G(H)` on `X / H` descends to the quotient group `N_G(H) / H`. -/
 noncomputable def normalizerQuotientOrbitHom :
     (Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G))) →*
       Equiv.Perm (MulAction.orbitRel.Quotient H X) :=
-  QuotientGroup.lift (H.subgroupOf (Subgroup.normalizer (H : Set G)))
-    (normalizerOrbitHom (X := X) H)
-    (subgroupOfNormalizer_le_ker_normalizerOrbitHom (X := X) H)
+  subgroupQuotientOrbitHom (X := X) H (Subgroup.normalizer (H : Set G)) H.le_normalizer
 
 /-- The descended action of `N_G(H) / H` on the subgroup-orbit quotient `X / H`. -/
 noncomputable instance normalizerQuotientMulAction :
     MulAction
       (Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G)))
       (MulAction.orbitRel.Quotient H X) :=
-  MulAction.ofEndHom <|
-    (MulAction.toEndHom (M := Equiv.Perm (MulAction.orbitRel.Quotient H X))).comp
-      (normalizerQuotientOrbitHom (X := X) H)
+  subgroupQuotientMulAction (X := X) H (Subgroup.normalizer (H : Set G)) H.le_normalizer
 
 private lemma normalizerQuotient_smul_eq_orbitHom
     (q : Subgroup.normalizer (H : Set G) ⧸ H.subgroupOf (Subgroup.normalizer (H : Set G)))
@@ -142,8 +209,7 @@ lemma normalizerQuotientOrbitHom_mk (n : Subgroup.normalizer (H : Set G)) (x : X
     normalizerQuotientOrbitHom H (QuotientGroup.mk n)
         (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
       Quotient.mk'' ((n : G) • x) := by
-  rw [normalizerQuotientOrbitHom, QuotientGroup.lift_mk]
-  rfl
+  exact subgroupQuotientOrbitHom_mk H (Subgroup.normalizer (H : Set G)) H.le_normalizer n x
 
 /-- On representatives, the descended normalizer-quotient action is the ambient action. -/
 @[simp]
