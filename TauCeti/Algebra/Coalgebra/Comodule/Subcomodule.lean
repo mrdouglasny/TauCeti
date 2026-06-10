@@ -89,6 +89,25 @@ theorem isSubcomodule_iff (P : Submodule R M) :
 
 namespace Subcomodule
 
+theorem toSubmodule_injective :
+    Function.Injective (toSubmodule : Subcomodule R C M → Submodule R M) := by
+  rintro ⟨_, _⟩
+  congr!
+
+instance : SetLike (Subcomodule R C M) M where
+  coe P := P.toSubmodule
+  coe_injective' := SetLike.coe_injective.comp toSubmodule_injective
+
+instance : AddSubmonoidClass (Subcomodule R C M) M where
+  zero_mem P := P.toSubmodule.zero_mem
+  add_mem {P} := P.toSubmodule.add_mem
+
+instance : SMulMemClass (Subcomodule R C M) R M where
+  smul_mem {P} r := P.toSubmodule.smul_mem r
+
+instance : CoeOut (Subcomodule R C M) (Submodule R M) where
+  coe := toSubmodule
+
 @[ext]
 theorem ext {P Q : Subcomodule R C M} (h : P.toSubmodule = Q.toSubmodule) : P = Q := by
   cases P
@@ -102,11 +121,20 @@ theorem toSubmodule_mk (P : Submodule R M)
     toSubmodule (mk (R := R) (C := C) (M := M) P hP) = P :=
   rfl
 
+@[simp]
+theorem coe_toSubmodule (P : Subcomodule R C M) : (P.toSubmodule : Set M) = P :=
+  rfl
+
+@[simp]
+theorem mem_toSubmodule {P : Subcomodule R C M} {m : M} :
+    m ∈ P.toSubmodule ↔ m ∈ P :=
+  Iff.rfl
+
 /-- The coaction of an element of a subcomodule factors through `P ⊗ C`. -/
-theorem coact_mem (P : Subcomodule R C M) ⦃m : M⦄ (hm : m ∈ P.toSubmodule) :
+theorem coact_mem (P : Subcomodule R C M) ⦃m : M⦄ (hm : m ∈ P) :
     Comodule.coact (R := R) (C := C) (M := M) m ∈
       submoduleCoactionRange (R := R) (C := C) P.toSubmodule :=
-  P.isSubcomodule ⟨m, hm, rfl⟩
+  P.isSubcomodule ⟨m, (mem_toSubmodule (P := P)).mpr hm, rfl⟩
 
 end Subcomodule
 
