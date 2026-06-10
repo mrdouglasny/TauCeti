@@ -7,10 +7,10 @@ import Mathlib.LinearAlgebra.Matrix.BilinearForm
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
 
 /-!
-# Quadratic forms associated to real matrices
+# Quadratic forms associated to matrices
 
-This file records elementary API for Mathlib's quadratic form attached to a real square
-matrix.
+This file records elementary API for Mathlib's quadratic form attached to a square matrix
+in standard coordinates.
 
 ## Main declarations
 
@@ -28,24 +28,24 @@ namespace Matrix
 
 open scoped Matrix
 
-variable {n : Type*} [Fintype n] [DecidableEq n]
+variable {n R : Type*} [Fintype n] [DecidableEq n] [CommRing R]
 
 /-- Mathlib's matrix quadratic form is the dot-product expression `ξᵀ A ξ`. -/
-lemma toQuadraticForm'_eq_dotProduct (A : _root_.Matrix n n ℝ) (ξ : EuclideanSpace ℝ n) :
+lemma toQuadraticForm'_eq_dotProduct (A : _root_.Matrix n n R) (ξ : n → R) :
     A.toQuadraticForm' ξ = ξ ⬝ᵥ A.mulVec ξ := by
   rw [_root_.Matrix.toQuadraticForm',
     LinearMap.BilinMap.toQuadraticMap_apply, _root_.Matrix.toLinearMap₂'_apply']
 
-/-- Transposition does not change the quadratic form associated to a real matrix. -/
+/-- Transposition does not change the quadratic form associated to a matrix. -/
 @[simp]
-lemma toQuadraticForm'_transpose (A : _root_.Matrix n n ℝ) (ξ : EuclideanSpace ℝ n) :
+lemma toQuadraticForm'_transpose (A : _root_.Matrix n n R) (ξ : n → R) :
     A.transpose.toQuadraticForm' ξ = A.toQuadraticForm' ξ := by
   rw [toQuadraticForm'_eq_dotProduct, toQuadraticForm'_eq_dotProduct,
     _root_.Matrix.dotProduct_transpose_mulVec]
 
 /-- Matrix quadratic forms are linear in scalar multiplication of the coefficient matrix. -/
 @[simp]
-lemma toQuadraticForm'_smul (c : ℝ) (A : _root_.Matrix n n ℝ) (ξ : EuclideanSpace ℝ n) :
+lemma toQuadraticForm'_smul (c : R) (A : _root_.Matrix n n R) (ξ : n → R) :
     (c • A).toQuadraticForm' ξ = c * A.toQuadraticForm' ξ := by
   rw [toQuadraticForm'_eq_dotProduct, toQuadraticForm'_eq_dotProduct,
     _root_.Matrix.smul_mulVec, _root_.dotProduct_smul]

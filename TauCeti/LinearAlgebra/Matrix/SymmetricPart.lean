@@ -56,6 +56,7 @@ omit [Fintype n] [DecidableEq n] in
 lemma symmetricPart_of_isSymm {A : _root_.Matrix n n R} (hA : A.IsSymm) :
     symmetricPart A = A := by
   ext i j
+  -- Matrix scalar multiplication and addition reduce to this entrywise scalar identity.
   change ⅟(2 : R) * (A i j + A j i) = A i j
   rw [hA.apply]
   rw [← two_mul, ← mul_assoc, invOf_mul_self, one_mul]
@@ -68,6 +69,8 @@ lemma toBilin'_symmetricPart (A : _root_.Matrix n n R) :
   intro v
   apply LinearMap.ext
   intro w
+  -- `toQuadraticForm'` is defined from `toLinearMap₂'`, and `associated` symmetrizes the
+  -- underlying bilinear map; the proof isolates that wrapper unfolding at one point.
   rw [symmetricPart_def, _root_.Matrix.toQuadraticForm',
     _root_.QuadraticMap.associated_toQuadraticMap]
   rw [_root_.Matrix.toBilin'_apply', _root_.Matrix.smul_mulVec, _root_.Matrix.add_mulVec,
