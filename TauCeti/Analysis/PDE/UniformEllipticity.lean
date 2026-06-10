@@ -369,8 +369,9 @@ lemma transpose (h : UniformlyEllipticOn Ω a lam Lam) :
 lemma symmetricPart (h : UniformlyEllipticOn Ω a lam Lam) :
     UniformlyEllipticOn Ω (fun x => TauCeti.Matrix.symmetricPart (a x)) lam Lam := by
   refine of_bounds h.pos h.le (fun {x} hx ξ => ?_) (fun {x} hx η ξ => ?_)
-  · simpa using h.lower_bound hx ξ
-  · rw [TauCeti.Matrix.symmetricPart, smul_mulVec, add_mulVec, dotProduct_smul, dotProduct_add]
+  · rw [TauCeti.Matrix.toQuadraticForm'_symmetricPart]
+    exact h.lower_bound hx ξ
+  · rw [TauCeti.Matrix.symmetricPart_def, smul_mulVec, add_mulVec, dotProduct_smul, dotProduct_add]
     simp only [smul_eq_mul, dotProduct_transpose_mulVec]
     set N : ℝ := ‖η‖ * ‖ξ‖
     have hηξ : |η ⬝ᵥ (a x *ᵥ ξ)| ≤ Lam * N := by
