@@ -59,17 +59,6 @@ variable [AddCommMonoid P] [Module R P] [Comodule R C P]
 local notation "ρM" => coact (R := R) (C := C) (M := M)
 local notation "ρN" => coact (R := R) (C := C) (M := N)
 
-omit [Coalgebra R C] [Comodule R C M] in
-/-- The `g = h = id` special case of `TensorProduct.map_map_assoc`, phrased so it can rewrite
-the comodule coassociativity calculation below. This is only a local proof helper; the general
-associator naturality lives in Mathlib's `TensorProduct.map_map_assoc`. -/
-private theorem assoc_rTensor_rTensor_apply {Q : Type*} [AddCommMonoid Q] [Module R Q]
-    (f : M →ₗ[R] Q) (x : (M ⊗[R] C) ⊗[R] C) :
-    TensorProduct.assoc R Q C C ((f.rTensor C).rTensor C x)
-      = f.rTensor (C ⊗[R] C) (TensorProduct.assoc R M C C x) := by
-  simpa [LinearMap.rTensor] using
-    (TensorProduct.map_map_assoc f LinearMap.id LinearMap.id x).symm
-
 /-- The coaction of the product comodule `M × N`: coact on each factor, then include into the
 corresponding summand. This is the implementation of the `Comodule R C (M × N)` instance; the
 public characterizing equations are `prod_coact_apply`, `prod_coact_inl`, and `prod_coact_inr`. -/
@@ -108,7 +97,18 @@ private theorem prodCoassoc_inl (m : M) :
   rw [prodCoact_inl_apply]
   rw [← LinearMap.comp_apply (prodCoact.rTensor C), ← LinearMap.rTensor_comp,
     prodCoact_comp_inl, LinearMap.rTensor_comp]
-  simp only [LinearMap.comp_apply, assoc_rTensor_rTensor_apply, coassoc_apply]
+  have h :
+      TensorProduct.assoc R (M × N) C C
+        ((LinearMap.rTensor C (LinearMap.rTensor C (LinearMap.inl R M N)) ∘ₗ
+          LinearMap.rTensor C (coact (R := R) (C := C) (M := M))) (ρM m))
+        = (LinearMap.inl R M N).rTensor (C ⊗[R] C)
+          (TensorProduct.assoc R M C C
+            ((coact (R := R) (C := C) (M := M)).rTensor C (ρM m))) := by
+    simp only [LinearMap.comp_apply]
+    simpa [LinearMap.rTensor] using
+      (TensorProduct.map_map_assoc (LinearMap.inl R M N) LinearMap.id LinearMap.id
+        ((coact (R := R) (C := C) (M := M)).rTensor C (ρM m))).symm
+  rw [h, coassoc_apply]
   rw [← LinearMap.comp_apply (Coalgebra.comul.lTensor (M × N)),
     LinearMap.lTensor_comp_rTensor, ← LinearMap.comp_apply (LinearMap.rTensor (C ⊗[R] C) _),
     LinearMap.rTensor_comp_lTensor]
@@ -119,7 +119,18 @@ private theorem prodCoassoc_inr (n : N) :
   rw [prodCoact_inr_apply]
   rw [← LinearMap.comp_apply (prodCoact.rTensor C), ← LinearMap.rTensor_comp,
     prodCoact_comp_inr, LinearMap.rTensor_comp]
-  simp only [LinearMap.comp_apply, assoc_rTensor_rTensor_apply, coassoc_apply]
+  have h :
+      TensorProduct.assoc R (M × N) C C
+        ((LinearMap.rTensor C (LinearMap.rTensor C (LinearMap.inr R M N)) ∘ₗ
+          LinearMap.rTensor C (coact (R := R) (C := C) (M := N))) (ρN n))
+        = (LinearMap.inr R M N).rTensor (C ⊗[R] C)
+          (TensorProduct.assoc R N C C
+            ((coact (R := R) (C := C) (M := N)).rTensor C (ρN n))) := by
+    simp only [LinearMap.comp_apply]
+    simpa [LinearMap.rTensor] using
+      (TensorProduct.map_map_assoc (LinearMap.inr R M N) LinearMap.id LinearMap.id
+        ((coact (R := R) (C := C) (M := N)).rTensor C (ρN n))).symm
+  rw [h, coassoc_apply]
   rw [← LinearMap.comp_apply (Coalgebra.comul.lTensor (M × N)),
     LinearMap.lTensor_comp_rTensor, ← LinearMap.comp_apply (LinearMap.rTensor (C ⊗[R] C) _),
     LinearMap.rTensor_comp_lTensor]
@@ -285,11 +296,19 @@ def coprod (f : Hom R C M P) (g : Hom R C N P) : Hom R C (M × N) P where
 
 /-- The first inclusion recovers the first component of a morphism out of the coproduct. -/
 @[simp] theorem coprod_comp_inl (f : Hom R C M P) (g : Hom R C N P) :
-    comp (coprod f g) inl = f := by ext m; simp
+    comp (coprod f g) inl = f := by
+  ext m
+  simp only [comp_apply, coprod_apply, inl_apply]
+  change f m + g.toLinearMap 0 = f m
+  rw [map_zero g.toLinearMap, add_zero]
 
 /-- The second inclusion recovers the second component of a morphism out of the coproduct. -/
 @[simp] theorem coprod_comp_inr (f : Hom R C M P) (g : Hom R C N P) :
-    comp (coprod f g) inr = g := by ext n; simp
+    comp (coprod f g) inr = g := by
+  ext n
+  simp only [comp_apply, coprod_apply, inr_apply]
+  change f.toLinearMap 0 + g n = g n
+  rw [map_zero f.toLinearMap, zero_add]
 
 /-- A morphism into the product is determined by its two projections: two morphisms into
 `M × N` that agree after `fst` and after `snd` are equal. This is the uniqueness half of the
