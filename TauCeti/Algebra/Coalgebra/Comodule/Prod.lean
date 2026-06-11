@@ -239,6 +239,26 @@ def inr : Hom R C N (M × N) where
 /-- The inclusion `inr` sends `n` to `(0, n)`. -/
 @[simp] theorem inr_apply (n : N) : (inr : Hom R C N (M × N)) n = (0, n) := rfl
 
+/-- The projection `fst` has the underlying first projection linear map. -/
+@[simp]
+theorem fst_toLinearMap : (fst : Hom R C (M × N) M).toLinearMap = LinearMap.fst R M N :=
+  rfl
+
+/-- The projection `snd` has the underlying second projection linear map. -/
+@[simp]
+theorem snd_toLinearMap : (snd : Hom R C (M × N) N).toLinearMap = LinearMap.snd R M N :=
+  rfl
+
+/-- The inclusion `inl` has the underlying first inclusion linear map. -/
+@[simp]
+theorem inl_toLinearMap : (inl : Hom R C M (M × N)).toLinearMap = LinearMap.inl R M N :=
+  rfl
+
+/-- The inclusion `inr` has the underlying second inclusion linear map. -/
+@[simp]
+theorem inr_toLinearMap : (inr : Hom R C N (M × N)).toLinearMap = LinearMap.inr R M N :=
+  rfl
+
 /-- The morphism into a product induced by a pair of morphisms. -/
 def prod (f : Hom R C P M) (g : Hom R C P N) : Hom R C P (M × N) where
   toLinearMap := f.toLinearMap.prod g.toLinearMap
@@ -285,6 +305,18 @@ def coprod (f : Hom R C M P) (g : Hom R C N P) : Hom R C (M × N) P where
 /-- The morphism out of the coproduct applies as the sum of its component morphisms. -/
 @[simp] theorem coprod_apply (f : Hom R C M P) (g : Hom R C N P) (x : M × N) :
     (coprod f g) x = f x.1 + g x.2 := rfl
+
+/-- The morphism into a product has the product of the underlying linear maps. -/
+@[simp]
+theorem prod_toLinearMap (f : Hom R C P M) (g : Hom R C P N) :
+    (prod f g).toLinearMap = f.toLinearMap.prod g.toLinearMap :=
+  rfl
+
+/-- The morphism out of a coproduct has the coproduct of the underlying linear maps. -/
+@[simp]
+theorem coprod_toLinearMap (f : Hom R C M P) (g : Hom R C N P) :
+    (coprod f g).toLinearMap = f.toLinearMap.coprod g.toLinearMap :=
+  rfl
 
 /-- The first projection recovers the first component of a morphism into the product. -/
 @[simp] theorem fst_comp_prod (f : Hom R C P M) (g : Hom R C P N) :
