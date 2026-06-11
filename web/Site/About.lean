@@ -1,5 +1,5 @@
 import VersoBlog
-import Mathlib.NumberTheory.Real.Irrational
+import TauCeti.Analysis.PDE.UniformEllipticity
 open Verso Genre Blog
 
 #doc (Page) "About" =>
@@ -24,16 +24,24 @@ they hunt for mis-formalizations, vacuous statements, and proofs that merely pus
 lump under the carpet. When every rubric approves on the current commit and the change
 touches only the mathematics, it merges automatically.
 
-# A second example, also checked
+# From the elliptic-PDE work
 
-This page is itself built by Lean: the snippet below is elaborated against Mathlib
-when the site is generated, so it cannot drift out of date.
+This page is itself built by Lean: the theorem below is a real result from the Tau
+Ceti library, elaborated when the site is generated, so it cannot drift out of date.
+On a uniformly elliptic region the coefficient matrix induces a coercive bilinear
+form — the hypothesis that powers Lax–Milgram.
 
 ```leanInit about
 ```
 
 ```lean about
--- The square root of two is irrational.
-theorem sqrt_two_irrational : Irrational (Real.sqrt 2) :=
-  irrational_sqrt_two
+open TauCeti PDE Matrix in
+/-- On a uniformly elliptic region, the coefficient matrix induces a coercive
+bilinear form at each interior point — the Lax–Milgram hypothesis, with explicit
+ellipticity constants. -/
+theorem ellipticity_coercive {X n : Type*} [Fintype n] [DecidableEq n]
+    {Ω : Set X} {a : X → Matrix n n ℝ} {lam Lam : ℝ}
+    (h : UniformlyEllipticOn Ω a lam Lam) {x : X} (hx : x ∈ Ω) :
+    IsCoercive (matrixBilinearForm (a x)) :=
+  h.isCoercive_matrixBilinearForm hx
 ```

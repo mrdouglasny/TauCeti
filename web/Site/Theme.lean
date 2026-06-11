@@ -104,7 +104,7 @@ def theme : Theme := { Theme.default with
 
         <section class="band taste">
           <h2 class="section-title">"A taste of the maths"</h2>
-          <p class="taste-note">"Every example on this site is elaborated and type-checked by Lean and Mathlib when the page is built — it cannot drift out of date."</p>
+          <p class="taste-note">"A real theorem from the universal-covers development — elaborated and type-checked when this page is built, so it cannot drift out of date."</p>
           {{← param "content" }}
         </section>
       </div>
