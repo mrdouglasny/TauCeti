@@ -37,6 +37,8 @@ import TauCeti.AlgebraicTopology.UniversalCover.Deck.Regular
 import TauCeti.Analysis.PDE.LowerOrder
 import TauCeti.Analysis.PDE.UniformEllipticity
 import TauCeti.Basic
+import TauCeti.NumberTheory.EffectiveBounds.UnitSquares
+import TauCeti.Algebra.Group.PowMonoidHom
 import TauCeti.FieldTheory.Trace
 import TauCeti.NumberTheory.EffectiveBounds.Discriminant
 import TauCeti.NumberTheory.EffectiveBounds.IdealCount
