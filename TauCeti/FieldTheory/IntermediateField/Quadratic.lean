@@ -105,6 +105,7 @@ theorem exists_add_mul_of_mem_sup_adjoin_sq {F : IntermediateField K L} {x : L}
 
 /-- Membership in `F ⊔ K⟮x⟯`, for `x² ∈ F`, is equivalent to having the form `a + b * x`
 with `a, b ∈ F`. -/
+@[simp]
 theorem mem_sup_adjoin_sq {F : IntermediateField K L} {x : L}
     (hx2 : x ^ 2 ∈ F) {y : L} :
     y ∈ F ⊔ IntermediateField.adjoin K {x} ↔
