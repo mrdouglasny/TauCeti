@@ -46,6 +46,7 @@ import TauCeti.Analysis.PDE.UniformEllipticity
 import TauCeti.Basic
 import TauCeti.FieldTheory.IntermediateField.Quadratic
 import TauCeti.FieldTheory.Trace
+import TauCeti.NumberTheory.DedekindDomain.RamificationInertia
 import TauCeti.NumberTheory.DedekindDomain.Transversal
 import TauCeti.NumberTheory.EffectiveBounds.ClassNumber
 import TauCeti.NumberTheory.EffectiveBounds.Discriminant
@@ -56,3 +57,4 @@ import TauCeti.NumberTheory.Multiquadratic.Galois
 import TauCeti.NumberTheory.Multiquadratic.GaloisGroup
 import TauCeti.NumberTheory.Multiquadratic.SquareClass
 import TauCeti.NumberTheory.NumberField.QuadraticSplitting
+import TauCeti.NumberTheory.NumberField.SplitsCompletely
