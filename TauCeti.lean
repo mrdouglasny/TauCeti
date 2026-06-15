@@ -7,6 +7,8 @@ import TauCeti.Algebra.AlgebraicGroup.BaseChange
 import TauCeti.Algebra.AlgebraicGroup.CommHopfAlgCat
 import TauCeti.Algebra.AlgebraicGroup.FiniteTypeCommHopfAlgCat
 import TauCeti.Algebra.AlgebraicGroup.MultiplicativeGroup
+import TauCeti.Algebra.AlgebraicGroup.Product
+import TauCeti.Algebra.Bialgebra.TensorProduct
 import TauCeti.Algebra.Coalgebra.Comodule.Cofree
 import TauCeti.Algebra.Coalgebra.Comodule.Corestrict
 import TauCeti.Algebra.Coalgebra.Comodule.Finite
