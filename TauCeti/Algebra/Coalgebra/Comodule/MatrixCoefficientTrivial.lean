@@ -29,7 +29,7 @@ coefficient algebra.
 ## Main declarations
 
 * `TauCeti.Comodule.groupLike_matrixCoefficientSubmodule_le_span_singleton`.
-* `TauCeti.Comodule.groupLike_matrixCoefficientSubmodule_eq_span_singleton`.
+* `TauCeti.Comodule.groupLike_rankOne_matrixCoefficientSubmodule_eq_span_singleton`.
 * `TauCeti.Comodule.groupLike_matrixCoefficientSubalgebra_le_adjoin_singleton`.
 * `TauCeti.Comodule.groupLike_rankOne_matrixCoefficientSubalgebra_eq_adjoin_singleton`.
 * `TauCeti.Comodule.trivial_matrixCoefficientSubmodule_le_span_singleton_one`.
@@ -88,7 +88,7 @@ theorem groupLike_mem_rankOne_matrixCoefficientSet (g : GroupLike R C) :
 /-- The coefficient set of the rank-one group-like comodule spans exactly the line generated
 by its group-like element. -/
 @[simp]
-theorem groupLike_matrixCoefficientSubmodule_eq_span_singleton (g : GroupLike R C) :
+theorem groupLike_rankOne_matrixCoefficientSubmodule_eq_span_singleton (g : GroupLike R C) :
     letI : Comodule R C R := groupLike (R := R) (C := C) (M := R) g
     matrixCoefficientSubmodule (R := R) (C := C) (M := R) =
       Submodule.span R ({(g : C)} : Set C) := by
@@ -203,7 +203,7 @@ theorem one_mem_trivialRankOne_matrixCoefficientSet :
 theorem trivialRankOne_matrixCoefficientSubmodule_eq_span_singleton_one :
     matrixCoefficientSubmodule (R := R) (C := C) (M := R) =
       Submodule.span R ({1} : Set C) :=
-  groupLike_matrixCoefficientSubmodule_eq_span_singleton (R := R) (C := C)
+  groupLike_rankOne_matrixCoefficientSubmodule_eq_span_singleton (R := R) (C := C)
     (1 : GroupLike R C)
 
 /-- The coefficient algebra of the rank-one trivial comodule is the bottom `R`-subalgebra. -/
