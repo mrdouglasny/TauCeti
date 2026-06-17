@@ -72,10 +72,7 @@ def ker (f : H →ₐc[R] K) (hf : Function.Surjective f) : HopfIdeal R H :=
       rw [Algebra.TensorProduct.map_ker (f := (f : H →ₐ[R] K)) (g := (f : H →ₐ[R] K))
         hf hf] at hker'
       rw [leftTensorIdeal_def, rightTensorIdeal_def]
-      change Coalgebra.comul (R := R) x ∈
-        Ideal.map Algebra.TensorProduct.includeLeft (RingHom.ker (f : H →ₐ[R] K)) ⊔
-          Ideal.map Algebra.TensorProduct.includeRight (RingHom.ker (f : H →ₐ[R] K))
-      exact hker')
+      convert hker' <;> rfl)
     (by
       intro x hx
       have h := CoalgHomClass.counit_comp_apply f x
@@ -150,10 +147,8 @@ theorem kerLiftBialgHom_bijective (f : H →ₐc[R] K) (hf : Function.Surjective
     obtain ⟨y, rfl⟩ := Ideal.Quotient.mkₐ_surjective R (ker f hf).toIdeal q₂
     rw [kerLiftBialgHom_mk, kerLiftBialgHom_mk] at hq
     have hsub : x - y ∈ (ker f hf).toIdeal := by
-      rw [ker_toIdeal, RingHom.mem_ker, map_sub]
-      change f x - f y = 0
-      rw [hq, sub_self]
-    change Ideal.Quotient.mk (ker f hf).toIdeal x = Ideal.Quotient.mk (ker f hf).toIdeal y
+      rw [ker_toIdeal, RingHom.mem_ker]
+      simp [map_sub, hq]
     exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem (I := (ker f hf).toIdeal) x y).mpr hsub
   · intro y
     obtain ⟨x, rfl⟩ := hf y
