@@ -102,7 +102,11 @@ jobs:
 
   review:
     needs: resolve
-    if: ${{ needs.resolve.outputs.pr != '' }}
+    # CI review is OFF unless the repo variable CI_REVIEW_ENABLED is set to 'true'.
+    # Disabled by default to control inference cost; for now reviews are run from the
+    # command line (the `tauceti-review` engine in TauCetiReview, or `tauceti` from
+    # TauCetiWorker). Re-enable by setting the CI_REVIEW_ENABLED repository variable.
+    if: ${{ vars.CI_REVIEW_ENABLED == 'true' && needs.resolve.outputs.pr != '' }}
     uses: FormalFrontier/TauCetiReview/.github/workflows/review.yml@main
     with:
       pr: ${{ needs.resolve.outputs.pr }}
