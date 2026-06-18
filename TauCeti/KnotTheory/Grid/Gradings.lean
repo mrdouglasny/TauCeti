@@ -1,0 +1,116 @@
+/-
+Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+import Mathlib.Tactic.Ring
+import TauCeti.KnotTheory.Grid.JFunction
+
+/-!
+# Maslov and Alexander gradings for grid states
+
+This file records the rational-valued grading formulas for the grid-combinatorial lane of the
+Heegaard Floer roadmap. The point-set `J`-function and its extension to formal differences were
+developed separately; here we use them to define the `O`- and `X`-Maslov gradings and the
+Alexander grading of a grid state.
+
+The definitions are intentionally formula-level. The later integer-valuedness and
+rectangle-change theorems can refer to these names without unfolding the point-pair count.
+
+## Main definitions
+
+* `TauCeti.GridDiagram.maslovO`, `TauCeti.GridDiagram.maslovX`: the two Maslov grading
+  formulas attached to the `O` and `X` markings.
+* `TauCeti.GridDiagram.alexander`: the Alexander grading formula.
+
+## References
+
+This supplies the grading-definition part of `TauCetiRoadmap/HeegaardFloer/README.md`,
+Lane G.2, "Gradings. The `J`-function, `M_O`, `M_X`, `A`; integer-valuedness of `A`;
+grading-change formulas across a rectangle." The formulas follow
+Ozsváth--Stipsicz--Szabó, *Grid Homology for Knots and Links*, Chapter 3.2:
+`M_O(x) = J(x - O, x - O) + 1`, `M_X(x) = J(x - X, x - X) + 1`, and
+`A(x) = (M_O(x) - M_X(x)) / 2 - (n - 1) / 2`.
+-/
+
+namespace TauCeti
+
+namespace GridDiagram
+
+variable {n : ℕ} (G : GridDiagram n)
+
+/-- The `O`-Maslov grading of a grid state.
+
+This is the formula `M_O(x) = J(x - O, x - O) + 1`. -/
+def maslovO (x : GridState n) : ℚ :=
+  GridPoint.JDiff x.pointSet G.OSet x.pointSet G.OSet + 1
+
+/-- The `O`-Maslov grading as a `JDiff` self-pairing plus one. -/
+@[simp]
+theorem maslovO_def (x : GridState n) :
+    G.maslovO x = GridPoint.JDiff x.pointSet G.OSet x.pointSet G.OSet + 1 :=
+  rfl
+
+/-- The expanded `O`-Maslov grading formula. -/
+theorem maslovO_eq (x : GridState n) :
+    G.maslovO x = GridState.J x x - 2 * G.JO x + GridState.J G.O G.O + 1 := by
+  rw [maslovO, GridPoint.JDiff_self_eq, GridState.J_def, JO_def, GridState.J_def, OSet]
+
+/-- The `X`-Maslov grading of a grid state.
+
+This is the formula `M_X(x) = J(x - X, x - X) + 1`. -/
+def maslovX (x : GridState n) : ℚ :=
+  GridPoint.JDiff x.pointSet G.XSet x.pointSet G.XSet + 1
+
+/-- The `X`-Maslov grading as a `JDiff` self-pairing plus one. -/
+@[simp]
+theorem maslovX_def (x : GridState n) :
+    G.maslovX x = GridPoint.JDiff x.pointSet G.XSet x.pointSet G.XSet + 1 :=
+  rfl
+
+/-- The expanded `X`-Maslov grading formula. -/
+theorem maslovX_eq (x : GridState n) :
+    G.maslovX x = GridState.J x x - 2 * G.JX x + GridState.J G.X G.X + 1 := by
+  rw [maslovX, GridPoint.JDiff_self_eq, GridState.J_def, JX_def, GridState.J_def, XSet]
+
+/-- The Alexander grading of a grid state.
+
+This is the formula `A(x) = (M_O(x) - M_X(x)) / 2 - (n - 1) / 2`. The shift is cast
+through `ℤ`, so the formula remains literal at `n = 0`; integer-valuedness is a later grading
+theorem. -/
+def alexander (x : GridState n) : ℚ :=
+  (G.maslovO x - G.maslovX x) / 2 - (((n : ℤ) - 1 : ℤ) : ℚ) / 2
+
+/-- The Alexander grading as the difference of the two Maslov gradings with the standard
+normalization shift. -/
+@[simp]
+theorem alexander_def (x : GridState n) :
+    G.alexander x =
+      (G.maslovO x - G.maslovX x) / 2 - (((n : ℤ) - 1 : ℤ) : ℚ) / 2 :=
+  rfl
+
+/-- The Alexander grading with the two Maslov formulas expanded. -/
+theorem alexander_eq (x : GridState n) :
+    G.alexander x =
+      (2 * (G.JX x - G.JO x) + (GridState.J G.O G.O - GridState.J G.X G.X) -
+        (((n : ℤ) - 1 : ℤ) : ℚ)) / 2 := by
+  rw [alexander, maslovO_eq, maslovX_eq]
+  ring
+
+/-- The difference of the two Maslov gradings is twice the Alexander grading plus the
+normalization shift. -/
+theorem maslovO_sub_maslovX_eq (x : GridState n) :
+    G.maslovO x - G.maslovX x =
+      2 * G.alexander x + (((n : ℤ) - 1 : ℤ) : ℚ) := by
+  rw [alexander]
+  ring
+
+/-- Replacing the two Maslov gradings by the same value leaves only the normalization shift in
+the Alexander formula. -/
+theorem alexander_eq_neg_shift_of_maslov_eq {x : GridState n} (h : G.maslovO x = G.maslovX x) :
+    G.alexander x = -(((n : ℤ) - 1 : ℤ) : ℚ) / 2 := by
+  rw [alexander, h]
+  ring
+
+end GridDiagram
+
+end TauCeti
