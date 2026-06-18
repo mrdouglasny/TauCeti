@@ -9,8 +9,8 @@ import TauCeti.KnotTheory.Grid.Diagram
 # Rectangles in grid diagrams
 
 This file adds the first rectangle API for the grid-combinatorial lane of the Heegaard Floer
-roadmap. The grid lives on a torus, so the basic one-dimensional ingredient is the clockwise
-open cyclic interval in `Fin n`. A grid rectangle is then the product of two such intervals,
+roadmap. The grid lives on a torus, so the basic one-dimensional ingredient is the open-open
+circular interval in `Fin n`. A grid rectangle is then the product of two such intervals,
 recorded as the finite set of squares in its interior.
 
 The final section packages an oriented rectangle from one grid state to another: two columns
@@ -20,7 +20,7 @@ finite-set disjointness conditions used for empty rectangles and marking-avoidin
 
 ## Main definitions
 
-* `TauCeti.Grid.cyclicOpen`: the clockwise open cyclic interval from `a` to `b`.
+* `TauCeti.Grid.cIoo`: the clockwise open-open circular interval from `a` to `b`.
 * `TauCeti.GridRectangle`: a toroidal rectangle, represented by its four cyclic sides.
 * `TauCeti.GridRectangle.interior`: the finite set of squares strictly inside the rectangle.
 * `TauCeti.GridRectangleBetween`: an oriented rectangle from one grid state to another.
@@ -45,7 +45,7 @@ variable {n : ℕ}
 If `a < b` in the standard representatives, this is the ordinary open interval
 `a < x < b`. If `b ≤ a` and `a ≠ b`, it wraps around `0`, so it is the union of
 `a < x` and `x < b`. The interval from a point to itself is empty. -/
-def cyclicOpen (a b : Fin n) : Finset (Fin n) :=
+def cIoo (a b : Fin n) : Finset (Fin n) :=
   Finset.univ.filter fun x =>
     a ≠ b ∧
       if a.val < b.val then
@@ -56,26 +56,26 @@ def cyclicOpen (a b : Fin n) : Finset (Fin n) :=
 /-- Membership in a clockwise open cyclic interval, unfolded as inequalities between the
 standard representatives. -/
 @[simp]
-theorem mem_cyclicOpen (a b x : Fin n) :
-    x ∈ cyclicOpen a b ↔
+theorem mem_cIoo (a b x : Fin n) :
+    x ∈ cIoo a b ↔
       a ≠ b ∧
         if a.val < b.val then
           a.val < x.val ∧ x.val < b.val
         else
           a.val < x.val ∨ x.val < b.val := by
-  simp [cyclicOpen]
+  simp [cIoo]
 
 /-- The open cyclic interval from a point to itself is empty. -/
 @[simp]
-theorem cyclicOpen_self (a : Fin n) : cyclicOpen a a = ∅ := by
+theorem cIoo_self (a : Fin n) : cIoo a a = ∅ := by
   ext x
   simp
 
 /-- The initial endpoint is not in its open cyclic interval. -/
 @[simp]
-theorem left_notMem_cyclicOpen (a b : Fin n) : a ∉ cyclicOpen a b := by
+theorem left_notMem_cIoo (a b : Fin n) : a ∉ cIoo a b := by
   intro ha
-  rw [mem_cyclicOpen] at ha
+  rw [mem_cIoo] at ha
   by_cases hab : a.val < b.val
   · have hinside : a.val < a.val ∧ a.val < b.val := by
       simpa only [hab, if_true] using ha.2
@@ -88,9 +88,9 @@ theorem left_notMem_cyclicOpen (a b : Fin n) : a ∉ cyclicOpen a b := by
 
 /-- The terminal endpoint is not in its open cyclic interval. -/
 @[simp]
-theorem right_notMem_cyclicOpen (a b : Fin n) : b ∉ cyclicOpen a b := by
+theorem right_notMem_cIoo (a b : Fin n) : b ∉ cIoo a b := by
   intro hb
-  rw [mem_cyclicOpen] at hb
+  rw [mem_cIoo] at hb
   by_cases hab : a.val < b.val
   · have hinside : a.val < b.val ∧ b.val < b.val := by
       simpa only [hab, if_true] using hb.2
@@ -124,11 +124,45 @@ variable {n : ℕ} (R : GridRectangle n)
 
 /-- The columns strictly inside a toroidal grid rectangle. -/
 def columnInterior : Finset (Fin n) :=
-  Grid.cyclicOpen R.left R.right
+  Grid.cIoo R.left R.right
 
 /-- The rows strictly inside a toroidal grid rectangle. -/
 def rowInterior : Finset (Fin n) :=
-  Grid.cyclicOpen R.bottom R.top
+  Grid.cIoo R.bottom R.top
+
+/-- Membership in the interior columns is membership in the corresponding open-open circular
+interval. -/
+@[simp]
+theorem mem_columnInterior (c : Fin n) :
+    c ∈ R.columnInterior ↔ c ∈ Grid.cIoo R.left R.right := by
+  rfl
+
+/-- Membership in the interior rows is membership in the corresponding open-open circular
+interval. -/
+@[simp]
+theorem mem_rowInterior (r : Fin n) :
+    r ∈ R.rowInterior ↔ r ∈ Grid.cIoo R.bottom R.top := by
+  rfl
+
+/-- The left side is not an interior column. -/
+@[simp]
+theorem left_notMem_columnInterior : R.left ∉ R.columnInterior := by
+  simp [columnInterior]
+
+/-- The right side is not an interior column. -/
+@[simp]
+theorem right_notMem_columnInterior : R.right ∉ R.columnInterior := by
+  simp [columnInterior]
+
+/-- The bottom side is not an interior row. -/
+@[simp]
+theorem bottom_notMem_rowInterior : R.bottom ∉ R.rowInterior := by
+  simp [rowInterior]
+
+/-- The top side is not an interior row. -/
+@[simp]
+theorem top_notMem_rowInterior : R.top ∉ R.rowInterior := by
+  simp [rowInterior]
 
 /-- The finite set of squares strictly inside a toroidal grid rectangle. -/
 def interior : Finset (Fin n × Fin n) :=
@@ -246,7 +280,7 @@ def toGridRectangle : GridRectangle n where
 /-- The two side rows of a rectangle between states are distinct. -/
 theorem bottom_ne_top : R.bottom ≠ R.top := by
   intro h
-  exact R.left_ne_right (x.toPerm.injective h)
+  exact R.left_ne_right (x.toPerm.injective (by simpa [bottom, top] using h))
 
 /-- The initial lower corner is a point of the source state. -/
 @[simp]
@@ -288,6 +322,74 @@ def AvoidsMarkings (G : GridDiagram n) : Prop :=
 theorem not_mem_interior_of_isEmpty (h : R.IsEmpty) {p : Fin n × Fin n}
     (hp : p ∈ x.pointSet) : p ∉ R.toGridRectangle.interior :=
   (R.toGridRectangle.isEmptyFor_iff x).mp h p hp
+
+/-- A rectangle between states is empty exactly when no source-state point lies in its
+interior. -/
+theorem isEmpty_iff :
+    R.IsEmpty ↔ ∀ p ∈ x.pointSet, p ∉ R.toGridRectangle.interior :=
+  R.toGridRectangle.isEmptyFor_iff x
+
+/-- If a target-state point lies on a side column, then it is not in the associated
+rectangle's interior. -/
+theorem not_mem_interior_of_fst_eq_left {p : Fin n × Fin n} (hp : p.1 = R.left) :
+    p ∉ R.toGridRectangle.interior := by
+  intro hpR
+  have hpcol := (R.toGridRectangle.mem_interior p).mp hpR |>.1
+  rw [hp] at hpcol
+  exact R.toGridRectangle.left_notMem_columnInterior hpcol
+
+/-- If a target-state point lies on the other side column, then it is not in the associated
+rectangle's interior. -/
+theorem not_mem_interior_of_fst_eq_right {p : Fin n × Fin n} (hp : p.1 = R.right) :
+    p ∉ R.toGridRectangle.interior := by
+  intro hpR
+  have hpcol := (R.toGridRectangle.mem_interior p).mp hpR |>.1
+  rw [hp] at hpcol
+  exact R.toGridRectangle.right_notMem_columnInterior hpcol
+
+/-- A rectangle between states is empty exactly when no target-state point lies in its
+interior. -/
+theorem isEmpty_iff_target :
+    R.IsEmpty ↔ ∀ p ∈ y.pointSet, p ∉ R.toGridRectangle.interior := by
+  rw [isEmpty_iff]
+  constructor
+  · intro h p hp
+    by_cases hleft : p.1 = R.left
+    · exact R.not_mem_interior_of_fst_eq_left hleft
+    by_cases hright : p.1 = R.right
+    · exact R.not_mem_interior_of_fst_eq_right hright
+    exact h p ((R.mem_target_pointSet_iff_of_ne hleft hright).mp hp)
+  · intro h p hp hpR
+    have hleft : p.1 ≠ R.left := by
+      intro hcol
+      exact R.not_mem_interior_of_fst_eq_left hcol hpR
+    have hright : p.1 ≠ R.right := by
+      intro hcol
+      exact R.not_mem_interior_of_fst_eq_right hcol hpR
+    exact h p ((R.mem_target_pointSet_iff_of_ne hleft hright).mpr hp) hpR
+
+/-- The target state has no point in the interior of an empty rectangle between states. -/
+theorem not_mem_interior_target_of_isEmpty (h : R.IsEmpty) {p : Fin n × Fin n}
+    (hp : p ∈ y.pointSet) : p ∉ R.toGridRectangle.interior :=
+  (R.isEmpty_iff_target).mp h p hp
+
+/-- A rectangle between states avoids markings exactly when neither marking set meets its
+interior. -/
+theorem avoidsMarkings_iff (G : GridDiagram n) :
+    R.AvoidsMarkings G ↔
+      Disjoint R.toGridRectangle.interior G.OSet ∧
+        Disjoint R.toGridRectangle.interior G.XSet :=
+  R.toGridRectangle.avoidsMarkings_iff G
+
+/-- A marking-avoiding rectangle between states has no `O` marking in its interior. -/
+theorem disjoint_interior_OSet_of_avoidsMarkings {G : GridDiagram n}
+    (h : R.AvoidsMarkings G) : Disjoint R.toGridRectangle.interior G.OSet :=
+  R.toGridRectangle.disjoint_interior_OSet_of_avoidsMarkings h
+
+/-- A marking-avoiding rectangle between states has no `X` marking in its interior. -/
+theorem disjoint_interior_XSet_of_avoidsMarkings {G : GridDiagram n}
+    (h : R.AvoidsMarkings G) : Disjoint R.toGridRectangle.interior G.XSet :=
+  R.toGridRectangle.disjoint_interior_XSet_of_avoidsMarkings h
 
 end GridRectangleBetween
 
