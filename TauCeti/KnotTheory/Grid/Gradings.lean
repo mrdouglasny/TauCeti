@@ -110,24 +110,6 @@ namespace GridDiagram
 
 variable {n : ℕ} (G : GridDiagram n)
 
-/-- The `J`-function self-pairing of the `O` markings. -/
-def JOO : ℚ :=
-  GridPoint.J G.OSet G.OSet
-
-/-- `JOO` is the point-set `J`-function of the `O` markings with themselves. -/
-@[simp]
-theorem JOO_def : G.JOO = GridPoint.J G.OSet G.OSet :=
-  rfl
-
-/-- The `J`-function self-pairing of the `X` markings. -/
-def JXX : ℚ :=
-  GridPoint.J G.XSet G.XSet
-
-/-- `JXX` is the point-set `J`-function of the `X` markings with themselves. -/
-@[simp]
-theorem JXX_def : G.JXX = GridPoint.J G.XSet G.XSet :=
-  rfl
-
 /-- The `O`-Maslov grading of a grid state.
 
 This is the formula `M_O(x) = J(x - O, x - O) + 1`. -/
@@ -141,8 +123,8 @@ theorem maslovO_def (x : GridState n) :
 
 /-- The expanded `O`-Maslov grading formula. -/
 theorem maslovO_eq (x : GridState n) :
-    G.maslovO x = GridState.J x x - 2 * G.JO x + G.JOO + 1 := by
-  rw [maslovO, GridPoint.JDiff_self_eq, GridState.J_def, JO_def, JOO_def]
+    G.maslovO x = GridState.J x x - 2 * G.JO x + GridState.J G.O G.O + 1 := by
+  rw [maslovO, GridPoint.JDiff_self_eq, GridState.J_def, JO_def, GridState.J_def, OSet]
 
 /-- The `X`-Maslov grading of a grid state.
 
@@ -157,8 +139,8 @@ theorem maslovX_def (x : GridState n) :
 
 /-- The expanded `X`-Maslov grading formula. -/
 theorem maslovX_eq (x : GridState n) :
-    G.maslovX x = GridState.J x x - 2 * G.JX x + G.JXX + 1 := by
-  rw [maslovX, GridPoint.JDiff_self_eq, GridState.J_def, JX_def, JXX_def]
+    G.maslovX x = GridState.J x x - 2 * G.JX x + GridState.J G.X G.X + 1 := by
+  rw [maslovX, GridPoint.JDiff_self_eq, GridState.J_def, JX_def, GridState.J_def, XSet]
 
 /-- The Alexander grading of a grid state.
 
@@ -178,7 +160,8 @@ theorem alexander_def (x : GridState n) :
 /-- The Alexander grading with the two Maslov formulas expanded. -/
 theorem alexander_eq (x : GridState n) :
     G.alexander x =
-      (2 * (G.JX x - G.JO x) + (G.JOO - G.JXX) - (((n : ℤ) - 1 : ℤ) : ℚ)) / 2 := by
+      (2 * (G.JX x - G.JO x) + (GridState.J G.O G.O - GridState.J G.X G.X) -
+        (((n : ℤ) - 1 : ℤ) : ℚ)) / 2 := by
   rw [alexander, maslovO_eq, maslovX_eq]
   ring
 
