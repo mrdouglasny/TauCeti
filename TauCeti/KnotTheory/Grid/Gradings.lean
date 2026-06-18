@@ -9,16 +9,15 @@ import TauCeti.KnotTheory.Grid.JFunction
 # Maslov and Alexander gradings for grid states
 
 This file records the rational-valued grading formulas for the grid-combinatorial lane of the
-Heegaard Floer roadmap. The point-set `J`-function was developed separately; here we add its
-bilinear extension to formal differences of point sets and use it to define the `O`- and
-`X`-Maslov gradings and the Alexander grading of a grid state.
+Heegaard Floer roadmap. The point-set `J`-function and its extension to formal differences were
+developed separately; here we use them to define the `O`- and `X`-Maslov gradings and the
+Alexander grading of a grid state.
 
 The definitions are intentionally formula-level. The later integer-valuedness and
 rectangle-change theorems can refer to these names without unfolding the point-pair count.
 
 ## Main definitions
 
-* `TauCeti.GridPoint.JDiff`: the value of `J` on formal differences `s - a` and `t - b`.
 * `TauCeti.GridDiagram.maslovO`, `TauCeti.GridDiagram.maslovX`: the two Maslov grading
   formulas attached to the `O` and `X` markings.
 * `TauCeti.GridDiagram.alexander`: the Alexander grading formula.
@@ -35,77 +34,6 @@ Ozsváth--Stipsicz--Szabó, *Grid Homology for Knots and Links*, Chapter 3.2:
 
 namespace TauCeti
 
-namespace GridPoint
-
-variable {n : ℕ}
-
-/-- The bilinear extension of the grid `J`-function to formal differences of point sets.
-
-`JDiff s a t b` means `J(s - a, t - b)`, expanded as
-`J s t - J s b - J a t + J a b`. -/
-def JDiff (s a t b : Finset (Fin n × Fin n)) : ℚ :=
-  GridPoint.J s t - GridPoint.J s b - GridPoint.J a t + GridPoint.J a b
-
-/-- The definition of `JDiff` as the expanded four-term formula. -/
-theorem JDiff_def (s a t b : Finset (Fin n × Fin n)) :
-    JDiff s a t b =
-      GridPoint.J s t - GridPoint.J s b - GridPoint.J a t + GridPoint.J a b :=
-  rfl
-
-/-- `JDiff` is symmetric in its two formal-difference inputs. -/
-theorem JDiff_comm (s a t b : Finset (Fin n × Fin n)) :
-    JDiff s a t b = JDiff t b s a := by
-  rw [JDiff, JDiff, GridPoint.J_comm t s, GridPoint.J_comm t a,
-    GridPoint.J_comm b s, GridPoint.J_comm b a]
-  ring
-
-/-- The formal difference of a point set with itself has zero `J`-pairing on the left. -/
-@[simp]
-theorem JDiff_self_left (s t b : Finset (Fin n × Fin n)) : JDiff s s t b = 0 := by
-  simp [JDiff]
-
-/-- The formal difference of a point set with itself has zero `J`-pairing on the right. -/
-@[simp]
-theorem JDiff_self_right (s a t : Finset (Fin n × Fin n)) : JDiff s a t t = 0 := by
-  rw [JDiff_comm, JDiff_self_left]
-
-/-- Pairing an ordinary point set with a formal difference is the corresponding difference of
-two `J`-values. -/
-@[simp]
-theorem JDiff_empty_left (s t b : Finset (Fin n × Fin n)) :
-    JDiff s ∅ t b = GridPoint.J s t - GridPoint.J s b := by
-  simp [JDiff]
-
-/-- Pairing a formal difference with an ordinary point set is the corresponding difference of
-two `J`-values. -/
-@[simp]
-theorem JDiff_empty_right (s a t : Finset (Fin n × Fin n)) :
-    JDiff s a t ∅ = GridPoint.J s t - GridPoint.J a t := by
-  simp [JDiff]
-
-/-- The self-pairing of `s - a` expanded in symmetric form. -/
-theorem JDiff_self_eq (s a : Finset (Fin n × Fin n)) :
-    JDiff s a s a = GridPoint.J s s - 2 * GridPoint.J s a + GridPoint.J a a := by
-  rw [JDiff, GridPoint.J_comm a s]
-  ring
-
-/-- `JDiff` is additive in the left positive point set over disjoint unions. -/
-theorem JDiff_union_left {s₁ s₂ a t b : Finset (Fin n × Fin n)} (h : Disjoint s₁ s₂) :
-    JDiff (s₁ ∪ s₂) a t b =
-      JDiff s₁ a t b + JDiff s₂ ∅ t b := by
-  rw [JDiff, JDiff, JDiff, GridPoint.J_union_left h, GridPoint.J_union_left h]
-  simp
-  ring
-
-/-- `JDiff` is additive in the right positive point set over disjoint unions. -/
-theorem JDiff_union_right {s a t₁ t₂ b : Finset (Fin n × Fin n)} (h : Disjoint t₁ t₂) :
-    JDiff s a (t₁ ∪ t₂) b =
-      JDiff s a t₁ b + JDiff s a t₂ ∅ := by
-  rw [JDiff_comm s a (t₁ ∪ t₂) b, JDiff_union_left h,
-    JDiff_comm t₁ b s a, JDiff_comm t₂ ∅ s a]
-
-end GridPoint
-
 namespace GridDiagram
 
 variable {n : ℕ} (G : GridDiagram n)
@@ -117,6 +45,7 @@ def maslovO (x : GridState n) : ℚ :=
   GridPoint.JDiff x.pointSet G.OSet x.pointSet G.OSet + 1
 
 /-- The `O`-Maslov grading as a `JDiff` self-pairing plus one. -/
+@[simp]
 theorem maslovO_def (x : GridState n) :
     G.maslovO x = GridPoint.JDiff x.pointSet G.OSet x.pointSet G.OSet + 1 :=
   rfl
@@ -133,6 +62,7 @@ def maslovX (x : GridState n) : ℚ :=
   GridPoint.JDiff x.pointSet G.XSet x.pointSet G.XSet + 1
 
 /-- The `X`-Maslov grading as a `JDiff` self-pairing plus one. -/
+@[simp]
 theorem maslovX_def (x : GridState n) :
     G.maslovX x = GridPoint.JDiff x.pointSet G.XSet x.pointSet G.XSet + 1 :=
   rfl
@@ -152,6 +82,7 @@ def alexander (x : GridState n) : ℚ :=
 
 /-- The Alexander grading as the difference of the two Maslov gradings with the standard
 normalization shift. -/
+@[simp]
 theorem alexander_def (x : GridState n) :
     G.alexander x =
       (G.maslovO x - G.maslovX x) / 2 - (((n : ℤ) - 1 : ℤ) : ℚ) / 2 :=
