@@ -12,17 +12,17 @@ import Mathlib.GroupTheory.Perm.Basic
 # Grid diagrams and grid states
 
 This file starts the grid-combinatorial lane of the Heegaard Floer roadmap. A grid state of
-grid number `n` is encoded as a permutation of `Fin n`, sending each column to the unique row
-occupied by the state in that column. A grid diagram is encoded by two such permutation graphs,
-one for the `O` markings and one for the `X` markings, with the condition that no square
-contains both markings.
+grid number `n` is a wrapper around a permutation of `Fin n`, sending each column to the
+unique row occupied by the state in that column. A grid diagram is encoded by two such
+permutation graphs, one for the `O` markings and one for the `X` markings, with the condition
+that no square contains both markings.
 
 The point-set API records the basic row, column, cardinality, and disjointness facts used
 before defining rectangles, empty rectangles, and the grid differential.
 
 ## Main definitions
 
-* `TauCeti.GridState`: a grid state as a permutation graph on `Fin n`.
+* `TauCeti.GridState`: a grid state with a permutation graph on `Fin n`.
 * `TauCeti.GridState.pointSet`: the finite set of occupied squares of a grid state.
 * `TauCeti.GridDiagram`: an `n × n` grid diagram with `O` and `X` markings.
 * `TauCeti.GridDiagram.OSet`, `TauCeti.GridDiagram.XSet`: the marking point sets.
@@ -38,14 +38,31 @@ and a grid state is one point in each row and column.
 
 namespace TauCeti
 
-/-- A grid state on an `n × n` toroidal grid, encoded as the permutation graph sending a
-column to its occupied row. -/
-abbrev GridState (n : ℕ) :=
-  Equiv.Perm (Fin n)
+/-- A grid state on an `n × n` toroidal grid.
+
+The field `toPerm` sends each column to its occupied row. It is intentionally wrapped so that
+the public API for grid states is the point-set API below, rather than the full permutation
+group API. -/
+structure GridState (n : ℕ) where
+  /-- The permutation sending each column to the occupied row in that column. -/
+  toPerm : Equiv.Perm (Fin n)
 
 namespace GridState
 
 variable {n : ℕ}
+
+/-- Apply a grid state to a column to get its occupied row. -/
+instance : CoeFun (GridState n) fun _ => Fin n → Fin n where
+  coe x := x.toPerm
+
+/-- Grid states are extensional in their column-to-row functions. -/
+@[ext]
+theorem ext {x y : GridState n} (h : ∀ c : Fin n, x c = y c) : x = y := by
+  cases x
+  cases y
+  congr
+  ext c
+  exact congrArg Fin.val (h c)
 
 /-- The finite set of occupied squares of a grid state. The first coordinate is the column and
 the second coordinate is the row. -/
@@ -90,9 +107,9 @@ theorem existsUnique_row_of_column (x : GridState n) (c : Fin n) :
 /-- A grid state has a unique occupied column in each row. -/
 theorem existsUnique_column_of_row (x : GridState n) (r : Fin n) :
     ∃! c : Fin n, (c, r) ∈ x.pointSet := by
-  refine ⟨x.symm r, by simp, ?_⟩
+  refine ⟨x.toPerm.symm r, by simp, ?_⟩
   intro c hc
-  exact x.injective (by simpa using hc)
+  exact x.toPerm.injective (by simpa using hc)
 
 /-- Point sets of grid states are equal exactly when the underlying permutations are equal. -/
 @[simp]
