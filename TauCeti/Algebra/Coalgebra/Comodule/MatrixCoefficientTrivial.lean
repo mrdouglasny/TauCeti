@@ -37,7 +37,6 @@ coefficient algebra.
 * `TauCeti.Comodule.trivial_matrixCoefficientSubalgebra_le_bot`.
 * `TauCeti.Comodule.trivial_matrixCoefficientSubalgebra_eq_bot`.
 * `TauCeti.Comodule.trivialRankOne_matrixCoefficientSubmodule_eq_span_singleton_one`.
-* `TauCeti.Comodule.trivialRankOne_matrixCoefficientSubalgebra_eq_bot`.
 
 ## References
 
@@ -220,12 +219,6 @@ theorem trivialRankOne_matrixCoefficientSubmodule_eq_span_singleton_one :
     rw [Set.mem_singleton_iff.mp hc]
     exact Submodule.subset_span (one_mem_trivialRankOne_matrixCoefficientSet (R := R)
       (C := C))
-
-/-- The coefficient algebra of the rank-one trivial comodule is the bottom `R`-subalgebra. -/
-@[simp]
-theorem trivialRankOne_matrixCoefficientSubalgebra_eq_bot :
-    matrixCoefficientSubalgebra (R := R) (C := C) (M := R) = ⊥ := by
-  exact trivial_matrixCoefficientSubalgebra_eq_bot (R := R) (C := C) (M := R)
 
 end RankOne
 
