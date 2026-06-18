@@ -3,6 +3,8 @@ Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.Data.Finset.Prod
+import Mathlib.Data.Set.Finite.Basic
+import Mathlib.Order.Circular.ZMod
 import TauCeti.KnotTheory.Grid.Diagram
 
 /-!
@@ -45,13 +47,9 @@ variable {n : ℕ}
 If `a < b` in the standard representatives, this is the ordinary open interval
 `a < x < b`. If `b ≤ a` and `a ≠ b`, it wraps around `0`, so it is the union of
 `a < x` and `x < b`. The interval from a point to itself is empty. -/
-def cIoo (a b : Fin n) : Finset (Fin n) :=
-  Finset.univ.filter fun x =>
-    a ≠ b ∧
-      if a.val < b.val then
-        a.val < x.val ∧ x.val < b.val
-      else
-        a.val < x.val ∨ x.val < b.val
+noncomputable def cIoo (a b : Fin n) : Finset (Fin n) :=
+  ((Set.finite_univ : (Set.univ : Set (Fin n)).Finite).subset
+    (Set.subset_univ (Set.cIoo a b : Set (Fin n)))).toFinset
 
 /-- Membership in a clockwise open cyclic interval, unfolded as inequalities between the
 standard representatives. -/
@@ -63,7 +61,21 @@ theorem mem_cIoo (a b x : Fin n) :
           a.val < x.val ∧ x.val < b.val
         else
           a.val < x.val ∨ x.val < b.val := by
-  simp [cIoo]
+  rw [cIoo]
+  simp only [Set.Finite.mem_toFinset, Set.mem_cIoo, Fin.sbtw_iff, Fin.lt_def]
+  constructor
+  · rintro (⟨hax, hxb⟩ | ⟨hxb, hba⟩ | ⟨hba, hax⟩)
+    · exact ⟨fun hab => by omega, by simp [hax, hxb]⟩
+    · exact ⟨fun hab => by omega, by simp [Nat.not_lt_of_gt hba, hxb]⟩
+    · exact ⟨fun hab => by omega, by simp [Nat.not_lt_of_gt hba, hax]⟩
+  · intro h
+    by_cases hab : a.val < b.val
+    · exact Or.inl (by simpa [hab] using h.2)
+    · have hba : b.val < a.val := by
+        exact Nat.lt_of_le_of_ne (Nat.le_of_not_gt hab) (by omega)
+      rcases (by simpa [hab] using h.2) with hax | hxb
+      · exact Or.inr (Or.inr ⟨hba, hax⟩)
+      · exact Or.inr (Or.inl ⟨hxb, hba⟩)
 
 /-- The open cyclic interval from a point to itself is empty. -/
 @[simp]
@@ -123,11 +135,11 @@ namespace GridRectangle
 variable {n : ℕ} (R : GridRectangle n)
 
 /-- The columns strictly inside a toroidal grid rectangle. -/
-def columnInterior : Finset (Fin n) :=
+noncomputable def columnInterior : Finset (Fin n) :=
   Grid.cIoo R.left R.right
 
 /-- The rows strictly inside a toroidal grid rectangle. -/
-def rowInterior : Finset (Fin n) :=
+noncomputable def rowInterior : Finset (Fin n) :=
   Grid.cIoo R.bottom R.top
 
 /-- Membership in the interior columns is membership in the corresponding open-open circular
@@ -165,7 +177,7 @@ theorem top_notMem_rowInterior : R.top ∉ R.rowInterior := by
   simp [rowInterior]
 
 /-- The finite set of squares strictly inside a toroidal grid rectangle. -/
-def interior : Finset (Fin n × Fin n) :=
+noncomputable def interior : Finset (Fin n × Fin n) :=
   R.columnInterior ×ˢ R.rowInterior
 
 /-- Membership in a rectangle interior is membership in both one-dimensional open intervals. -/
