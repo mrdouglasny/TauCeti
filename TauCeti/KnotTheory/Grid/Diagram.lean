@@ -146,6 +146,7 @@ end GridState
 
 The permutation fields enforce one `O` and one `X` in each row and column. The `disjoint`
 field says no square contains both markings. -/
+@[ext]
 structure GridDiagram (n : ℕ) where
   /-- The `O` marking in each column, encoded by its row. -/
   O : GridState n
