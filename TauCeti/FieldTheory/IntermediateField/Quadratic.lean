@@ -154,8 +154,11 @@ theorem finrank_adjoin_simple_eq_two_of_sq_mem_notMem (F : IntermediateField K L
     exact hxF (hy ▸ y.2)
   omega
 
--- `restrictScalars` keeps the same carrier and inherited `K`-module structure; naming that
--- definitional equality keeps later degree computations from relying on an unexplained `change`.
+-- `restrictScalars` keeps the same carrier and inherited `K`-module structure, so a `K`-finrank is
+-- unchanged by it. Mathlib's `Submodule.restrictScalarsEquiv` proves the analogue for submodules,
+-- but only as an `F`-linear equivalence, and restricting it to `K` needs `IsScalarTower`/
+-- `CompatibleSMul` instances that the tower `K → F → F⟮x⟯` does not provide for
+-- `Submodule.restrictScalars K`; so we name the definitional equality here instead.
 private theorem finrank_restrictScalars_eq (F : IntermediateField K L)
     (E : IntermediateField F L) :
     Module.finrank K (E.restrictScalars K) = Module.finrank K E := rfl
