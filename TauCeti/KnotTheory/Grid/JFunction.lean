@@ -81,6 +81,13 @@ def I (s t : Finset (Fin n × Fin n)) : ℕ :=
   ((s ×ˢ t).filter fun pq : (Fin n × Fin n) × (Fin n × Fin n) =>
     IsSouthWest pq.1 pq.2).card
 
+/-- The ordered southwest count as the cardinality of the filtered product of point sets. -/
+theorem I_def (s t : Finset (Fin n × Fin n)) :
+    I s t =
+      ((s ×ˢ t).filter fun pq : (Fin n × Fin n) × (Fin n × Fin n) =>
+        IsSouthWest pq.1 pq.2).card :=
+  rfl
+
 /-- Membership in the finite set counted by `GridPoint.I`. -/
 @[simp]
 theorem mem_filter_product_isSouthWest (s t : Finset (Fin n × Fin n))
@@ -119,9 +126,17 @@ convenient for parity and integrality lemmas before passing to rational values. 
 def JNum (s t : Finset (Fin n × Fin n)) : ℕ :=
   I s t + I t s
 
+/-- The numerator of `J` is the sum of the two ordered southwest counts. -/
+theorem JNum_def (s t : Finset (Fin n × Fin n)) : JNum s t = I s t + I t s :=
+  rfl
+
 /-- The rational-valued symmetrized grid `J`-function. -/
 def J (s t : Finset (Fin n × Fin n)) : ℚ :=
   ((JNum s t : ℕ) : ℚ) / 2
+
+/-- The rational-valued `J`-function is half of its symmetrized numerator. -/
+theorem J_def (s t : Finset (Fin n × Fin n)) : GridPoint.J s t = ((JNum s t : ℕ) : ℚ) / 2 :=
+  rfl
 
 /-- The numerator of `J` is symmetric. -/
 theorem JNum_comm (s t : Finset (Fin n × Fin n)) : JNum s t = JNum t s := by
