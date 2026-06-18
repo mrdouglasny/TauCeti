@@ -336,16 +336,12 @@ theorem source_ne_target (R : GridRectangleBetween x y) : x ≠ y := by
   cases hxy
   exact R.left_ne_right (x.toPerm.injective (by simpa [bottom, top] using R.map_left))
 
-/-- There is no rectangle from a grid state to itself. -/
-theorem false_of_source_eq_target (R : GridRectangleBetween x x) : False :=
-  R.source_ne_target rfl
-
 /-- There are no rectangles from a grid state to itself. -/
 @[simp]
 theorem all_self (x : GridState n) : all x x = ∅ := by
   classical
   ext R
-  exact false_of_source_eq_target R |>.elim
+  exact R.source_ne_target rfl |>.elim
 
 /-- The initial lower corner is a point of the source state. -/
 @[simp]
