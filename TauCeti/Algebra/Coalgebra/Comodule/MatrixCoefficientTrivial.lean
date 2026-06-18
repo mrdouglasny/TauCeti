@@ -33,6 +33,7 @@ coefficient algebra.
 * `TauCeti.Comodule.groupLike_rankOne_matrixCoefficientSubmodule_eq_span_singleton`.
 * `TauCeti.Comodule.groupLike_matrixCoefficientSubalgebra_le_adjoin_singleton`.
 * `TauCeti.Comodule.groupLike_rankOne_matrixCoefficientSubalgebra_eq_adjoin_singleton`.
+* `TauCeti.Comodule.trivial_rankOne_matrixCoefficientSubmodule_eq_span_singleton_one`.
 * `TauCeti.Comodule.trivial_matrixCoefficientSubalgebra_le_bot`.
 * `TauCeti.Comodule.trivial_matrixCoefficientSubalgebra_eq_bot`.
 
@@ -170,6 +171,22 @@ theorem trivial_matrixCoefficientSubmodule_le_span_singleton_one :
       Submodule.span R ({1} : Set C) :=
   matrixCoefficientSubmodule_le (R := R) (C := C) (M := M)
     trivial_matrixCoefficient_mem_span_singleton_one
+
+/-- The coefficient submodule of the rank-one trivial comodule is exactly the line spanned by
+`1`. -/
+@[simp]
+theorem trivial_rankOne_matrixCoefficientSubmodule_eq_span_singleton_one :
+    matrixCoefficientSubmodule (R := R) (C := C) (M := R) =
+      Submodule.span R ({1} : Set C) := by
+  apply le_antisymm
+  · exact trivial_matrixCoefficientSubmodule_le_span_singleton_one (R := R) (C := C)
+      (M := R)
+  · rw [Submodule.span_le]
+    intro c hc
+    rw [Set.mem_singleton_iff.mp hc]
+    exact Submodule.subset_span <| by
+      rw [mem_matrixCoefficientSet_iff]
+      exact ⟨LinearMap.id, 1, by simp⟩
 
 /-- A matrix coefficient of a trivial comodule lies in the bottom `R`-subalgebra. -/
 theorem trivial_matrixCoefficient_mem_bot (φ : M →ₗ[R] R) (m : M) :
