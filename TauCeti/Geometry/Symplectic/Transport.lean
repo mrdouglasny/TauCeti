@@ -2,6 +2,7 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Algebra.Module.Equiv.Basic
 import TauCeti.Geometry.Symplectic.AlmostComplex
 
 /-!
@@ -69,6 +70,7 @@ lemma transport_refl (J : AlmostComplexStructure V) :
 
 /-- Transport is functorial: transporting along `e₁` then `e₂` is transporting along their
 composite. -/
+@[simp]
 lemma transport_trans (J : AlmostComplexStructure V) (e₁ : V ≃ₗ[ℝ] W) (e₂ : W ≃ₗ[ℝ] X) :
     (J.transport e₁).transport e₂ = J.transport (e₁ ≪≫ₗ e₂) := by
   apply toLinearMap_injective
