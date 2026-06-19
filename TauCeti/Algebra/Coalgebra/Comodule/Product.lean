@@ -520,7 +520,8 @@ theorem prodInl_desc {M N P : ComoduleCat.{u, v, w} R C} (f : M ⟶ P) (g : N �
     prodInl M N ≫ prodDesc f g = f := by
   ext m
   rw [comp_apply, prodDesc_apply, prodInl_apply]
-  rw [show g 0 = 0 from map_zero g.toLinearMap, add_zero]
+  have hg0 : g 0 = 0 := map_zero g.toLinearMap
+  rw [hg0, add_zero]
 
 /-- The bundled product desc after the right inclusion is the second morphism. -/
 @[simp]
@@ -528,7 +529,8 @@ theorem prodInr_desc {M N P : ComoduleCat.{u, v, w} R C} (f : M ⟶ P) (g : N �
     prodInr M N ≫ prodDesc f g = g := by
   ext n
   rw [comp_apply, prodDesc_apply, prodInr_apply]
-  rw [show f 0 = 0 from map_zero f.toLinearMap, zero_add]
+  have hf0 : f 0 = 0 := map_zero f.toLinearMap
+  rw [hf0, zero_add]
 
 /-- The first projection after the left inclusion is the identity. -/
 @[simp]
