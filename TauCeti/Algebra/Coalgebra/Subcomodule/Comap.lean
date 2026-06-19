@@ -30,8 +30,9 @@ comfortably.
 
 ## References
 
-The construction is the standard inverse image of a subcomodule. The exactness step reuses
-Mathlib's `TensorProduct.rTensor_exact` and `LinearMap.exact_subtype_ker_map`.
+The construction is the standard inverse image of a subcomodule; see Sweedler,
+*Hopf Algebras*, Chapter 2. The exactness step reuses Mathlib's
+`TensorProduct.rTensor_exact` and `LinearMap.exact_subtype_ker_map`.
 -/
 
 open scoped TensorProduct
