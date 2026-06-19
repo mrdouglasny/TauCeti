@@ -151,9 +151,9 @@ lemma complexModule_ofComplexModule_smul {V : Type*}
     z • v = smul₀ z v := by
   let smul₀ : ℂ → V → V := (· • ·)
   have coe_smul' (r : ℝ) (w : V) : (r : ℂ) • w = r • w := by
-    have h := smul_assoc r (1 : ℂ) w
-    simp only [one_smul, Algebra.smul_def, mul_one] at h
-    exact h
+    exact IsScalarTower.algebraMap_smul ℂ r w
+  have ofComplexModule_smul (w : V) : ofComplexModule V w = smul₀ Complex.I w := by
+    rw [ofComplexModule_apply]
   have hdecomp : z.re • v + z.im • smul₀ Complex.I v = smul₀ z v := by
     dsimp only [smul₀]
     rw [← Complex.re_add_im z]
@@ -163,8 +163,7 @@ lemma complexModule_ofComplexModule_smul {V : Type*}
     conv_rhs => rw [add_smul, mul_smul, coe_smul', coe_smul']
   letI := (ofComplexModule V).complexModule
   rw [complexModule_smul_def]
-  dsimp only [ofComplexModule]
-  simp only [LinearMap.coe_restrictScalars, LinearMap.lsmul_apply]
+  rw [ofComplexModule_smul]
   exact hdecomp
 
 end AlmostComplexStructure
