@@ -48,6 +48,12 @@ section ToComplex
 
 variable [AddCommGroup V] [Module ℝ V]
 
+private lemma module_compHom_smul_def {R S M : Type*} [Semiring R] [Semiring S]
+    [AddCommMonoid M] [Module R M] (f : S →+* R) (s : S) (m : M) :
+    letI : Module S M := Module.compHom M f
+    s • m = f s • m :=
+  rfl
+
 /-- The complex vector space structure on a real module `V` induced by an almost complex
 structure `J`: the scalar `a + b·i` acts as `a • v + b • J v`.
 
@@ -66,12 +72,10 @@ lemma complexModule_smul_def (J : AlmostComplexStructure V) (z : ℂ) (v : V) :
     z • v = z.re • v + z.im • J v :=
   by
   letI := J.complexModule
-  -- The induced action is `Module.compHom`'s action through the algebra map `Complex.liftAux …`,
-  -- so by definition `z • v` is that algebra map applied to `z` and then to `v`. Expose this
-  -- defeq, then evaluate `liftAux` on the real/imaginary parts.
-  rw [show z • v = (Complex.liftAux J.toLinearMap (by
+  rw [module_compHom_smul_def, Module.End.smul_def]
+  change (Complex.liftAux J.toLinearMap (by
     ext v
-    simp [Module.End.mul_apply, J.apply_apply]) z) v from rfl]
+    simp [Module.End.mul_apply, J.apply_apply]) z) v = z.re • v + z.im • J v
   rw [Complex.liftAux_apply]
   rfl
 
