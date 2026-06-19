@@ -6,6 +6,7 @@ import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Field.Rat
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Rat.Lemmas
+import Mathlib.Tactic.Ring
 import TauCeti.KnotTheory.Grid.Diagram
 
 /-!
@@ -26,6 +27,7 @@ and `A`.
 * `TauCeti.GridPoint.I`: the ordered southwest pair count.
 * `TauCeti.GridPoint.JNum`: the numerator of the symmetrized `J`-function.
 * `TauCeti.GridPoint.J`: the rational-valued symmetrized `J`-function.
+* `TauCeti.GridPoint.JDiff`: the value of `J` on formal differences `s - a` and `t - b`.
 * `TauCeti.GridState.J`, `TauCeti.GridDiagram.JO`, and `TauCeti.GridDiagram.JX`: specialized
   forms for grid states and markings.
 
@@ -158,6 +160,12 @@ def JNum (s t : Finset (Fin n × Fin n)) : ℕ :=
 theorem JNum_def (s t : Finset (Fin n × Fin n)) : JNum s t = I s t + I t s :=
   rfl
 
+/-- The symmetrized numerator of the `J`-function on a point set with itself is even: it is twice
+the ordered southwest count. -/
+@[simp]
+theorem JNum_self (s : Finset (Fin n × Fin n)) : JNum s s = 2 * I s s := by
+  rw [JNum_def, two_mul]
+
 /-- The rational-valued symmetrized grid `J`-function. -/
 def J (s t : Finset (Fin n × Fin n)) : ℚ :=
   ((JNum s t : ℕ) : ℚ) / 2
@@ -165,6 +173,15 @@ def J (s t : Finset (Fin n × Fin n)) : ℚ :=
 /-- The rational-valued `J`-function is half of its symmetrized numerator. -/
 theorem J_def (s t : Finset (Fin n × Fin n)) : GridPoint.J s t = ((JNum s t : ℕ) : ℚ) / 2 :=
   rfl
+
+/-- The `J`-function on a point set with itself is an integer, namely the ordered southwest
+count. The two southwest comparisons of a pair contribute symmetrically, so the division by two
+is exact. -/
+@[simp]
+theorem J_self (s : Finset (Fin n × Fin n)) : GridPoint.J s s = (I s s : ℚ) := by
+  rw [J_def, JNum_self]
+  push_cast
+  ring
 
 /-- The numerator of `J` is symmetric. -/
 theorem JNum_comm (s t : Finset (Fin n × Fin n)) : JNum s t = JNum t s := by
@@ -239,6 +256,81 @@ theorem J_insert_right {p : Fin n × Fin n} {s t : Finset (Fin n × Fin n)} (h :
     GridPoint.J s (insert p t) = GridPoint.J s {p} + GridPoint.J s t := by
   rw [← Finset.singleton_union, J_union_right]
   exact Finset.disjoint_singleton_left.mpr h
+
+/-- The bilinear extension of the grid `J`-function to formal differences of point sets.
+
+`JDiff s a t b` means `J(s - a, t - b)`, expanded as
+`J s t - J s b - J a t + J a b`. -/
+def JDiff (s a t b : Finset (Fin n × Fin n)) : ℚ :=
+  GridPoint.J s t - GridPoint.J s b - GridPoint.J a t + GridPoint.J a b
+
+/-- The definition of `JDiff` as the expanded four-term formula. -/
+theorem JDiff_def (s a t b : Finset (Fin n × Fin n)) :
+    JDiff s a t b =
+      GridPoint.J s t - GridPoint.J s b - GridPoint.J a t + GridPoint.J a b :=
+  rfl
+
+/-- `JDiff` is symmetric in its two formal-difference inputs. -/
+theorem JDiff_comm (s a t b : Finset (Fin n × Fin n)) :
+    JDiff s a t b = JDiff t b s a := by
+  rw [JDiff, JDiff, GridPoint.J_comm t s, GridPoint.J_comm t a,
+    GridPoint.J_comm b s, GridPoint.J_comm b a]
+  ring
+
+/-- The formal difference of a point set with itself has zero `J`-pairing on the left. -/
+@[simp]
+theorem JDiff_self_left (s t b : Finset (Fin n × Fin n)) : JDiff s s t b = 0 := by
+  simp [JDiff]
+
+/-- The formal difference of a point set with itself has zero `J`-pairing on the right. -/
+@[simp]
+theorem JDiff_self_right (s a t : Finset (Fin n × Fin n)) : JDiff s a t t = 0 := by
+  rw [JDiff_comm, JDiff_self_left]
+
+/-- Pairing an ordinary point set with a formal difference is the corresponding difference of
+two `J`-values. -/
+@[simp]
+theorem JDiff_left_sub_empty (s t b : Finset (Fin n × Fin n)) :
+    JDiff s ∅ t b = GridPoint.J s t - GridPoint.J s b := by
+  simp [JDiff]
+
+/-- Pairing a formal difference with an ordinary point set is the corresponding difference of
+two `J`-values. -/
+@[simp]
+theorem JDiff_right_sub_empty (s a t : Finset (Fin n × Fin n)) :
+    JDiff s a t ∅ = GridPoint.J s t - GridPoint.J a t := by
+  simp [JDiff]
+
+/-- The self-pairing of `s - a` expanded in symmetric form. -/
+theorem JDiff_self_eq (s a : Finset (Fin n × Fin n)) :
+    JDiff s a s a = GridPoint.J s s - 2 * GridPoint.J s a + GridPoint.J a a := by
+  rw [JDiff, GridPoint.J_comm a s]
+  ring
+
+/-- The self-pairing `JDiff s a s a` is integer-valued: it is the cast of
+`I(s, s) - JNum(s, a) + I(a, a)`. The two `J`-self-pairings are integers by `J_self`, and the
+cross term `2 · J(s, a)` is the integer numerator `JNum(s, a)`, so every half cancels. This is the
+general fact underlying the integer-valuedness of the Maslov gradings. -/
+theorem JDiff_self_eq_intCast (s a : Finset (Fin n × Fin n)) :
+    JDiff s a s a = ((I s s : ℤ) - JNum s a + I a a : ℚ) := by
+  rw [JDiff_self_eq, J_self s, J_self a, J_def]
+  push_cast
+  ring
+
+/-- `JDiff` is additive in the left positive point set over disjoint unions. -/
+theorem JDiff_union_left {s₁ s₂ a t b : Finset (Fin n × Fin n)} (h : Disjoint s₁ s₂) :
+    JDiff (s₁ ∪ s₂) a t b =
+      JDiff s₁ a t b + JDiff s₂ ∅ t b := by
+  rw [JDiff, JDiff, JDiff, GridPoint.J_union_left h, GridPoint.J_union_left h]
+  simp
+  ring
+
+/-- `JDiff` is additive in the right positive point set over disjoint unions. -/
+theorem JDiff_union_right {s a t₁ t₂ b : Finset (Fin n × Fin n)} (h : Disjoint t₁ t₂) :
+    JDiff s a (t₁ ∪ t₂) b =
+      JDiff s a t₁ b + JDiff s a t₂ ∅ := by
+  rw [JDiff_comm s a (t₁ ∪ t₂) b, JDiff_union_left h,
+    JDiff_comm t₁ b s a, JDiff_comm t₂ ∅ s a]
 
 /-- The numerator of `J` on singleton point sets records whether either point is southwest of
 the other. -/
