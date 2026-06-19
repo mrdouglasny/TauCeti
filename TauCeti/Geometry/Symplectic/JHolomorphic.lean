@@ -61,6 +61,40 @@ def IsJHolomorphic (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W
     (f : V → W) : Prop :=
   ∀ x, IsJHolomorphicAt J J' f x
 
+/-- Restate pointwise `J`-holomorphicity as existence of a complex-linear Frechet
+derivative. -/
+lemma isJHolomorphicAt_iff (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W)
+    (f : V → W) (x : V) :
+    IsJHolomorphicAt J J' f x ↔
+      ∃ f' : V →L[ℝ] W, HasFDerivAt f f' x ∧ IsComplexLinearMap J J' f'.toLinearMap :=
+  Iff.rfl
+
+/-- Restate within-set `J`-holomorphicity as existence of a complex-linear Frechet
+derivative within the set. -/
+lemma isJHolomorphicWithinAt_iff (J : AlmostComplexStructure V)
+    (J' : AlmostComplexStructure W) (f : V → W) (s : Set V) (x : V) :
+    IsJHolomorphicWithinAt J J' f s x ↔
+      ∃ f' : V →L[ℝ] W,
+        HasFDerivWithinAt f f' s x ∧ IsComplexLinearMap J J' f'.toLinearMap :=
+  Iff.rfl
+
+/-- Restate setwise `J`-holomorphicity as the within-set derivative condition at each
+point of the set. -/
+lemma isJHolomorphicOn_iff (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W)
+    (f : V → W) (s : Set V) :
+    IsJHolomorphicOn J J' f s ↔
+      ∀ x ∈ s, ∃ f' : V →L[ℝ] W,
+        HasFDerivWithinAt f f' s x ∧ IsComplexLinearMap J J' f'.toLinearMap :=
+  Iff.rfl
+
+/-- Restate global `J`-holomorphicity as the pointwise derivative condition at every point. -/
+lemma isJHolomorphic_iff (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W)
+    (f : V → W) :
+    IsJHolomorphic J J' f ↔
+      ∀ x, ∃ f' : V →L[ℝ] W, HasFDerivAt f f' x ∧
+        IsComplexLinearMap J J' f'.toLinearMap :=
+  Iff.rfl
+
 /-- On the whole space, setwise `J`-holomorphicity is the same as global
 `J`-holomorphicity. -/
 @[simp]
