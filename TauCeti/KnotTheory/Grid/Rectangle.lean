@@ -437,32 +437,6 @@ theorem symm_toGridRectangle (R : GridRectangleBetween x y) :
   | mk left right left_ne_right map_left map_right map_of_ne =>
       simp [toGridRectangle, GridRectangle.symm, symm, bottom, top, map_left, map_right]
 
-/-- The associated opposite toroidal rectangle has the original right side as its left
-side. -/
-@[simp]
-theorem symm_toGridRectangle_left (R : GridRectangleBetween x y) :
-    R.symm.toGridRectangle.left = R.right := by
-  simp [toGridRectangle]
-
-/-- The associated opposite toroidal rectangle has the original left side as its right
-side. -/
-@[simp]
-theorem symm_toGridRectangle_right (R : GridRectangleBetween x y) :
-    R.symm.toGridRectangle.right = R.left := by
-  simp [toGridRectangle]
-
-/-- The associated opposite toroidal rectangle has the same bottom row. -/
-@[simp]
-theorem symm_toGridRectangle_bottom (R : GridRectangleBetween x y) :
-    R.symm.toGridRectangle.bottom = R.bottom := by
-  simp [toGridRectangle]
-
-/-- The associated opposite toroidal rectangle has the same top row. -/
-@[simp]
-theorem symm_toGridRectangle_top (R : GridRectangleBetween x y) :
-    R.symm.toGridRectangle.top = R.top := by
-  simp [toGridRectangle]
-
 /-- The two side rows of a rectangle between states are distinct. -/
 theorem bottom_ne_top : R.bottom ≠ R.top := by
   intro h
