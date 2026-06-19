@@ -2,7 +2,6 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.Algebra.Module.Equiv.Basic
 import TauCeti.Geometry.Symplectic.AlmostComplex
 
 /-!
@@ -119,23 +118,9 @@ variable {V₁ V₂ W₁ W₂ : Type*}
 variable [AddCommGroup V₁] [Module ℝ V₁] [AddCommGroup V₂] [Module ℝ V₂]
 variable [AddCommGroup W₁] [Module ℝ W₁] [AddCommGroup W₂] [Module ℝ W₂]
 
-/-- Raw complex-linearity is preserved and reflected by conjugating source and target along
-linear equivalences. -/
-lemma isComplexLinear_arrowCongr_iff {J : V₁ →ₗ[ℝ] V₁} {J' : W₁ →ₗ[ℝ] W₁}
-    {F : V₁ →ₗ[ℝ] W₁} (eV : V₁ ≃ₗ[ℝ] V₂) (eW : W₁ ≃ₗ[ℝ] W₂) :
-    IsComplexLinear (eV.conj J) (eW.conj J') (eV.arrowCongr eW F) ↔
-      IsComplexLinear J J' F := by
-  constructor
-  · intro hF
-    refine isComplexLinear_of_apply fun v => ?_
-    have h := hF.apply (eV v)
-    simpa [LinearEquiv.arrowCongr_apply] using congrArg eW.symm h
-  · intro hF
-    refine isComplexLinear_of_apply fun v => ?_
-    simp [LinearEquiv.arrowCongr_apply, hF.apply]
-
 /-- Complex-linearity is preserved and reflected when source, target, and map are transported
 along linear equivalences. -/
+@[simp]
 lemma isComplexLinearMap_arrowCongr_iff {J : AlmostComplexStructure V₁}
     {J' : AlmostComplexStructure W₁} {F : V₁ →ₗ[ℝ] W₁}
     (eV : V₁ ≃ₗ[ℝ] V₂) (eW : W₁ ≃ₗ[ℝ] W₂) :
