@@ -245,6 +245,7 @@ theorem complexLinearPart_add_complexAntilinearPart (J : V →ₗ[ℝ] V) (J' : 
   module
 
 /-- The complex-linear-part and complex-antilinear-part operators add to the identity. -/
+@[simp]
 theorem complexLinearPartLinearMap_add_complexAntilinearPartLinearMap
     (J : V →ₗ[ℝ] V) (J' : W →ₗ[ℝ] W) :
     complexLinearPartLinearMap J J' + complexAntilinearPartLinearMap J J' = LinearMap.id := by
