@@ -124,11 +124,7 @@ private theorem comap_coact_mem (f : Comodule.Hom R C M N) (B : Subcomodule R C 
   rw [Comodule.Hom.map_coact_apply f m]
   rcases B.coact_mem hm with ⟨t, ht⟩
   rw [← LinearMap.rTensor_def]
-  have hcoact :
-      Comodule.coact (R := R) (C := C) (M := N) (f m) =
-        Comodule.coact (R := R) (C := C) (M := N) (f.toLinearMap m) :=
-    rfl
-  rw [hcoact]
+  rw [← Comodule.Hom.coe_toLinearMap f]
   rw [← ht]
   exact rTensor_mkQ_map_subtype (R := R) (C := C) (N := N) B.toSubmodule t
 
