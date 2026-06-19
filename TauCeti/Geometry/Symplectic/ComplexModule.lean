@@ -66,6 +66,9 @@ lemma complexModule_smul_def (J : AlmostComplexStructure V) (z : ℂ) (v : V) :
     z • v = z.re • v + z.im • J v :=
   by
   letI := J.complexModule
+  -- The induced action is `Module.compHom`'s action through the algebra map `Complex.liftAux …`,
+  -- so by definition `z • v` is that algebra map applied to `z` and then to `v`. Expose this
+  -- defeq, then evaluate `liftAux` on the real/imaginary parts.
   rw [show z • v = (Complex.liftAux J.toLinearMap (by
     ext v
     simp [Module.End.mul_apply, J.apply_apply]) z) v from rfl]
@@ -121,6 +124,7 @@ lemma ofComplexModule_apply (v : V) : ofComplexModule V v = Complex.I • v :=
 end OfComplex
 
 /-- Reading the almost complex structure back off the induced complex module recovers `J`. -/
+@[simp]
 lemma ofComplexModule_complexModule {V : Type*} [AddCommGroup V] [Module ℝ V]
     (J : AlmostComplexStructure V) :
     letI := J.complexModule
@@ -132,6 +136,7 @@ lemma ofComplexModule_complexModule {V : Type*} [AddCommGroup V] [Module ℝ V]
   rw [ofComplexModule_apply, complexModule_I_smul]
 
 /-- The complex module induced by `ofComplexModule` has the original complex scalar action. -/
+@[simp]
 lemma complexModule_ofComplexModule_smul {V : Type*}
     [AddCommGroup V] [Module ℝ V] [Module ℂ V] [IsScalarTower ℝ ℂ V] (z : ℂ) (v : V) :
     let smul₀ : ℂ → V → V := (· • ·)
