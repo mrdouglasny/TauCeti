@@ -160,6 +160,12 @@ def JNum (s t : Finset (Fin n × Fin n)) : ℕ :=
 theorem JNum_def (s t : Finset (Fin n × Fin n)) : JNum s t = I s t + I t s :=
   rfl
 
+/-- The symmetrized numerator of the `J`-function on a point set with itself is even: it is twice
+the ordered southwest count. -/
+@[simp]
+theorem JNum_self (s : Finset (Fin n × Fin n)) : JNum s s = 2 * I s s := by
+  rw [JNum_def, two_mul]
+
 /-- The rational-valued symmetrized grid `J`-function. -/
 def J (s t : Finset (Fin n × Fin n)) : ℚ :=
   ((JNum s t : ℕ) : ℚ) / 2
@@ -167,6 +173,15 @@ def J (s t : Finset (Fin n × Fin n)) : ℚ :=
 /-- The rational-valued `J`-function is half of its symmetrized numerator. -/
 theorem J_def (s t : Finset (Fin n × Fin n)) : GridPoint.J s t = ((JNum s t : ℕ) : ℚ) / 2 :=
   rfl
+
+/-- The `J`-function on a point set with itself is an integer, namely the ordered southwest
+count. The two southwest comparisons of a pair contribute symmetrically, so the division by two
+is exact. -/
+@[simp]
+theorem J_self (s : Finset (Fin n × Fin n)) : GridPoint.J s s = (I s s : ℚ) := by
+  rw [J_def, JNum_self]
+  push_cast
+  ring
 
 /-- The numerator of `J` is symmetric. -/
 theorem JNum_comm (s t : Finset (Fin n × Fin n)) : JNum s t = JNum t s := by
@@ -290,6 +305,16 @@ theorem JDiff_right_sub_empty (s a t : Finset (Fin n × Fin n)) :
 theorem JDiff_self_eq (s a : Finset (Fin n × Fin n)) :
     JDiff s a s a = GridPoint.J s s - 2 * GridPoint.J s a + GridPoint.J a a := by
   rw [JDiff, GridPoint.J_comm a s]
+  ring
+
+/-- The self-pairing `JDiff s a s a` is integer-valued: it is the cast of
+`I(s, s) - JNum(s, a) + I(a, a)`. The two `J`-self-pairings are integers by `J_self`, and the
+cross term `2 · J(s, a)` is the integer numerator `JNum(s, a)`, so every half cancels. This is the
+general fact underlying the integer-valuedness of the Maslov gradings. -/
+theorem JDiff_self_eq_intCast (s a : Finset (Fin n × Fin n)) :
+    JDiff s a s a = ((I s s : ℤ) - JNum s a + I a a : ℚ) := by
+  rw [JDiff_self_eq, J_self s, J_self a, J_def]
+  push_cast
   ring
 
 /-- `JDiff` is additive in the left positive point set over disjoint unions. -/

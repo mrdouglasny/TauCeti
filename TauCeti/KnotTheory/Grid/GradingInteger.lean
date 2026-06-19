@@ -33,37 +33,18 @@ so `M_O(x)` is an integer. The same computation handles `M_X`.
 * `TauCeti.GridDiagram.maslovO_exists_int`, `TauCeti.GridDiagram.maslovX_exists_int`: the Maslov
   gradings are integers.
 * `TauCeti.GridDiagram.two_mul_alexander_eq_intCast`,
-  `TauCeti.GridDiagram.alexander_two_mul_exists_int`: twice the Alexander grading is an integer.
+  `TauCeti.GridDiagram.two_mul_alexander_exists_int`: twice the Alexander grading is an integer.
 
 ## References
 
-This advances `TauCetiRoadmap/HeegaardFloer/README.md`, Lane G.2, "Gradings. The `J`-function,
-`M_O`, `M_X`, `A`; integer-valuedness of `A`; grading-change formulas across a rectangle." The
-integrality of the Maslov gradings is the prerequisite that the (parity-sensitive) integrality of
-the Alexander grading itself builds on; see Ozsváth--Stipsicz--Szabó, *Grid Homology for Knots and
-Links*, Chapter 4.
+This advances `TauCetiRoadmap/CombinatorialHeegaardFloer/README.md`, Lane G item 2, "Gradings.
+The `J`-function, `M_O`, `M_X`, `A`; integer-valuedness of `A`; grading-change formulas across a
+rectangle." The integrality of the Maslov gradings is the prerequisite that the (parity-sensitive)
+integrality of the Alexander grading itself builds on; see Ozsváth--Stipsicz--Szabó, *Grid Homology
+for Knots and Links*, Chapter 4.
 -/
 
 namespace TauCeti
-
-namespace GridPoint
-
-variable {n : ℕ}
-
-/-- The symmetrized numerator of the `J`-function on a point set with itself is even: it is twice
-the ordered southwest count. -/
-theorem JNum_self (s : Finset (Fin n × Fin n)) : JNum s s = 2 * I s s := by
-  rw [JNum_def, two_mul]
-
-/-- The `J`-function on a point set with itself is an integer, namely the ordered southwest
-count. The two southwest comparisons of a pair contribute symmetrically, so the division by two
-is exact. -/
-theorem J_self (s : Finset (Fin n × Fin n)) : GridPoint.J s s = (I s s : ℚ) := by
-  rw [J_def, JNum_self]
-  push_cast
-  ring
-
-end GridPoint
 
 namespace GridDiagram
 
@@ -77,36 +58,40 @@ def maslovOℤ (x : GridState n) : ℤ :=
   (GridPoint.I x.pointSet x.pointSet : ℤ) - GridPoint.JNum x.pointSet G.OSet
     + GridPoint.I G.OSet G.OSet + 1
 
+/-- The integer `O`-Maslov grading restated as its defining formula. -/
+@[simp]
+theorem maslovOℤ_def (x : GridState n) :
+    G.maslovOℤ x =
+      (GridPoint.I x.pointSet x.pointSet : ℤ) - GridPoint.JNum x.pointSet G.OSet
+        + GridPoint.I G.OSet G.OSet + 1 :=
+  rfl
+
 /-- The integer-valued `X`-Maslov grading of a grid state. -/
 def maslovXℤ (x : GridState n) : ℤ :=
   (GridPoint.I x.pointSet x.pointSet : ℤ) - GridPoint.JNum x.pointSet G.XSet
     + GridPoint.I G.XSet G.XSet + 1
 
+/-- The integer `X`-Maslov grading restated as its defining formula. -/
+@[simp]
+theorem maslovXℤ_def (x : GridState n) :
+    G.maslovXℤ x =
+      (GridPoint.I x.pointSet x.pointSet : ℤ) - GridPoint.JNum x.pointSet G.XSet
+        + GridPoint.I G.XSet G.XSet + 1 :=
+  rfl
+
 /-- The rational `O`-Maslov grading is the cast of its integer counterpart: `M_O` is an
-integer. -/
+integer. This specializes the general self-pairing integrality `GridPoint.JDiff_self_eq_intCast`
+to the `O`-markings. -/
 theorem maslovO_eq_intCast (x : GridState n) : G.maslovO x = (G.maslovOℤ x : ℚ) := by
-  have hxx : GridState.J x x = (GridPoint.I x.pointSet x.pointSet : ℚ) := by
-    rw [GridState.J_def, GridPoint.J_self]
-  have hOO : GridState.J G.O G.O = (GridPoint.I G.OSet G.OSet : ℚ) := by
-    rw [GridState.J_def, GridPoint.J_self, OSet]
-  have hJO : 2 * G.JO x = (GridPoint.JNum x.pointSet G.OSet : ℚ) := by
-    rw [JO_def, GridPoint.J_def]
-    ring
-  rw [maslovO_eq, hxx, hJO, hOO, maslovOℤ]
+  rw [maslovO_def, GridPoint.JDiff_self_eq_intCast, maslovOℤ]
   push_cast
   ring
 
 /-- The rational `X`-Maslov grading is the cast of its integer counterpart: `M_X` is an
-integer. -/
+integer. This specializes the general self-pairing integrality `GridPoint.JDiff_self_eq_intCast`
+to the `X`-markings. -/
 theorem maslovX_eq_intCast (x : GridState n) : G.maslovX x = (G.maslovXℤ x : ℚ) := by
-  have hxx : GridState.J x x = (GridPoint.I x.pointSet x.pointSet : ℚ) := by
-    rw [GridState.J_def, GridPoint.J_self]
-  have hXX : GridState.J G.X G.X = (GridPoint.I G.XSet G.XSet : ℚ) := by
-    rw [GridState.J_def, GridPoint.J_self, XSet]
-  have hJX : 2 * G.JX x = (GridPoint.JNum x.pointSet G.XSet : ℚ) := by
-    rw [JX_def, GridPoint.J_def]
-    ring
-  rw [maslovX_eq, hxx, hJX, hXX, maslovXℤ]
+  rw [maslovX_def, GridPoint.JDiff_self_eq_intCast, maslovXℤ]
   push_cast
   ring
 
@@ -123,6 +108,12 @@ The normalization shift `(n - 1)` is taken over `ℤ`, so the formula is literal
 def alexanderTwoℤ (x : GridState n) : ℤ :=
   G.maslovOℤ x - G.maslovXℤ x - ((n : ℤ) - 1)
 
+/-- The integer numerator of twice the Alexander grading restated as its defining formula. -/
+@[simp]
+theorem alexanderTwoℤ_def (x : GridState n) :
+    G.alexanderTwoℤ x = G.maslovOℤ x - G.maslovXℤ x - ((n : ℤ) - 1) :=
+  rfl
+
 /-- Twice the Alexander grading is an integer: it is the difference of the integer Maslov
 gradings, corrected by the normalization shift. This stops short of integrality of `A` itself,
 which is the genuinely parity-sensitive statement. -/
@@ -134,7 +125,7 @@ theorem two_mul_alexander_eq_intCast (x : GridState n) :
 
 /-- Twice the Alexander grading is an integer; equivalently, the Alexander grading is a
 half-integer. -/
-theorem alexander_two_mul_exists_int (x : GridState n) :
+theorem two_mul_alexander_exists_int (x : GridState n) :
     ∃ m : ℤ, 2 * G.alexander x = (m : ℚ) :=
   ⟨G.alexanderTwoℤ x, G.two_mul_alexander_eq_intCast x⟩
 
