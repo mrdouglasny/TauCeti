@@ -227,6 +227,17 @@ structure Compatible (ω : SymplecticForm V) (J : AlmostComplexStructure V) : Pr
   /-- The associated quadratic form `v ↦ ω(v, Jv)` is positive definite. -/
   positive : (ω.associatedBilinForm J).toQuadraticMap.PosDef
 
+/-- Compatibility is equivalently `J`-invariance plus tameness. -/
+lemma compatible_iff (ω : SymplecticForm V) (J : AlmostComplexStructure V) :
+    ω.Compatible J ↔ ω.Invariant J ∧ ω.Tames J :=
+  ⟨fun h => ⟨h.invariant, (ω.tames_iff_associated_pos J).mpr h.positive⟩,
+    fun h => ⟨h.1, (ω.tames_iff_associated_pos J).mp h.2⟩⟩
+
+/-- Build compatibility from `J`-invariance and the named tameness predicate. -/
+lemma Compatible.of_tames {ω : SymplecticForm V} {J : AlmostComplexStructure V}
+    (hinvariant : ω.Invariant J) (htames : ω.Tames J) : ω.Compatible J :=
+  (ω.compatible_iff J).mpr ⟨hinvariant, htames⟩
+
 lemma Compatible.tames {ω : SymplecticForm V} {J : AlmostComplexStructure V}
     (h : ω.Compatible J) : ω.Tames J :=
   (ω.tames_iff_associated_pos J).mpr h.positive
