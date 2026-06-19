@@ -33,17 +33,18 @@ The construction is the standard direct sum of comodules; see Sweedler, *Hopf Al
 Chapter 2.
 -/
 
+open CategoryTheory
 open scoped TensorProduct
 
 namespace TauCeti
 
-universe u v w
+universe u v w x
 
 namespace Comodule
 
 variable {R : Type u} [CommSemiring R]
 variable {C : Type v} [AddCommMonoid C] [Module R C] [Coalgebra R C]
-variable {M N : Type w}
+variable {M : Type w} {N : Type x}
 variable [AddCommMonoid M] [Module R M] [Comodule R C M]
 variable [AddCommMonoid N] [Module R N] [Comodule R C N]
 
@@ -81,28 +82,44 @@ theorem prodCoact_inr (n : N) :
         (coact (R := R) (C := C) (M := N) n) := by
   simp [prodCoact]
 
+private theorem prodCoact_coassoc_map {P : Type*} [AddCommMonoid P] [Module R P]
+    [Comodule R C P] (f : P →ₗ[R] M × N)
+    (hcomp :
+      prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ f =
+        TensorProduct.map f LinearMap.id ∘ₗ coact (R := R) (C := C) (M := P))
+    (p : P) :
+    TensorProduct.assoc R (M × N) C C
+        ((prodCoact (R := R) (C := C) (M := M) (N := N)).rTensor C
+          (prodCoact (R := R) (C := C) (M := M) (N := N) (f p))) =
+      Coalgebra.comul.lTensor (M × N)
+        (prodCoact (R := R) (C := C) (M := M) (N := N) (f p)) := by
+  rw [show prodCoact (R := R) (C := C) (M := M) (N := N) (f p) =
+      TensorProduct.map f LinearMap.id (coact (R := R) (C := C) (M := P) p) by
+        exact LinearMap.congr_fun hcomp p]
+  have h :=
+    congrArg
+      (TensorProduct.map f
+        (TensorProduct.map (LinearMap.id : C →ₗ[R] C) (LinearMap.id : C →ₗ[R] C)))
+      (coassoc_apply (R := R) (C := C) (M := P) p)
+  rw [TensorProduct.map_map_assoc] at h
+  simpa only [LinearMap.rTensor_map, LinearMap.lTensor_map, LinearMap.rTensor_def,
+    LinearMap.lTensor_def, hcomp, LinearMap.comp_id, LinearMap.id_comp, TensorProduct.map_id,
+    TensorProduct.map_map] using h
+
 private theorem prodCoact_coassoc_inl (m : M) :
     TensorProduct.assoc R (M × N) C C
         ((prodCoact (R := R) (C := C) (M := M) (N := N)).rTensor C
           (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inl R M N m))) =
       Coalgebra.comul.lTensor (M × N)
         (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inl R M N m)) := by
-  simp only [prodCoact_inl]
-  have h :=
-    congrArg
-      (TensorProduct.map (LinearMap.inl R M N)
-        (TensorProduct.map (LinearMap.id : C →ₗ[R] C) (LinearMap.id : C →ₗ[R] C)))
-      (coassoc_apply (R := R) (C := C) (M := M) m)
-  rw [TensorProduct.map_map_assoc] at h
   have hcomp :
       prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ LinearMap.inl R M N =
         TensorProduct.map (LinearMap.inl R M N) LinearMap.id ∘ₗ
           coact (R := R) (C := C) (M := M) := by
     ext x
     simp
-  simpa only [LinearMap.rTensor_map, LinearMap.lTensor_map, LinearMap.rTensor_def,
-    LinearMap.lTensor_def, hcomp, LinearMap.comp_id, LinearMap.id_comp, TensorProduct.map_id,
-    TensorProduct.map_map] using h
+  exact prodCoact_coassoc_map (R := R) (C := C) (M := M) (N := N)
+    (LinearMap.inl R M N) hcomp m
 
 private theorem prodCoact_coassoc_inr (n : N) :
     TensorProduct.assoc R (M × N) C C
@@ -110,22 +127,14 @@ private theorem prodCoact_coassoc_inr (n : N) :
           (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inr R M N n))) =
       Coalgebra.comul.lTensor (M × N)
         (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inr R M N n)) := by
-  simp only [prodCoact_inr]
-  have h :=
-    congrArg
-      (TensorProduct.map (LinearMap.inr R M N)
-        (TensorProduct.map (LinearMap.id : C →ₗ[R] C) (LinearMap.id : C →ₗ[R] C)))
-      (coassoc_apply (R := R) (C := C) (M := N) n)
-  rw [TensorProduct.map_map_assoc] at h
   have hcomp :
       prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ LinearMap.inr R M N =
         TensorProduct.map (LinearMap.inr R M N) LinearMap.id ∘ₗ
           coact (R := R) (C := C) (M := N) := by
     ext x
     simp
-  simpa only [LinearMap.rTensor_map, LinearMap.lTensor_map, LinearMap.rTensor_def,
-    LinearMap.lTensor_def, hcomp, LinearMap.comp_id, LinearMap.id_comp, TensorProduct.map_id,
-    TensorProduct.map_map] using h
+  exact prodCoact_coassoc_map (R := R) (C := C) (M := M) (N := N)
+    (LinearMap.inr R M N) hcomp n
 
 private theorem prodCoact_coassoc :
     TensorProduct.assoc R (M × N) C C ∘ₗ
@@ -139,29 +148,50 @@ private theorem prodCoact_coassoc :
   · ext n
     exact prodCoact_coassoc_inr (R := R) (C := C) (M := M) (N := N) n
 
+private theorem prodCoact_counit_map {P : Type*} [AddCommMonoid P] [Module R P]
+    [Comodule R C P] (f : P →ₗ[R] M × N)
+    (hcomp :
+      prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ f =
+        TensorProduct.map f LinearMap.id ∘ₗ coact (R := R) (C := C) (M := P))
+    (p : P) :
+    Coalgebra.counit.lTensor (M × N)
+        (prodCoact (R := R) (C := C) (M := M) (N := N) (f p)) =
+      f p ⊗ₜ[R] 1 := by
+  rw [show prodCoact (R := R) (C := C) (M := M) (N := N) (f p) =
+      TensorProduct.map f LinearMap.id (coact (R := R) (C := C) (M := P) p) by
+        exact LinearMap.congr_fun hcomp p]
+  have h :=
+    congrArg (TensorProduct.map f (LinearMap.id : R →ₗ[R] R))
+      (lTensor_counit_coact (R := R) (C := C) (M := P) p)
+  simpa only [LinearMap.lTensor_map, LinearMap.lTensor_def, LinearMap.comp_id, LinearMap.id_comp,
+    TensorProduct.map_id, TensorProduct.map_map, TensorProduct.map_tmul,
+    LinearMap.id_apply] using h
+
 private theorem prodCoact_counit_inl (m : M) :
     Coalgebra.counit.lTensor (M × N)
         (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inl R M N m)) =
       LinearMap.inl R M N m ⊗ₜ[R] 1 := by
-  simp only [prodCoact_inl]
-  have h :=
-    congrArg (TensorProduct.map (LinearMap.inl R M N) (LinearMap.id : R →ₗ[R] R))
-      (lTensor_counit_coact (R := R) (C := C) (M := M) m)
-  simpa only [LinearMap.lTensor_map, LinearMap.lTensor_def, LinearMap.comp_id, LinearMap.id_comp,
-    TensorProduct.map_id, TensorProduct.map_map, TensorProduct.map_tmul,
-    LinearMap.id_apply] using h
+  have hcomp :
+      prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ LinearMap.inl R M N =
+        TensorProduct.map (LinearMap.inl R M N) LinearMap.id ∘ₗ
+          coact (R := R) (C := C) (M := M) := by
+    ext x
+    simp
+  exact prodCoact_counit_map (R := R) (C := C) (M := M) (N := N)
+    (LinearMap.inl R M N) hcomp m
 
 private theorem prodCoact_counit_inr (n : N) :
     Coalgebra.counit.lTensor (M × N)
         (prodCoact (R := R) (C := C) (M := M) (N := N) (LinearMap.inr R M N n)) =
       LinearMap.inr R M N n ⊗ₜ[R] 1 := by
-  simp only [prodCoact_inr]
-  have h :=
-    congrArg (TensorProduct.map (LinearMap.inr R M N) (LinearMap.id : R →ₗ[R] R))
-      (lTensor_counit_coact (R := R) (C := C) (M := N) n)
-  simpa only [LinearMap.lTensor_map, LinearMap.lTensor_def, LinearMap.comp_id, LinearMap.id_comp,
-    TensorProduct.map_id, TensorProduct.map_map, TensorProduct.map_tmul,
-    LinearMap.id_apply] using h
+  have hcomp :
+      prodCoact (R := R) (C := C) (M := M) (N := N) ∘ₗ LinearMap.inr R M N =
+        TensorProduct.map (LinearMap.inr R M N) LinearMap.id ∘ₗ
+          coact (R := R) (C := C) (M := N) := by
+    ext x
+    simp
+  exact prodCoact_counit_map (R := R) (C := C) (M := M) (N := N)
+    (LinearMap.inr R M N) hcomp n
 
 private theorem prodCoact_counit :
     Coalgebra.counit.lTensor (M × N) ∘ₗ
@@ -174,7 +204,7 @@ private theorem prodCoact_counit :
     exact prodCoact_counit_inr (R := R) (C := C) (M := M) (N := N) n
 
 /-- The product of two right comodules, with the direct-sum coaction. -/
-@[reducible]
+@[implicit_reducible]
 def Prod : Comodule R C (M × N) where
   coact := prodCoact (R := R) (C := C) (M := M) (N := N)
   coassoc := prodCoact_coassoc (R := R) (C := C) (M := M) (N := N)
@@ -268,24 +298,72 @@ abbrev prodInl (M N : ComoduleCat.{u, v, w} R C) : M ⟶ prod R C M N :=
 abbrev prodInr (M N : ComoduleCat.{u, v, w} R C) : N ⟶ prod R C M N :=
   Comodule.prodInr (R := R) (C := C) (M := M) (N := N)
 
+/-- The bundled product comodule, using biproduct terminology. -/
+abbrev biprod (M N : ComoduleCat.{u, v, w} R C) : ComoduleCat.{u, v, w} R C :=
+  prod R C M N
+
+/-- The first projection from the bundled biproduct comodule. -/
+abbrev biprodFst (M N : ComoduleCat.{u, v, w} R C) : biprod M N ⟶ M :=
+  prodFst M N
+
+/-- The second projection from the bundled biproduct comodule. -/
+abbrev biprodSnd (M N : ComoduleCat.{u, v, w} R C) : biprod M N ⟶ N :=
+  prodSnd M N
+
+/-- The left inclusion into the bundled biproduct comodule. -/
+abbrev biprodInl (M N : ComoduleCat.{u, v, w} R C) : M ⟶ biprod M N :=
+  prodInl M N
+
+/-- The right inclusion into the bundled biproduct comodule. -/
+abbrev biprodInr (M N : ComoduleCat.{u, v, w} R C) : N ⟶ biprod M N :=
+  prodInr M N
+
+/-- Evaluating the bundled first projection returns the first component. -/
 @[simp]
 theorem prodFst_apply (M N : ComoduleCat.{u, v, w} R C) (x : prod R C M N) :
     prodFst M N x = x.1 :=
   rfl
 
+/-- Evaluating the bundled second projection returns the second component. -/
 @[simp]
 theorem prodSnd_apply (M N : ComoduleCat.{u, v, w} R C) (x : prod R C M N) :
     prodSnd M N x = x.2 :=
   rfl
 
+/-- Evaluating the bundled left inclusion returns the pair with zero right component. -/
 @[simp]
 theorem prodInl_apply (M N : ComoduleCat.{u, v, w} R C) (m : M) :
     prodInl M N m = (m, 0) :=
   rfl
 
+/-- Evaluating the bundled right inclusion returns the pair with zero left component. -/
 @[simp]
 theorem prodInr_apply (M N : ComoduleCat.{u, v, w} R C) (n : N) :
     prodInr M N n = (0, n) :=
+  rfl
+
+/-- Evaluating the bundled biproduct first projection returns the first component. -/
+@[simp]
+theorem biprodFst_apply (M N : ComoduleCat.{u, v, w} R C) (x : biprod M N) :
+    biprodFst M N x = x.1 :=
+  rfl
+
+/-- Evaluating the bundled biproduct second projection returns the second component. -/
+@[simp]
+theorem biprodSnd_apply (M N : ComoduleCat.{u, v, w} R C) (x : biprod M N) :
+    biprodSnd M N x = x.2 :=
+  rfl
+
+/-- Evaluating the bundled biproduct left inclusion returns the pair with zero right component. -/
+@[simp]
+theorem biprodInl_apply (M N : ComoduleCat.{u, v, w} R C) (m : M) :
+    biprodInl M N m = (m, 0) :=
+  rfl
+
+/-- Evaluating the bundled biproduct right inclusion returns the pair with zero left component. -/
+@[simp]
+theorem biprodInr_apply (M N : ComoduleCat.{u, v, w} R C) (n : N) :
+    biprodInr M N n = (0, n) :=
   rfl
 
 end ComoduleCat
