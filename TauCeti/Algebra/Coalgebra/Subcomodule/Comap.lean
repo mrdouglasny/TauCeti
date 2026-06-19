@@ -42,7 +42,7 @@ universe u v w x y
 
 variable {R : Type u} {C : Type v} {M : Type w} {N : Type x}
 variable [CommRing R]
-variable [AddCommGroup C] [Module R C] [Coalgebra R C] [Module.Flat R C]
+variable [AddCommMonoid C] [Module R C] [Coalgebra R C] [Module.Flat R C]
 variable [AddCommMonoid M] [Module R M] [Comodule R C M]
 variable [AddCommMonoid N] [Module R N] [Comodule R C N]
 
@@ -62,6 +62,7 @@ private theorem rTensor_rangeRestrict_eq_zero_of_rTensor_eq_zero
     {B : Submodule R N₁} {f : M₁ →ₗ[R] N₁} {t : M₁ ⊗[R] C}
     (h : LinearMap.rTensor C (B.mkQ.comp f) t = 0) :
     LinearMap.rTensor C (B.mkQ.comp f).rangeRestrict t = 0 := by
+  letI : AddCommGroup C := Module.addCommMonoidToAddCommGroup R (M := C)
   apply Module.Flat.rTensor_preserves_injective_linearMap
     (LinearMap.range (B.mkQ.comp f)).subtype Subtype.val_injective
   calc
@@ -83,6 +84,7 @@ private theorem tensor_mem_range_comap {M₁ : Type w} {N₁ : Type x}
     {t : M₁ ⊗[R] C} (h : LinearMap.rTensor C (B.mkQ.comp f) t = 0) :
     t ∈ LinearMap.range
       (TensorProduct.map (B.comap f).subtype (LinearMap.id : C →ₗ[R] C)) := by
+  letI : AddCommGroup C := Module.addCommMonoidToAddCommGroup R (M := C)
   let g : M₁ →ₗ[R] LinearMap.range (B.mkQ.comp f) := (B.mkQ.comp f).rangeRestrict
   have hker : LinearMap.ker g = B.comap f :=
     ker_rangeRestrict_mkQ_comp (M₁ := M₁) (N₁ := N₁) B f
@@ -107,6 +109,7 @@ private theorem rTensor_mkQ_map_subtype {N₁ : Type x} [AddCommGroup N₁] [Mod
     (B : Submodule R N₁) (t : B ⊗[R] C) :
     LinearMap.rTensor C B.mkQ
         (TensorProduct.map B.subtype (LinearMap.id : C →ₗ[R] C) t) = 0 := by
+  letI : AddCommGroup C := Module.addCommMonoidToAddCommGroup R (M := C)
   induction t with
   | zero => simp
   | tmul b c =>
@@ -124,6 +127,7 @@ private theorem comap_coact_mem (f : Comodule.Hom R C M N) (B : Subcomodule R C 
       LinearMap.range
         (TensorProduct.map (B.toSubmodule.comap f.toLinearMap).subtype
           (LinearMap.id : C →ₗ[R] C)) := by
+  letI : AddCommGroup C := Module.addCommMonoidToAddCommGroup R (M := C)
   letI : AddCommGroup M := Module.addCommMonoidToAddCommGroup R (M := M)
   letI : AddCommGroup N := Module.addCommMonoidToAddCommGroup R (M := N)
   let f' : M →ₗ[R] N :=
