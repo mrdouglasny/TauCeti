@@ -201,34 +201,6 @@ lemma IsComplexLinearMap.comp {J : AlmostComplexStructure V} {J' : AlmostComplex
     G (F (J v)) = G (J' (F v)) := by rw [hF v]
     _ = J'' (G (F v)) := hG (F v)
 
-/-- Complex-linear maps are closed under addition. -/
-lemma IsComplexLinearMap.add {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
-    {F G : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F) (hG : IsComplexLinearMap J J' G) :
-    IsComplexLinearMap J J' (F + G) := by
-  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF hG ⊢
-  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).add_mem hF hG
-
-/-- Complex-linear maps are closed under negation. -/
-lemma IsComplexLinearMap.neg {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
-    {F : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F) :
-    IsComplexLinearMap J J' (-F) := by
-  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF ⊢
-  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).neg_mem hF
-
-/-- Complex-linear maps are closed under subtraction. -/
-lemma IsComplexLinearMap.sub {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
-    {F G : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F) (hG : IsComplexLinearMap J J' G) :
-    IsComplexLinearMap J J' (F - G) := by
-  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF hG ⊢
-  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).sub_mem hF hG
-
-/-- Complex-linear maps are closed under multiplication by a real scalar. -/
-lemma IsComplexLinearMap.smul {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
-    {F : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F) (c : ℝ) :
-    IsComplexLinearMap J J' (c • F) := by
-  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF ⊢
-  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).smul_mem c hF
-
 end ComplexLinearMap
 
 /-- A symplectic form on a real module is an alternating, nondegenerate bilinear form.
