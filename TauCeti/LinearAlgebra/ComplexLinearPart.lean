@@ -37,8 +37,8 @@ statement, before any smoothness or bundle structure is introduced.
 * `TauCeti.complexAntilinearPart J J' F`: the complex-antilinear part `½ (F + J' ∘ F ∘ J)`
   (the `∂̄` operator).
 * `TauCeti.complexLinearPartLinearMap J J'` /
-  `TauCeti.complexAntilinearPartLinearMap J J'`: the corresponding real-linear projections on
-  `V →ₗ[ℝ] W`.
+  `TauCeti.complexAntilinearPartLinearMap J J'`: the corresponding real-linear operators on
+  `V →ₗ[ℝ] W` (these become genuine projections only under `J ∘ J = -1` and `J' ∘ J' = -1`).
 * `TauCeti.complexLinearMaps J J'` / `TauCeti.complexAntilinearMaps J J'`: the real subspaces of
   complex-linear and complex-antilinear maps.
 
@@ -74,6 +74,17 @@ def IsComplexAntilinear (J : V →ₗ[ℝ] V) (J' : W →ₗ[ℝ] W) (F : V →�
   F ∘ₗ J = -(J' ∘ₗ F)
 
 variable {J : V →ₗ[ℝ] V} {J' : W →ₗ[ℝ] W} {J'' : U →ₗ[ℝ] U}
+
+/-- Complex linearity restated as its defining commutation equation `F ∘ J = J' ∘ F`. -/
+@[simp, grind =]
+theorem isComplexLinear_iff {F : V →ₗ[ℝ] W} :
+    IsComplexLinear J J' F ↔ F ∘ₗ J = J' ∘ₗ F := Iff.rfl
+
+/-- Complex antilinearity restated as its defining anticommutation equation
+`F ∘ J = -(J' ∘ F)`. -/
+@[simp, grind =]
+theorem isComplexAntilinear_iff {F : V →ₗ[ℝ] W} :
+    IsComplexAntilinear J J' F ↔ F ∘ₗ J = -(J' ∘ₗ F) := Iff.rfl
 
 /-- The pointwise form of complex linearity: `F (J v) = J' (F v)`. -/
 theorem IsComplexLinear.apply {F : V →ₗ[ℝ] W} (h : IsComplexLinear J J' F) (v : V) :
@@ -231,7 +242,7 @@ theorem complexLinearPart_add_complexAntilinearPart (J : V →ₗ[ℝ] V) (J' : 
   simp only [LinearMap.add_apply, complexLinearPart_apply, complexAntilinearPart_apply]
   module
 
-/-- The complex-linear and complex-antilinear projection operators add to the identity. -/
+/-- The complex-linear-part and complex-antilinear-part operators add to the identity. -/
 theorem complexLinearPartLinearMap_add_complexAntilinearPartLinearMap
     (J : V →ₗ[ℝ] V) (J' : W →ₗ[ℝ] W) :
     complexLinearPartLinearMap J J' + complexAntilinearPartLinearMap J J' = LinearMap.id := by
@@ -384,7 +395,8 @@ theorem IsComplexAntilinear.complexLinearPart_eq_zero {F : V →ₗ[ℝ] W}
 
 /-- Uniqueness of the complex-linear/antilinear decomposition: if `F = A + B` with `A` complex
 linear and `B` complex antilinear, then `A` and `B` are the canonical parts of `F`. -/
-theorem eq_complexLinearPart_of_decomp (hJ' : J' ∘ₗ J' = -LinearMap.id) {F A B : V →ₗ[ℝ] W}
+theorem complexLinearPart_eq_and_complexAntilinearPart_eq_of_decomp
+    (hJ' : J' ∘ₗ J' = -LinearMap.id) {F A B : V →ₗ[ℝ] W}
     (hA : IsComplexLinear J J' A) (hB : IsComplexAntilinear J J' B) (hF : F = A + B) :
     A = complexLinearPart J J' F ∧ B = complexAntilinearPart J J' F := by
   refine ⟨?_, ?_⟩
