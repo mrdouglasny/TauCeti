@@ -2,6 +2,7 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Mathlib.Data.ZMod.Basic
 import Mathlib.LinearAlgebra.Finsupp.LSum
 import TauCeti.KnotTheory.Grid.BlockedRectangle
 
@@ -25,7 +26,7 @@ will apply.
 
 ## References
 
-This supplies a prerequisite for `TauCetiRoadmap/HeegaardFloer/README.md`, Lane G.3,
+This supplies a prerequisite for `TauCetiRoadmap/CombinatorialHeegaardFloer/README.md`, Lane G.3,
 "The complexes and `∂² = 0`. Fully blocked `GC̃` over 𝔽₂ (rectangles avoiding all
 markings)". The coefficient formula follows Ozsváth--Stipsicz--Szabó, *Grid Homology for
 Knots and Links*, Chapter 3.
