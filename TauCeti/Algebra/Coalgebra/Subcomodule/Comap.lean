@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.LinearAlgebra.TensorProduct.RightExactness
 import Mathlib.RingTheory.Flat.Basic
-import TauCeti.Algebra.Coalgebra.Subcomodule.Lattice
+import TauCeti.Algebra.Coalgebra.Subcomodule
 
 /-!
 # Inverse images of subcomodules
@@ -24,7 +24,9 @@ comfortably.
 
 * `TauCeti.Subcomodule.comap`: inverse image of a subcomodule under a comodule morphism.
 * `TauCeti.Subcomodule.mem_comap`, `comap_toSubmodule`: characteristic API.
-* `TauCeti.Subcomodule.map_le_iff_le_comap`: the usual image/preimage Galois connection.
+* `TauCeti.Subcomodule.map_le_iff_le_comap`, `gc_map_comap`: the usual image/preimage
+  Galois connection.
+* `TauCeti.Subcomodule.comap_bot_toSubmodule`: the bottom inverse image as a kernel.
 
 ## References
 
@@ -91,7 +93,8 @@ private theorem tensor_mem_range_comap (B : Submodule R N) (f : M →ₗ[R] N)
       t ∈ LinearMap.range (LinearMap.rTensor C (LinearMap.ker g).subtype) := by
     simpa [Function.Exact.linearMap_ker_eq (rTensor_exact C hexact hg)] using ht
   rw [← hker]
-  simpa [LinearMap.rTensor] using ht'
+  rw [LinearMap.rTensor_def] at ht'
+  simpa using ht'
 
 omit [Coalgebra R C] [Comodule R C M] [Comodule R C N] [Module.Flat R C] in
 private theorem rTensor_mkQ_map_subtype (B : Submodule R N) (t : B ⊗[R] C) :
@@ -103,7 +106,8 @@ private theorem rTensor_mkQ_map_subtype (B : Submodule R N) (t : B ⊗[R] C) :
       have hb : B.mkQ (b : N) = 0 := by
         rw [Submodule.mkQ_apply]
         exact (Submodule.Quotient.mk_eq_zero B).2 b.property
-      simp [LinearMap.rTensor, hb]
+      rw [LinearMap.rTensor_def]
+      simp [hb]
   | add x y hx hy =>
       simp [hx, hy]
 
@@ -116,11 +120,13 @@ private theorem comap_coact_mem (f : Comodule.Hom R C M N) (B : Subcomodule R C 
   refine tensor_mem_range_comap (R := R) (C := C) (M := M) (N := N)
     B.toSubmodule f.toLinearMap ?_
   rw [← LinearMap.comp_apply, LinearMap.rTensor_comp]
-  change LinearMap.rTensor C B.toSubmodule.mkQ
+  rw [LinearMap.rTensor_def]
+  change TensorProduct.map B.toSubmodule.mkQ (LinearMap.id : C →ₗ[R] C)
       (TensorProduct.map f.toLinearMap (LinearMap.id : C →ₗ[R] C)
         (Comodule.coact (R := R) (C := C) (M := M) m)) = 0
   rw [Comodule.Hom.map_coact_apply f m]
   rcases B.coact_mem hm with ⟨t, ht⟩
+  rw [← LinearMap.rTensor_def]
   change LinearMap.rTensor C B.toSubmodule.mkQ
       (Comodule.coact (R := R) (C := C) (M := N) (f.toLinearMap m)) = 0
   rw [← ht]
@@ -158,6 +164,13 @@ theorem comap_top (f : Comodule.Hom R C M N) : (⊤ : Subcomodule R C N).comap f
   ext m
   simp
 
+/-- The underlying submodule of the inverse image of the bottom subcomodule is the kernel. -/
+@[simp]
+theorem comap_bot_toSubmodule (f : Comodule.Hom R C M N) :
+    ((⊥ : Subcomodule R C N).comap f).toSubmodule = LinearMap.ker f.toLinearMap := by
+  ext m
+  simp [LinearMap.mem_ker]
+
 /-- Images are left adjoint to inverse images for subcomodules. -/
 theorem map_le_iff_le_comap {A : Subcomodule R C M} {B : Subcomodule R C N}
     {f : Comodule.Hom R C M N} :
@@ -165,8 +178,21 @@ theorem map_le_iff_le_comap {A : Subcomodule R C M} {B : Subcomodule R C N}
   rw [map_le_iff]
   rfl
 
+/-- The image construction is left adjoint to inverse image for subcomodules. -/
+theorem gc_map_comap (f : Comodule.Hom R C M N) :
+    GaloisConnection
+      (fun A : Subcomodule R C M => A.map f)
+      (fun B : Subcomodule R C N => B.comap f) := fun _ _ =>
+  map_le_iff_le_comap
+
+/-- A subcomodule is contained in the inverse image of its image. -/
+theorem le_comap_map (A : Subcomodule R C M) (f : Comodule.Hom R C M N) :
+    A ≤ (A.map f).comap f :=
+  (gc_map_comap f).le_u_l A
+
 /-- A subcomodule is contained in the inverse image of the image of a larger subcomodule. -/
-theorem le_comap_map {A D : Subcomodule R C M} (hAD : A ≤ D) (f : Comodule.Hom R C M N) :
+theorem le_comap_map_of_le {A D : Subcomodule R C M} (hAD : A ≤ D)
+    (f : Comodule.Hom R C M N) :
     A ≤ (D.map f).comap f := by
   rw [← map_le_iff_le_comap]
   exact map_mono f hAD
@@ -174,7 +200,7 @@ theorem le_comap_map {A D : Subcomodule R C M} (hAD : A ≤ D) (f : Comodule.Hom
 /-- The image of the inverse image of a subcomodule is contained in the subcomodule. -/
 theorem map_comap_le (B : Subcomodule R C N) (f : Comodule.Hom R C M N) :
     (B.comap f).map f ≤ B := by
-  rw [map_le_iff_le_comap]
+  exact (gc_map_comap f).l_u_le B
 
 /-- Inverse images compose contravariantly with comodule morphisms. -/
 @[simp]
