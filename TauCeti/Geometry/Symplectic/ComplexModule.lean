@@ -142,6 +142,17 @@ lemma ofComplexModule_complexModule {V : Type*} [AddCommGroup V] [Module ℝ V]
   refine AlmostComplexStructure.ext fun v => ?_
   rw [ofComplexModule_apply, complexModule_I_smul]
 
+/-- Decompose a complex scalar action into its real and imaginary parts, when the real scalar
+action is the one induced by the complex scalar action. -/
+lemma complex_smul_eq_re_smul_add_im_smul_I {V : Type*}
+    [AddCommGroup V] [Module ℝ V] [Module ℂ V] [IsScalarTower ℝ ℂ V] (z : ℂ) (v : V) :
+    z.re • v + z.im • (Complex.I • v) = z • v := by
+  conv_rhs =>
+    rw [← Complex.re_add_im z, add_smul, mul_smul]
+  rw [← IsScalarTower.algebraMap_smul ℂ z.re v,
+    ← IsScalarTower.algebraMap_smul ℂ z.im (Complex.I • v)]
+  rw [Complex.coe_algebraMap]
+
 /-- The complex module induced by `ofComplexModule` has the original complex scalar action. -/
 @[simp]
 lemma complexModule_ofComplexModule_smul {V : Type*}
@@ -150,17 +161,10 @@ lemma complexModule_ofComplexModule_smul {V : Type*}
     letI := (ofComplexModule V).complexModule
     z • v = smul₀ z v := by
   let smul₀ : ℂ → V → V := (· • ·)
-  have coe_smul' (r : ℝ) (w : V) : (r : ℂ) • w = r • w := by
-    exact IsScalarTower.algebraMap_smul ℂ r w
   have ofComplexModule_smul (w : V) : ofComplexModule V w = smul₀ Complex.I w := by
     rw [ofComplexModule_apply]
   have hdecomp : z.re • v + z.im • smul₀ Complex.I v = smul₀ z v := by
-    dsimp only [smul₀]
-    rw [← Complex.re_add_im z]
-    simp only [Complex.add_re, Complex.ofReal_re, Complex.mul_re, Complex.ofReal_im,
-      Complex.I_re, mul_zero, sub_zero, Complex.add_im, Complex.mul_im, Complex.I_im,
-      add_zero, zero_add, mul_one]
-    conv_rhs => rw [add_smul, mul_smul, coe_smul', coe_smul']
+    exact complex_smul_eq_re_smul_add_im_smul_I z v
   letI := (ofComplexModule V).complexModule
   rw [complexModule_smul_def]
   rw [ofComplexModule_smul]
