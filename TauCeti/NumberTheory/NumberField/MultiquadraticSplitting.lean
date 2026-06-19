@@ -53,6 +53,7 @@ theorem ncard_primesOver_multiquadratic_iff {ι : Type*} [Finite ι] (d : ι →
     exact ⟨Q, hQ⟩
   haveI := hQp
   haveI := hQo
+  haveI : Q.IsMaximal := Ideal.IsMaximal.of_liesOver_isMaximal Q (span {(p : ℤ)})
   -- Each `r i` is integral (a root of the monic `X² - d i`), so it lifts to `R i : 𝓞 K`.
   have hintr : ∀ i, IsIntegral ℤ (r i) := fun i =>
     ⟨X ^ 2 - C (d i), monic_X_pow_sub_C (d i) (by norm_num), by
@@ -74,6 +75,7 @@ theorem ncard_primesOver_multiquadratic_iff {ι : Type*} [Finite ι] (d : ι →
     rw [ncard_primesOver_eq_finrank_iff K p] at hsplit
     have hfQ : finrank (ℤ ⧸ span {(p : ℤ)}) (𝓞 K ⧸ Q) = 1 := by
       rw [← Ideal.inertiaDeg_algebraMap (p := span {(p : ℤ)}) (P := Q),
+        Ideal.inertiaDeg_eq_inertiaDeg',
         ← Ideal.inertiaDegIn_eq_inertiaDeg (span {(p : ℤ)}) Q (K ≃ₐ[ℚ] K)]
       exact hsplit.2
     letI fld : Field (ℤ ⧸ span {(p : ℤ)}) := Ideal.Quotient.field _
