@@ -27,6 +27,9 @@ rectangle-change theorems can refer to these names without unfolding the point-p
 * `TauCeti.GridDiagram.maslovO_transpose`, `TauCeti.GridDiagram.maslovX_transpose`,
   `TauCeti.GridDiagram.alexander_transpose`: the Maslov and Alexander gradings are invariant
   under the diagonal reflection of a grid state and diagram.
+* `TauCeti.GridDiagram.maslovO_rotate`, `TauCeti.GridDiagram.maslovX_rotate`,
+  `TauCeti.GridDiagram.alexander_rotate`: the Maslov and Alexander gradings are invariant
+  under the half-turn rotation of a grid state and diagram.
 * `TauCeti.GridDiagram.maslovO_swapMarkings`, `TauCeti.GridDiagram.maslovX_swapMarkings`: the
   two Maslov gradings are exchanged by the marking swap.
 * `TauCeti.GridDiagram.alexander_swapMarkings`: the Alexander grading is negated up to the
@@ -138,6 +141,24 @@ depends only on the common grid size, so it cancels between the two diagrams. -/
 theorem alexander_transpose (x : GridState n) :
     G.transpose.alexander x.transpose = G.alexander x := by
   rw [alexander_def, alexander_def, maslovO_transpose, maslovX_transpose]
+
+/-- The `O`-Maslov grading is invariant under the half-turn rotation. -/
+theorem maslovO_rotate (x : GridState n) :
+    G.rotate.maslovO x.rotate = G.maslovO x := by
+  rw [maslovO_def, maslovO_def, GridState.rotate_pointSet, rotate_OSet,
+    GridPoint.JDiff_image_rev]
+
+/-- The `X`-Maslov grading is invariant under the half-turn rotation. -/
+theorem maslovX_rotate (x : GridState n) :
+    G.rotate.maslovX x.rotate = G.maslovX x := by
+  rw [maslovX_def, maslovX_def, GridState.rotate_pointSet, rotate_XSet,
+    GridPoint.JDiff_image_rev]
+
+/-- The Alexander grading is invariant under the half-turn rotation. The normalization shift
+depends only on the common grid size, so it cancels between the two diagrams. -/
+theorem alexander_rotate (x : GridState n) :
+    G.rotate.alexander x.rotate = G.alexander x := by
+  rw [alexander_def, alexander_def, maslovO_rotate, maslovX_rotate]
 
 /-- The marking swap exchanges the two Maslov gradings: `M_O` of the swap is `M_X`. -/
 @[simp]

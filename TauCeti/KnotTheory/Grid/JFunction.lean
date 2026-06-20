@@ -7,7 +7,7 @@ import Mathlib.Algebra.Field.Rat
 import Mathlib.Data.Finset.Prod
 import Mathlib.Data.Rat.Lemmas
 import Mathlib.Tactic.Ring
-import TauCeti.KnotTheory.Grid.Diagram
+import TauCeti.KnotTheory.Grid.Rotation
 
 /-!
 # The grid `J`-function
@@ -36,6 +36,11 @@ and `A`.
 * `TauCeti.GridPoint.I_image_swap`, `TauCeti.GridPoint.J_image_swap`,
   `TauCeti.GridPoint.JDiff_image_swap`, `TauCeti.GridState.J_transpose`: the southwest counts
   and the `J`-function are invariant under reflecting the point sets across the diagonal.
+* `TauCeti.GridPoint.I_image_rev`, `TauCeti.GridPoint.JNum_image_rev`,
+  `TauCeti.GridPoint.J_image_rev`, `TauCeti.GridPoint.JDiff_image_rev`,
+  `TauCeti.GridState.J_rotate`: reversing both coordinates of the point sets exchanges the two
+  arguments of the ordered count `I`, while the symmetrized `JNum`, `J`, and `JDiff` are
+  invariant.
 
 ## References
 
@@ -453,6 +458,67 @@ theorem JDiff_image_swap (s a t b : Finset (Fin n × Fin n)) :
   rw [JDiff_def, JDiff_def, J_image_swap, J_image_swap, J_image_swap,
     J_image_swap]
 
+/-- Reversing both coordinates of both points of a pair exchanges the two endpoints of the strict
+southwest relation: it sends the column and row comparisons to their reverses. -/
+@[simp, grind =]
+theorem isSouthWest_rev (p q : Fin n × Fin n) :
+    IsSouthWest (Prod.map Fin.rev Fin.rev p) (Prod.map Fin.rev Fin.rev q) ↔ IsSouthWest q p := by
+  simp only [IsSouthWest, Prod.map_fst, Prod.map_snd]
+  have h1 := p.1.isLt
+  have h2 := q.1.isLt
+  have h3 := p.2.isLt
+  have h4 := q.2.isLt
+  rw [Fin.val_rev, Fin.val_rev, Fin.val_rev, Fin.val_rev]
+  omega
+
+/-- The coordinate-reversal map on grid squares is injective. -/
+private theorem prodMap_rev_injective :
+    Function.Injective (Prod.map (Fin.rev (n := n)) (Fin.rev (n := n))) :=
+  Fin.rev_injective.prodMap Fin.rev_injective
+
+/-- The coordinate-reversal map on pairs of grid squares is injective. -/
+private theorem prodMap_prodMap_rev_injective :
+    Function.Injective
+      (Prod.map (Prod.map (Fin.rev (n := n)) (Fin.rev (n := n)))
+        (Prod.map (Fin.rev (n := n)) (Fin.rev (n := n)))) :=
+  prodMap_rev_injective.prodMap prodMap_rev_injective
+
+/-- The ordered southwest count is invariant, up to exchanging the two point sets, under reversing
+both coordinates of both point sets. The reversal turns each southwest comparison into the
+opposite comparison, so the count of southwest pairs from `s` to `t` becomes the count from `t`
+to `s`. -/
+theorem I_image_rev (s t : Finset (Fin n × Fin n)) :
+    I (s.image (Prod.map Fin.rev Fin.rev)) (t.image (Prod.map Fin.rev Fin.rev)) = I t s := by
+  classical
+  rw [I_def, ← Finset.prodMap_image_product (Prod.map Fin.rev Fin.rev)
+      (Prod.map Fin.rev Fin.rev) s t, Finset.filter_image,
+    Finset.card_image_of_injective _ prodMap_prodMap_rev_injective]
+  rw [I_def, ← Finset.image_swap_product t s, Finset.filter_image,
+    Finset.card_image_of_injective _ Prod.swap_injective]
+  refine congrArg Finset.card (Finset.filter_congr fun pq _ => ?_)
+  simpa using isSouthWest_rev pq.1 pq.2
+
+/-- The numerator of the `J`-function is invariant under reversing both coordinates of both point
+sets. The two ordered counts are exchanged by the reversal, and their sum is symmetric. -/
+theorem JNum_image_rev (s t : Finset (Fin n × Fin n)) :
+    JNum (s.image (Prod.map Fin.rev Fin.rev)) (t.image (Prod.map Fin.rev Fin.rev)) = JNum s t := by
+  rw [JNum_def, JNum_def, I_image_rev, I_image_rev, Nat.add_comm]
+
+/-- The symmetrized grid `J`-function is invariant under reversing both coordinates of both point
+sets. -/
+theorem J_image_rev (s t : Finset (Fin n × Fin n)) :
+    GridPoint.J (s.image (Prod.map Fin.rev Fin.rev)) (t.image (Prod.map Fin.rev Fin.rev))
+      = GridPoint.J s t := by
+  rw [J_def, J_def, JNum_image_rev]
+
+/-- The bilinear `J`-function on formal differences is invariant under reversing both coordinates
+of all four point sets. -/
+theorem JDiff_image_rev (s a t b : Finset (Fin n × Fin n)) :
+    JDiff (s.image (Prod.map Fin.rev Fin.rev)) (a.image (Prod.map Fin.rev Fin.rev))
+        (t.image (Prod.map Fin.rev Fin.rev)) (b.image (Prod.map Fin.rev Fin.rev))
+      = JDiff s a t b := by
+  rw [JDiff_def, JDiff_def, J_image_rev, J_image_rev, J_image_rev, J_image_rev]
+
 end GridPoint
 
 namespace GridState
@@ -477,6 +543,11 @@ diagonal. -/
 theorem J_transpose (x y : GridState n) :
     GridState.J x.transpose y.transpose = GridState.J x y := by
   rw [J_def, J_def, transpose_pointSet, transpose_pointSet, GridPoint.J_image_swap]
+
+/-- The state-level grid `J`-function is invariant under the half-turn rotation of both states. -/
+theorem J_rotate (x y : GridState n) :
+    GridState.J x.rotate y.rotate = GridState.J x y := by
+  rw [J_def, J_def, rotate_pointSet, rotate_pointSet, GridPoint.J_image_rev]
 
 end GridState
 
@@ -511,6 +582,16 @@ theorem JO_transpose (x : GridState n) :
 theorem JX_transpose (x : GridState n) :
     GridDiagram.JX G.transpose x.transpose = GridDiagram.JX G x := by
   rw [JX_def, JX_def, GridState.transpose_pointSet, transpose_XSet, GridPoint.J_image_swap]
+
+/-- `JO` is invariant under the half-turn rotation of the diagram and state. -/
+theorem JO_rotate (x : GridState n) :
+    GridDiagram.JO G.rotate x.rotate = GridDiagram.JO G x := by
+  rw [JO_def, JO_def, GridState.rotate_pointSet, rotate_OSet, GridPoint.J_image_rev]
+
+/-- `JX` is invariant under the half-turn rotation of the diagram and state. -/
+theorem JX_rotate (x : GridState n) :
+    GridDiagram.JX G.rotate x.rotate = GridDiagram.JX G x := by
+  rw [JX_def, JX_def, GridState.rotate_pointSet, rotate_XSet, GridPoint.J_image_rev]
 
 /-- The marking swap exchanges the `O`-marking `J`-pairing with the `X`-marking `J`-pairing. -/
 @[simp]
