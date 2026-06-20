@@ -26,10 +26,9 @@ Alexander grading-change computation across a rectangle rests on, and they let l
   source state with the two side columns swapped.
 * `TauCeti.GridRectangleBetween.source_eq_swapColumns`: the symmetric statement recovering the
   source from the target.
-* `TauCeti.GridState.mem_pointSet_inter_swapColumns_iff`: a square is shared by a state and
-  a column swap exactly when it belongs to the source and avoids the two swapped columns.
-* `TauCeti.GridRectangleBetween.mem_pointSet_inter_iff`: the rectangle specialization of the
-  preceding column-swap statement.
+* `TauCeti.GridRectangleBetween.mem_pointSet_inter_iff`: a square is shared by the two states
+  exactly when it belongs to the source and avoids the two side columns -- the rectangle
+  specialization of `GridState.mem_pointSet_inter_swapColumns_iff` from `Diagram.lean`.
 * `TauCeti.GridRectangleBetween.source_pointSet_eq`,
   `TauCeti.GridRectangleBetween.target_pointSet_eq`: each state's point set is the shared part
   together with its own two corners.
@@ -45,155 +44,6 @@ Lane G.2, "grading-change formulas across a rectangle", and Lane G.3, "The compl
 -/
 
 namespace TauCeti
-
-namespace GridState
-
-variable {n : ℕ} (x : GridState n) {a b : Fin n}
-
-/-- A square is shared by a grid state and the state with columns `a` and `b` swapped exactly
-when it is a source-state square away from the two swapped columns. -/
-@[simp]
-theorem mem_pointSet_inter_swapColumns_iff (h : a ≠ b) (p : Fin n × Fin n) :
-    p ∈ x.pointSet ∩ (x.swapColumns a b).pointSet ↔
-      p ∈ x.pointSet ∧ p.1 ≠ a ∧ p.1 ≠ b := by
-  rw [Finset.mem_inter, mem_pointSet_swapColumns]
-  constructor
-  · rintro ⟨hx, hswap⟩
-    refine ⟨hx, ?_, ?_⟩
-    · rintro hpa
-      have hxa : x a = p.2 := by
-        simpa [hpa] using (mem_pointSet x p).mp hx
-      have hxb : x b = p.2 := by
-        simpa [hpa] using (mem_pointSet x (Equiv.swap a b p.1, p.2)).mp hswap
-      exact h (x.toPerm.injective (hxa.trans hxb.symm))
-    · rintro hpb
-      have hxb : x b = p.2 := by
-        simpa [hpb] using (mem_pointSet x p).mp hx
-      have hxa : x a = p.2 := by
-        simpa [hpb] using (mem_pointSet x (Equiv.swap a b p.1, p.2)).mp hswap
-      exact h (x.toPerm.injective (hxa.trans hxb.symm))
-  · rintro ⟨hx, ha, hb⟩
-    refine ⟨hx, ?_⟩
-    simpa [Equiv.swap_apply_of_ne_of_ne ha hb] using hx
-
-/-- The point set of a grid state is the shared part with a column swap, together with the two
-source-state squares in the swapped columns. -/
-theorem pointSet_eq_insert_insert_inter_swapColumns (h : a ≠ b) :
-    x.pointSet =
-      insert (a, x a) (insert (b, x b) (x.pointSet ∩ (x.swapColumns a b).pointSet)) := by
-  ext p
-  simp only [Finset.mem_insert]
-  constructor
-  · intro hx
-    rcases eq_or_ne p.1 a with ha | ha
-    · refine Or.inl ?_
-      have : p.2 = x a := by
-        simpa [ha] using ((mem_pointSet x p).mp hx).symm
-      exact Prod.ext ha this
-    · rcases eq_or_ne p.1 b with hb | hb
-      · refine Or.inr (Or.inl ?_)
-        have : p.2 = x b := by
-          simpa [hb] using ((mem_pointSet x p).mp hx).symm
-        exact Prod.ext hb this
-      · exact Or.inr (Or.inr ((mem_pointSet_inter_swapColumns_iff x h p).mpr ⟨hx, ha, hb⟩))
-  · rintro (rfl | rfl | hp)
-    · simp
-    · simp
-    · exact Finset.mem_of_mem_inter_left hp
-
-/-- The point set after swapping columns `a` and `b` is the shared part with the source state,
-together with the two target-state squares in the swapped columns. -/
-theorem swapColumns_pointSet_eq_insert_insert_inter (h : a ≠ b) :
-    (x.swapColumns a b).pointSet =
-      insert (a, x b) (insert (b, x a) (x.pointSet ∩ (x.swapColumns a b).pointSet)) := by
-  ext p
-  simp only [Finset.mem_insert]
-  constructor
-  · intro hp
-    rcases eq_or_ne p.1 a with ha | ha
-    · refine Or.inl ?_
-      have : p.2 = x b := by
-        simpa [ha] using ((mem_pointSet (x.swapColumns a b) p).mp hp).symm
-      exact Prod.ext ha this
-    · rcases eq_or_ne p.1 b with hb | hb
-      · refine Or.inr (Or.inl ?_)
-        have : p.2 = x a := by
-          simpa [hb] using ((mem_pointSet (x.swapColumns a b) p).mp hp).symm
-        exact Prod.ext hb this
-      · refine Or.inr (Or.inr ?_)
-        have hx : p ∈ x.pointSet := by
-          rw [mem_pointSet] at hp ⊢
-          rw [swapColumns_apply, Equiv.swap_apply_of_ne_of_ne ha hb] at hp
-          exact hp
-        exact (mem_pointSet_inter_swapColumns_iff x h p).mpr ⟨hx, ha, hb⟩
-  · rintro (rfl | rfl | hp)
-    · simp
-    · simp
-    · exact Finset.mem_of_mem_inter_right hp
-
-/-- The source-state square in column `a` is not shared with the state whose columns `a` and
-`b` have been swapped. -/
-theorem left_notMem_pointSet_inter_swapColumns (h : a ≠ b) :
-    (a, x a) ∉ x.pointSet ∩ (x.swapColumns a b).pointSet := by
-  rw [mem_pointSet_inter_swapColumns_iff x h]
-  rintro ⟨_, ha, _⟩
-  exact ha rfl
-
-/-- The source-state square in column `b` is not shared with the state whose columns `a` and
-`b` have been swapped. -/
-theorem right_notMem_pointSet_inter_swapColumns (h : a ≠ b) :
-    (b, x b) ∉ x.pointSet ∩ (x.swapColumns a b).pointSet := by
-  rw [mem_pointSet_inter_swapColumns_iff x h]
-  rintro ⟨_, _, hb⟩
-  exact hb rfl
-
-/-- The target-state square in column `a` after swapping columns `a` and `b` is not shared
-with the source state. -/
-theorem swapColumns_left_notMem_pointSet_inter (h : a ≠ b) :
-    (a, x b) ∉ x.pointSet ∩ (x.swapColumns a b).pointSet := by
-  rw [mem_pointSet_inter_swapColumns_iff x h]
-  rintro ⟨_, ha, _⟩
-  exact ha rfl
-
-/-- The target-state square in column `b` after swapping columns `a` and `b` is not shared
-with the source state. -/
-theorem swapColumns_right_notMem_pointSet_inter (h : a ≠ b) :
-    (b, x a) ∉ x.pointSet ∩ (x.swapColumns a b).pointSet := by
-  rw [mem_pointSet_inter_swapColumns_iff x h]
-  rintro ⟨_, _, hb⟩
-  exact hb rfl
-
-/-- The two source-state squares in the swapped columns are distinct. -/
-theorem left_ne_right_pointSet_swapColumns (h : a ≠ b) :
-    ((a, x a) : Fin n × Fin n) ≠ (b, x b) := by
-  rw [Ne, Prod.mk.injEq, not_and]
-  intro hab
-  exact absurd hab h
-
-/-- The two target-state squares in the swapped columns are distinct. -/
-theorem swapColumns_left_ne_right_pointSet (h : a ≠ b) :
-    ((a, x b) : Fin n × Fin n) ≠ (b, x a) := by
-  rw [Ne, Prod.mk.injEq, not_and]
-  intro hab
-  exact absurd hab h
-
-/-- A grid state and a swap of two distinct columns share exactly `n - 2` squares. -/
-theorem card_pointSet_inter_swapColumns (h : a ≠ b) :
-    (x.pointSet ∩ (x.swapColumns a b).pointSet).card = n - 2 := by
-  have hne : (b, x b) ∉ x.pointSet ∩ (x.swapColumns a b).pointSet :=
-    right_notMem_pointSet_inter_swapColumns x h
-  have hne' :
-      (a, x a) ∉ insert (b, x b) (x.pointSet ∩ (x.swapColumns a b).pointSet) := by
-    rw [Finset.mem_insert]
-    rintro (hab | ha)
-    · exact left_ne_right_pointSet_swapColumns x h hab
-    · exact left_notMem_pointSet_inter_swapColumns x h ha
-  have hcard := congrArg Finset.card (pointSet_eq_insert_insert_inter_swapColumns x h)
-  rw [card_pointSet, Finset.card_insert_of_notMem hne',
-    Finset.card_insert_of_notMem hne] at hcard
-  omega
-
-end GridState
 
 namespace GridRectangleBetween
 
@@ -269,13 +119,6 @@ theorem right_top_notMem_inter :
   rintro ⟨_, _, hright⟩
   exact hright rfl
 
-/-- The two corners of the source state are distinct. -/
-theorem left_bottom_ne_right_top :
-    ((R.left, R.bottom) : Fin n × Fin n) ≠ (R.right, R.top) := by
-  rw [Ne, Prod.mk.injEq, not_and]
-  intro h
-  exact absurd h R.left_ne_right
-
 /-- The upper-left target corner is not shared with the source state: it sits on a side column. -/
 @[simp]
 theorem left_top_notMem_inter :
@@ -291,13 +134,6 @@ theorem right_bottom_notMem_inter :
   rw [mem_pointSet_inter_iff R]
   rintro ⟨_, _, hright⟩
   exact hright rfl
-
-/-- The two corners of the target state are distinct. -/
-theorem left_top_ne_right_bottom :
-    ((R.left, R.top) : Fin n × Fin n) ≠ (R.right, R.bottom) := by
-  rw [Ne, Prod.mk.injEq, not_and]
-  intro h
-  exact absurd h R.left_ne_right
 
 /-- The source state's point set is its shared intersection with the target point set together
 with the two source corners `(R.left, R.bottom)` and `(R.right, R.top)`. -/
