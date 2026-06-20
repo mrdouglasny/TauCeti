@@ -1,0 +1,221 @@
+/-
+Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+import TauCeti.AlgebraicGeometry.WeilDivisor
+import Mathlib.GroupTheory.QuotientGroup.Basic
+
+/-!
+# Principal divisors and the divisor class group of an order system
+
+This file adds the next piece of the Jacobian roadmap's Layer A on top of the formal Weil
+divisor group: **principal divisors**, the **divisor class group** `Cl(X)`, and the abstract
+degree-zero subgroup `Pic⁰`.
+
+The geometric input is packaged as an `OrderSystem`: a family of `ℤ`-valued order-of-vanishing
+homomorphisms `ord x : G →+ ℤ` indexed by the points `X`, with the finiteness condition that
+each `g : G` has nonzero order at only finitely many points. Instantiating `G` with
+`Additive Kˣ` for the multiplicative group of a function field, `ord x` is the order of
+vanishing `ord_x(f)` of a rational function `f` at the point `x`, and the principal divisor of
+`f` is the finite formal sum `Σ_x ord_x(f) · [x]`. The finiteness condition is exactly the
+statement that a rational function has zeros and poles at only finitely many points.
+
+From this data we build:
+
+* `OrderSystem.principalDivisor` and `OrderSystem.principalHom`, the principal divisor of a
+  function and its packaging as a homomorphism `G →+ WeilDivisor X`;
+* `OrderSystem.principalSubgroup`, the subgroup of principal divisors, and
+  `OrderSystem.LinearlyEquivalent`, the equivalence relation "differ by a principal divisor";
+* `OrderSystem.ClassGroup`, the divisor class group `WeilDivisor X ⧸ principal`, with its
+  quotient map `OrderSystem.divisorClass` and the characterization of equal classes;
+* `OrderSystem.degreeClass` and `OrderSystem.picZero`: when principal divisors have degree
+  zero (the geometric fact that a rational function has as many zeros as poles, recorded here
+  as the hypothesis `IsDegreeZero`), the degree descends to the class group, and `Pic⁰` is the
+  kernel of that descended degree.
+
+This realizes the Layer A roadmap items "principal divisors", "`Cl(X) ≅ Pic X`", and
+"`Pic⁰ X = ker deg` (as an abstract group)" of
+`TauCetiRoadmap/JacobianChallenge/README.md`, before the Picard functor and Picard scheme
+exist. The geometric `ord_x` (residue-field valuations of a function field) and the proof that
+a principal divisor has degree zero are later geometric constructions; here both are abstracted
+to the data of an `OrderSystem` and the predicate `IsDegreeZero`.
+
+No external mathematics is vendored. This reuses Tau Ceti's existing `WeilDivisor` API and
+Mathlib's `Finsupp.onFinset` (to assemble a finitely supported function from coordinatewise
+data) and `QuotientAddGroup` quotient machinery.
+-/
+
+namespace TauCeti
+
+namespace AlgebraicGeometry
+
+namespace WeilDivisor
+
+/-- An *order system* on a type of points `X` with values in a group `G`: a family of
+`ℤ`-valued homomorphisms `ord x : G →+ ℤ`, the orders of vanishing at each point, such that
+every `g : G` vanishes to nonzero order at only finitely many points.
+
+Instantiate `G` with `Additive Kˣ` for the multiplicative group of a function field `K`: then
+`ord x` is the order of vanishing `ord_x(f)` of a rational function at the point `x`, and the
+finiteness condition records that a rational function has zeros and poles at only finitely many
+points. The principal divisor of `f` is `Σ_x ord_x(f) · [x]`. -/
+structure OrderSystem (X G : Type*) [AddCommGroup G] where
+  /-- The order of vanishing at each point, as a homomorphism `G →+ ℤ`. -/
+  ord : X → G →+ ℤ
+  /-- Each group element has nonzero order at only finitely many points. -/
+  finite_support : ∀ g, (Function.support fun x => ord x g).Finite
+
+namespace OrderSystem
+
+variable {X G : Type*} [AddCommGroup G] (S : OrderSystem X G)
+
+/-- The principal divisor `Σ_x ord_x(g) · [x]` attached to `g : G`. -/
+noncomputable def principalDivisor (g : G) : WeilDivisor X :=
+  Finsupp.onFinset (S.finite_support g).toFinset (fun x => S.ord x g) fun _ hx =>
+    (S.finite_support g).mem_toFinset.mpr (Function.mem_support.mpr hx)
+
+@[simp]
+lemma coeff_principalDivisor (g : G) (x : X) :
+    coeff (S.principalDivisor g) x = S.ord x g :=
+  Finsupp.onFinset_apply
+
+/-- Principal divisors as a homomorphism `G →+ WeilDivisor X`. -/
+noncomputable def principalHom : G →+ WeilDivisor X where
+  toFun := S.principalDivisor
+  map_zero' := by ext x; simp
+  map_add' g₁ g₂ := by ext x; simp
+
+@[simp]
+lemma principalHom_apply (g : G) : S.principalHom g = S.principalDivisor g :=
+  rfl
+
+@[simp]
+lemma principalDivisor_zero : S.principalDivisor 0 = 0 :=
+  map_zero S.principalHom
+
+lemma principalDivisor_add (g₁ g₂ : G) :
+    S.principalDivisor (g₁ + g₂) = S.principalDivisor g₁ + S.principalDivisor g₂ :=
+  map_add S.principalHom g₁ g₂
+
+@[simp]
+lemma principalDivisor_neg (g : G) : S.principalDivisor (-g) = -S.principalDivisor g :=
+  map_neg S.principalHom g
+
+lemma principalDivisor_sub (g₁ g₂ : G) :
+    S.principalDivisor (g₁ - g₂) = S.principalDivisor g₁ - S.principalDivisor g₂ :=
+  map_sub S.principalHom g₁ g₂
+
+/-- The subgroup of principal divisors. -/
+noncomputable def principalSubgroup : AddSubgroup (WeilDivisor X) :=
+  S.principalHom.range
+
+lemma mem_principalSubgroup {D : WeilDivisor X} :
+    D ∈ S.principalSubgroup ↔ ∃ g, S.principalDivisor g = D :=
+  AddMonoidHom.mem_range
+
+@[simp]
+lemma principalDivisor_mem_principalSubgroup (g : G) :
+    S.principalDivisor g ∈ S.principalSubgroup :=
+  ⟨g, rfl⟩
+
+/-- Two Weil divisors are *linearly equivalent* with respect to `S` when their difference is a
+principal divisor. This is the equivalence relation whose quotient is the divisor class
+group. -/
+def LinearlyEquivalent (D E : WeilDivisor X) : Prop :=
+  D - E ∈ S.principalSubgroup
+
+lemma linearlyEquivalent_iff {D E : WeilDivisor X} :
+    S.LinearlyEquivalent D E ↔ D - E ∈ S.principalSubgroup :=
+  Iff.rfl
+
+lemma LinearlyEquivalent.refl (D : WeilDivisor X) : S.LinearlyEquivalent D D := by
+  simp [LinearlyEquivalent]
+
+variable {S}
+
+lemma LinearlyEquivalent.symm {D E : WeilDivisor X} (h : S.LinearlyEquivalent D E) :
+    S.LinearlyEquivalent E D := by
+  have := S.principalSubgroup.neg_mem h
+  rwa [neg_sub] at this
+
+lemma LinearlyEquivalent.trans {D E F : WeilDivisor X} (h₁ : S.LinearlyEquivalent D E)
+    (h₂ : S.LinearlyEquivalent E F) : S.LinearlyEquivalent D F := by
+  have := S.principalSubgroup.add_mem h₁ h₂
+  rwa [sub_add_sub_cancel] at this
+
+variable (S)
+
+lemma equivalence_linearlyEquivalent : Equivalence S.LinearlyEquivalent :=
+  ⟨LinearlyEquivalent.refl S, fun h => h.symm, fun h₁ h₂ => h₁.trans h₂⟩
+
+/-- The *divisor class group* `Cl(X) = WeilDivisor X ⧸ (principal divisors)` of an order
+system `S`. -/
+abbrev ClassGroup : Type _ :=
+  WeilDivisor X ⧸ S.principalSubgroup
+
+/-- The divisor class of a Weil divisor in the divisor class group. -/
+noncomputable def divisorClass : WeilDivisor X →+ S.ClassGroup :=
+  QuotientAddGroup.mk' S.principalSubgroup
+
+lemma divisorClass_surjective : Function.Surjective S.divisorClass :=
+  QuotientAddGroup.mk'_surjective S.principalSubgroup
+
+@[simp]
+lemma divisorClass_principalDivisor (g : G) :
+    S.divisorClass (S.principalDivisor g) = 0 :=
+  (QuotientAddGroup.eq_zero_iff _).mpr (S.principalDivisor_mem_principalSubgroup g)
+
+lemma divisorClass_eq_iff {D E : WeilDivisor X} :
+    S.divisorClass D = S.divisorClass E ↔ S.LinearlyEquivalent D E :=
+  QuotientAddGroup.eq_iff_sub_mem
+
+lemma divisorClass_eq_zero_iff {D : WeilDivisor X} :
+    S.divisorClass D = 0 ↔ D ∈ S.principalSubgroup :=
+  QuotientAddGroup.eq_zero_iff D
+
+/-- An order system has *degree-zero principal divisors* when every principal divisor has
+(unweighted) degree zero. For a smooth proper curve this is the geometric fact that a rational
+function has as many zeros as poles, counted with multiplicity; here it is recorded as a
+hypothesis. -/
+def IsDegreeZero : Prop :=
+  ∀ g, degree (S.principalDivisor g) = 0
+
+variable {S}
+
+lemma IsDegreeZero.principalSubgroup_le_ker (h : S.IsDegreeZero) :
+    S.principalSubgroup ≤ (degree : WeilDivisor X →+ ℤ).ker := by
+  rintro D ⟨g, rfl⟩
+  rw [AddMonoidHom.mem_ker]
+  exact h g
+
+/-- When principal divisors have degree zero, the degree map descends to the divisor class
+group: linearly equivalent divisors have the same degree. -/
+noncomputable def degreeClass (h : S.IsDegreeZero) : S.ClassGroup →+ ℤ :=
+  QuotientAddGroup.lift S.principalSubgroup degree h.principalSubgroup_le_ker
+
+@[simp]
+lemma degreeClass_divisorClass (h : S.IsDegreeZero) (D : WeilDivisor X) :
+    degreeClass h (S.divisorClass D) = degree D :=
+  QuotientAddGroup.lift_mk' S.principalSubgroup h.principalSubgroup_le_ker D
+
+/-- The degree-zero part of the divisor class group, the abstract `Pic⁰` of the Jacobian
+roadmap: the kernel of the degree map on divisor classes. -/
+noncomputable def picZero (h : S.IsDegreeZero) : AddSubgroup S.ClassGroup :=
+  (degreeClass h).ker
+
+lemma mem_picZero (h : S.IsDegreeZero) {c : S.ClassGroup} :
+    c ∈ picZero h ↔ degreeClass h c = 0 :=
+  AddMonoidHom.mem_ker
+
+@[simp]
+lemma divisorClass_mem_picZero (h : S.IsDegreeZero) {D : WeilDivisor X} :
+    S.divisorClass D ∈ picZero h ↔ degree D = 0 := by
+  rw [mem_picZero, degreeClass_divisorClass]
+
+end OrderSystem
+
+end WeilDivisor
+
+end AlgebraicGeometry
+
+end TauCeti
