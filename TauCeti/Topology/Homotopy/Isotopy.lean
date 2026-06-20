@@ -167,6 +167,18 @@ noncomputable def trans [CompactSpace X] [T2Space Y] {f₂ : C(X, Y)}
           ext <;> simp [hyG]
         exact congrArg Prod.snd (G.isEmbedding_total.injective htotal))).isEmbedding
 
+/-- The value of a concatenated isotopy is given by the first isotopy on `[0, 1 / 2]`
+and by the second isotopy on `[1 / 2, 1]`, with the time parameter rescaled linearly. -/
+theorem trans_apply [CompactSpace X] [T2Space Y] {f₂ : C(X, Y)}
+    (F : Isotopy f₀ f₁) (G : Isotopy f₁ f₂) (x : I × X) :
+    (F.trans G) x =
+      if h : (x.1 : ℝ) ≤ 1 / 2 then
+        F (⟨2 * x.1, (unitInterval.mul_pos_mem_iff zero_lt_two).2 ⟨x.1.2.1, h⟩⟩, x.2)
+      else
+        G (⟨2 * x.1 - 1,
+          unitInterval.two_mul_sub_one_mem_iff.2 ⟨(not_le.1 h).le, x.1.2.2⟩⟩, x.2) :=
+  Homotopy.trans_apply F.toHomotopy G.toHomotopy x
+
 instance instHomotopyLike : HomotopyLike (Isotopy f₀ f₁) f₀ f₁ where
   map_continuous F := F.continuous_toFun
   map_zero_left F := F.map_zero_left
