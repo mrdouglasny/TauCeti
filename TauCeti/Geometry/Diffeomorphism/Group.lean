@@ -110,6 +110,10 @@ theorem toEquiv_one : (1 : M ≃ₘ^n⟮I, I⟯ M).toEquiv = 1 := rfl
 @[simp]
 theorem toEquiv_mul (f g : M ≃ₘ^n⟮I, I⟯ M) : (f * g).toEquiv = f.toEquiv * g.toEquiv := rfl
 
+/-- The underlying equivalence preserves inversion of self-diffeomorphisms. -/
+@[simp]
+theorem toEquiv_inv (f : M ≃ₘ^n⟮I, I⟯ M) : (f⁻¹).toEquiv = f.toEquiv⁻¹ := rfl
+
 /-- The forgetful group homomorphism from the self-diffeomorphism group to the permutation group of
 the underlying set, sending a diffeomorphism to its underlying equivalence. -/
 @[simps]
