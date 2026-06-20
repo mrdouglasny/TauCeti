@@ -3,6 +3,9 @@ Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.RingTheory.Finiteness.Prod
+import Mathlib.CategoryTheory.Limits.Constructions.FiniteProductsOfBinaryProducts
+import Mathlib.CategoryTheory.Limits.Shapes.BinaryProducts
+import Mathlib.CategoryTheory.Preadditive.Biproducts
 import TauCeti.Algebra.Coalgebra.Comodule.Finite
 import TauCeti.Algebra.Coalgebra.Comodule.FinitePreadditive
 import TauCeti.Algebra.Coalgebra.Comodule.Product
@@ -13,7 +16,8 @@ import TauCeti.Algebra.Coalgebra.Comodule.Product
 This file packages the direct-sum product comodule inside `FGComoduleCat`. The ambient
 category `ComoduleCat` already has the product comodule on the cartesian product of the
 underlying modules; finite generation is preserved by binary products of modules, so this
-construction stays in the full subcategory of finitely generated comodules.
+construction stays in the full subcategory of finitely generated comodules. The same concrete
+object is also registered as the categorical binary product in `FGComoduleCat`.
 
 This is a small Layer 1 prerequisite for the reductive-groups roadmap target on the
 finite-dimensional comodule representation category: products and biproduct-style maps are
@@ -24,6 +28,14 @@ needed before tensor products, duals, and the rigid monoidal category can be bui
 * `TauCeti.FGComoduleCat.prod`: the product of two finitely generated comodules.
 * `TauCeti.FGComoduleCat.prodFst`, `prodSnd`, `prodInl`, `prodInr`: the canonical maps.
 * `TauCeti.FGComoduleCat.prodLift`, `prodDesc`: maps into and out of the product.
+* `TauCeti.FGComoduleCat.hasBinaryProduct`: the categorical binary product instance using
+  the concrete product object.
+* `TauCeti.FGComoduleCat.hasBinaryProducts`, `hasFiniteProducts`: product infrastructure
+  induced by the binary product and the existing zero object.
+* `TauCeti.FGComoduleCat.hasBinaryBiproduct`: the ring/preadditive biproduct instance induced
+  by the binary product.
+* `TauCeti.FGComoduleCat.hasBinaryBiproducts`, `hasFiniteBiproducts`: aggregate
+  ring/preadditive biproduct infrastructure.
 
 ## References
 
@@ -50,6 +62,8 @@ underlying modules. -/
 abbrev prod (M N : FGComoduleCat.{u, v, w} R C) : FGComoduleCat.{u, v, w} R C where
   obj := ComoduleCat.prod R C M.obj N.obj
   property := by
+    -- `ComoduleCat.prod` is carried definitionally by the raw product `M × N`, so the finite
+    -- generation obligation is exactly the standard product finiteness instance.
     change Module.Finite R (M × N)
     exact Module.Finite.prod
 
@@ -150,6 +164,13 @@ theorem prodLift_apply {P M N : FGComoduleCat.{u, v, w} R C} (f : P ⟶ M) (g : 
     prodLift f g p = (f p, g p) :=
   rfl
 
+/-- Evaluating the product desc adds the evaluations of its two components. -/
+@[simp]
+theorem prodDesc_apply {M N P : FGComoduleCat.{u, v, w} R C} (f : M ⟶ P) (g : N ⟶ P)
+    (x : prod R C M N) :
+    prodDesc f g x = f x.1 + g x.2 :=
+  rfl
+
 /-- Evaluating the left inclusion gives a pair with zero right component. -/
 @[simp]
 theorem prodInl_apply (M N : FGComoduleCat.{u, v, w} R C) (m : M) :
@@ -160,20 +181,6 @@ theorem prodInl_apply (M N : FGComoduleCat.{u, v, w} R C) (m : M) :
 @[simp]
 theorem prodInr_apply (M N : FGComoduleCat.{u, v, w} R C) (n : N) :
     prodInr M N n = (0, n) :=
-  rfl
-
-end Semiring
-
-section Ring
-
-variable {R : Type u} [CommRing R]
-variable {C : Type v} [AddCommMonoid C] [Module R C] [Coalgebra R C]
-
-/-- Evaluating the product desc adds the evaluations of its two components. -/
-@[simp]
-theorem prodDesc_apply {M N P : FGComoduleCat.{u, v, w} R C} (f : M ⟶ P) (g : N ⟶ P)
-    (x : prod R C M N) :
-    prodDesc f g x = f x.1 + g x.2 :=
   rfl
 
 /-- The first projection after a product lift is the first morphism. -/
@@ -193,6 +200,68 @@ theorem prodLift_snd {P M N : FGComoduleCat.{u, v, w} R C} (f : P ⟶ M) (g : P 
   simp only [ObjectProperty.FullSubcategory.comp_hom, prodLift_hom, prodSnd_hom]
   exact
     (ComoduleCat.prodLift_snd (R := R) (C := C) f.hom g.hom)
+
+/-- Morphisms into the product are determined by their projections. -/
+@[ext]
+theorem prod_hom_ext {P M N : FGComoduleCat.{u, v, w} R C} {f g : P ⟶ prod R C M N}
+    (hfst : f ≫ prodFst M N = g ≫ prodFst M N)
+    (hsnd : f ≫ prodSnd M N = g ≫ prodSnd M N) : f = g := by
+  apply ObjectProperty.hom_ext
+  exact ComoduleCat.prod_hom_ext (R := R) (C := C)
+    (by simpa only [ObjectProperty.FullSubcategory.comp_hom, prodFst_hom] using
+      congrArg (fun h => h.hom) hfst)
+    (by simpa only [ObjectProperty.FullSubcategory.comp_hom, prodSnd_hom] using
+      congrArg (fun h => h.hom) hsnd)
+
+/-- The concrete binary fan whose point is `FGComoduleCat.prod`. -/
+def prodBinaryFan (M N : FGComoduleCat.{u, v, w} R C) : Limits.BinaryFan M N :=
+  Limits.BinaryFan.mk (prodFst M N) (prodSnd M N)
+
+/-- The concrete product fan is a categorical product. -/
+def prodBinaryFanIsLimit (M N : FGComoduleCat.{u, v, w} R C) :
+    Limits.IsLimit (prodBinaryFan M N) :=
+  Limits.BinaryFan.IsLimit.mk _
+    (fun f g => prodLift f g)
+    (fun f g => prodLift_fst f g)
+    (fun f g => prodLift_snd f g)
+    (fun f g _ hfst hsnd =>
+      prod_hom_ext
+        (hfst.trans (prodLift_fst f g).symm)
+        (hsnd.trans (prodLift_snd f g).symm))
+
+/-- The concrete product supplies the categorical binary product of finitely generated
+comodules. -/
+instance hasBinaryProduct (M N : FGComoduleCat.{u, v, w} R C) :
+    Limits.HasBinaryProduct M N :=
+  Limits.HasLimit.mk ⟨prodBinaryFan M N, prodBinaryFanIsLimit M N⟩
+
+/-- Finitely generated comodules have categorical binary products. -/
+instance hasBinaryProducts : Limits.HasBinaryProducts (FGComoduleCat.{u, v, w} R C) :=
+  Limits.hasBinaryProducts_of_hasLimit_pair (FGComoduleCat.{u, v, w} R C)
+
+/-- Finitely generated comodules have finite products. -/
+instance hasFiniteProducts : Limits.HasFiniteProducts (FGComoduleCat.{u, v, w} R C) :=
+  CategoryTheory.hasFiniteProducts_of_has_binary_and_terminal
+
+end Semiring
+
+section Ring
+
+variable {R : Type u} [CommRing R]
+variable {C : Type v} [AddCommMonoid C] [Module R C] [Coalgebra R C]
+
+/-- The preadditive binary product is also a binary biproduct. -/
+instance hasBinaryBiproduct (M N : FGComoduleCat.{u, v, w} R C) :
+    Limits.HasBinaryBiproduct M N :=
+  Limits.HasBinaryBiproduct.of_hasBinaryProduct M N
+
+/-- Finitely generated comodules over a commutative ring have binary biproducts. -/
+instance hasBinaryBiproducts : Limits.HasBinaryBiproducts (FGComoduleCat.{u, v, w} R C) :=
+  Limits.HasBinaryBiproducts.of_hasBinaryProducts
+
+/-- Finitely generated comodules over a commutative ring have finite biproducts. -/
+instance hasFiniteBiproducts : Limits.HasFiniteBiproducts (FGComoduleCat.{u, v, w} R C) :=
+  Limits.HasFiniteBiproducts.of_hasFiniteProducts
 
 /-- The product desc after the left inclusion is the first morphism. -/
 @[simp]
@@ -259,18 +328,6 @@ theorem prod_fst_inl_add_snd_inr (M N : FGComoduleCat.{u, v, w} R C) :
     prodSnd_hom, prodInr_hom, hom_add, ObjectProperty.FullSubcategory.id_hom]
   exact
     (ComoduleCat.prod_fst_inl_add_snd_inr (R := R) (C := C) M.obj N.obj)
-
-/-- Morphisms into the product are determined by their projections. -/
-@[ext]
-theorem prod_hom_ext {P M N : FGComoduleCat.{u, v, w} R C} {f g : P ⟶ prod R C M N}
-    (hfst : f ≫ prodFst M N = g ≫ prodFst M N)
-    (hsnd : f ≫ prodSnd M N = g ≫ prodSnd M N) : f = g := by
-  apply ObjectProperty.hom_ext
-  exact ComoduleCat.prod_hom_ext (R := R) (C := C)
-    (by simpa only [ObjectProperty.FullSubcategory.comp_hom, prodFst_hom] using
-      congrArg (fun h => h.hom) hfst)
-    (by simpa only [ObjectProperty.FullSubcategory.comp_hom, prodSnd_hom] using
-      congrArg (fun h => h.hom) hsnd)
 
 /-- Morphisms out of the product are determined by their values on the inclusions. -/
 @[ext]
