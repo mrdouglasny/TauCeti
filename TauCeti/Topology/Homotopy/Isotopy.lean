@@ -34,8 +34,9 @@ notion also underlies locally flat isotopy, diffeotopies, and concordance.
   embeddings.
 * `TauCeti.Isotopy.toHomotopyWith`: an isotopy is, in particular, a Mathlib homotopy through
   embeddings.
-* `TauCeti.Isotopic.refl` / `TauCeti.Isotopic.symm`: isotopy is reflexive on embeddings and
-  symmetric.
+* `TauCeti.Isotopic.refl` / `TauCeti.Isotopic.symm` / `TauCeti.Isotopic.trans`: isotopy is
+  reflexive on embeddings, symmetric, and transitive when the source is compact and the target
+  is Hausdorff.
 * `TauCeti.Isotopic.homotopic`: isotopic maps are homotopic.
 * `TauCeti.AmbientIsotopy.isotopy` / `TauCeti.AmbientIsotopy.isotopic`: an ambient isotopy
   carries any embedding `f` to the isotopic embedding `Φ.final ∘ f`. This is the "ambient
@@ -116,6 +117,56 @@ theorem isEmbedding_left (F : Isotopy f₀ f₁) : IsEmbedding f₀ := by
 theorem isEmbedding_right (F : Isotopy f₀ f₁) : IsEmbedding f₁ := by
   simpa using F.isEmbedding_apply 1
 
+/-- Concatenate two isotopies when compactness and Hausdorffness make the concatenated total map
+an embedding. -/
+noncomputable def trans [CompactSpace X] [T2Space Y] {f₂ : C(X, Y)}
+    (F : Isotopy f₀ f₁) (G : Isotopy f₁ f₂) : Isotopy f₀ f₂ where
+  toHomotopy := F.toHomotopy.trans G.toHomotopy
+  isEmbedding_total' := by
+    let H : Homotopy f₀ f₂ := F.toHomotopy.trans G.toHomotopy
+    have hcont : Continuous fun p : I × X => (p.1, H p) := by fun_prop
+    exact (hcont.isClosedEmbedding (by
+      rintro ⟨t, x⟩ ⟨u, y⟩ hxy
+      have ht : t = u := congrArg Prod.fst hxy
+      have hy : H (t, x) = H (u, y) := congrArg Prod.snd hxy
+      subst u
+      rw [Prod.mk.injEq]
+      refine ⟨rfl, ?_⟩
+      by_cases ht_half : (t : ℝ) ≤ 1 / 2
+      · let s : I := ⟨2 * t, (unitInterval.mul_pos_mem_iff zero_lt_two).2 ⟨t.2.1, ht_half⟩⟩
+        have hyF : F.toHomotopy (s, x) = F.toHomotopy (s, y) := by
+          rw [show H (t, x) = F.toHomotopy (s, x) by
+                rw [Homotopy.trans_apply]
+                split_ifs with h
+                · rfl
+                · exact (h ht_half).elim,
+              show H (t, y) = F.toHomotopy (s, y) by
+                rw [Homotopy.trans_apply]
+                split_ifs with h
+                · rfl
+                · exact (h ht_half).elim] at hy
+          exact hy
+        have htotal : F.totalMap (s, x) = F.totalMap (s, y) := by
+          ext <;> simp [hyF]
+        exact congrArg Prod.snd (F.isEmbedding_total.injective htotal)
+      · let s : I :=
+          ⟨2 * t - 1, unitInterval.two_mul_sub_one_mem_iff.2 ⟨(not_le.1 ht_half).le, t.2.2⟩⟩
+        have hyG : G.toHomotopy (s, x) = G.toHomotopy (s, y) := by
+          rw [show H (t, x) = G.toHomotopy (s, x) by
+                rw [Homotopy.trans_apply]
+                split_ifs with h
+                · exact (ht_half h).elim
+                · rfl,
+              show H (t, y) = G.toHomotopy (s, y) by
+                rw [Homotopy.trans_apply]
+                split_ifs with h
+                · exact (ht_half h).elim
+                · rfl] at hy
+          exact hy
+        have htotal : G.totalMap (s, x) = G.totalMap (s, y) := by
+          ext <;> simp [hyG]
+        exact congrArg Prod.snd (G.isEmbedding_total.injective htotal))).isEmbedding
+
 instance instHomotopyLike : HomotopyLike (Isotopy f₀ f₁) f₀ f₁ where
   map_continuous F := F.continuous_toFun
   map_zero_left F := F.map_zero_left
@@ -152,6 +203,12 @@ theorem symm (h : Isotopic f₀ f₁) : Isotopic f₁ f₀ :=
         ext p
         · simp [Function.comp_def, Isotopy.totalMap, e, e', unitInterval.symm_symm]
         · exact congrArg h.some.toHomotopy (by ext <;> simp [e]) }⟩
+
+/-- Isotopy is transitive when the source is compact and the target is Hausdorff. -/
+@[trans]
+theorem trans [CompactSpace X] [T2Space Y] {f₂ : C(X, Y)}
+    (h₀₁ : Isotopic f₀ f₁) (h₁₂ : Isotopic f₁ f₂) : Isotopic f₀ f₂ :=
+  ⟨h₀₁.some.trans h₁₂.some⟩
 
 /-- The left endpoint of an isotopy relation is an embedding. -/
 theorem isEmbedding_left (h : Isotopic f₀ f₁) : IsEmbedding f₀ :=
