@@ -40,8 +40,11 @@ namespace IsCompl
 
 variable {L₁ L₂ : Submodule R E} {M₁ M₂ : Submodule R F}
 
-/-- Products of complementary submodules are complementary. -/
-theorem prod (hL : IsCompl L₁ L₂) (hM : IsCompl M₁ M₂) :
+/-- Products of complementary submodules are complementary.
+
+This is a local helper for the maximal totally real product and doubled-module lemmas below; it
+is `private` because it is not part of the totally real subspace API surface. -/
+private theorem prod (hL : IsCompl L₁ L₂) (hM : IsCompl M₁ M₂) :
     IsCompl (L₁.prod M₁) (L₂.prod M₂) := by
   refine IsCompl.of_eq ?_ ?_
   · rw [Submodule.prod_inf_prod, hL.inf_eq_bot, hM.inf_eq_bot, Submodule.prod_bot]
