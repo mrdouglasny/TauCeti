@@ -125,6 +125,7 @@ def ofComplexModule (V : Type*) [AddCommGroup V] [Module ℝ V] [Module ℂ V] [
     ext v
     simp [smul_smul, Complex.I_mul_I]
 
+/-- The almost complex structure read from a complex module acts by multiplication by `i`. -/
 @[simp]
 lemma ofComplexModule_apply (v : V) : ofComplexModule V v = Complex.I • v :=
   rfl
