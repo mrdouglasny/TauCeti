@@ -2,7 +2,7 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.Analysis.InnerProductSpace.Basic
+import Mathlib.Analysis.InnerProductSpace.Defs
 import TauCeti.Geometry.Symplectic.AlmostComplex
 
 /-!
@@ -26,11 +26,11 @@ against exactly this metric.
 
 * `TauCeti.SymplecticForm.associatedBilinForm_apply_right_apply`: `g(v, J w) = -ω(v, w)`, holding
   for any `J` from the identity `J² = -1` alone.
-* `TauCeti.SymplecticForm.Compatible.associatedBilinForm_apply_left_apply`: `g(J v, w) = ω(v, w)`,
+* `TauCeti.SymplecticForm.Invariant.associatedBilinForm_apply_left_apply`: `g(J v, w) = ω(v, w)`,
   recovering `ω` from the metric.
-* `TauCeti.SymplecticForm.Compatible.associatedBilinForm_invariant`: `J` is a `g`-isometry,
+* `TauCeti.SymplecticForm.Invariant.associatedBilinForm_invariant`: `J` is a `g`-isometry,
   `g(J v, J w) = g(v, w)`.
-* `TauCeti.SymplecticForm.Compatible.associatedBilinForm_skewAdjoint`: `J` is `g`-skew-adjoint,
+* `TauCeti.SymplecticForm.Invariant.associatedBilinForm_skewAdjoint`: `J` is `g`-skew-adjoint,
   `g(J v, w) = -g(v, J w)`.
 * `TauCeti.SymplecticForm.Compatible.associatedBilinForm_nondegenerate`: the metric is
   nondegenerate.
@@ -56,44 +56,93 @@ lemma associatedBilinForm_apply_right_apply (v w : V) :
   rw [associatedBilinForm_apply, AlmostComplexStructure.apply_apply]
   exact map_neg (ω.toBilinForm v) w
 
-namespace Compatible
+namespace Invariant
+
+/-- Pointwise form of invariance under applying `J` to both arguments. -/
+lemma apply (hinv : ω.Invariant J) (v w : V) : ω (J v) (J w) = ω v w :=
+  (ω.invariant_iff J).mp hinv v w
 
 /-- The metric recovers the symplectic form: `g(J v, w) = ω(v, w)`. -/
-lemma associatedBilinForm_apply_left_apply (h : ω.Compatible J) (v w : V) :
+@[simp]
+lemma associatedBilinForm_apply_left_apply (hinv : ω.Invariant J) (v w : V) :
     ω.associatedBilinForm J (J v) w = ω v w := by
-  rw [associatedBilinForm_apply, h.invariant_apply]
+  rw [associatedBilinForm_apply, hinv.apply]
 
-/-- The symplectic form is recovered from the metric and `J`: `ω(v, w) = g(J v, w)`. -/
-lemma symplecticForm_eq_associatedBilinForm (h : ω.Compatible J) (v w : V) :
+/-- Pointwise recovery of the symplectic form from the metric and `J`: `ω(v, w) = g(J v, w)`. -/
+lemma symplecticForm_apply_eq_associatedBilinForm_apply_left_apply
+    (hinv : ω.Invariant J) (v w : V) :
     ω v w = ω.associatedBilinForm J (J v) w :=
-  (h.associatedBilinForm_apply_left_apply v w).symm
+  (hinv.associatedBilinForm_apply_left_apply v w).symm
 
 /-- `J` is an isometry of the metric `g`: `g(J v, J w) = g(v, w)`. -/
-lemma associatedBilinForm_invariant (h : ω.Compatible J) (v w : V) :
+lemma associatedBilinForm_invariant (hinv : ω.Invariant J) (v w : V) :
     ω.associatedBilinForm J (J v) (J w) = ω.associatedBilinForm J v w := by
-  rw [h.associatedBilinForm_apply_left_apply v (J w), associatedBilinForm_apply]
+  rw [hinv.associatedBilinForm_apply_left_apply v (J w), associatedBilinForm_apply]
 
 /-- `J` is skew-adjoint for the metric `g`: `g(J v, w) = -g(v, J w)`. -/
-lemma associatedBilinForm_skewAdjoint (h : ω.Compatible J) (v w : V) :
+lemma associatedBilinForm_skewAdjoint (hinv : ω.Invariant J) (v w : V) :
     ω.associatedBilinForm J (J v) w = -ω.associatedBilinForm J v (J w) := by
-  rw [h.associatedBilinForm_apply_left_apply, associatedBilinForm_apply_right_apply, neg_neg]
+  rw [hinv.associatedBilinForm_apply_left_apply, associatedBilinForm_apply_right_apply, neg_neg]
 
-/-- The metric `g(v, v) = ω(v, J v)` is nonnegative. -/
-lemma associatedBilinForm_self_nonneg (h : ω.Compatible J) (v : V) :
+end Invariant
+
+/-- The metric `g(v, v) = ω(v, J v)` is nonnegative under positive-definiteness. -/
+lemma associatedBilinForm_self_nonneg
+    (hpositive : (ω.associatedBilinForm J).toQuadraticMap.PosDef) (v : V) :
     0 ≤ ω.associatedBilinForm J v v := by
-  simpa [LinearMap.BilinMap.toQuadraticMap_apply] using h.positive.nonneg v
+  simpa [LinearMap.BilinMap.toQuadraticMap_apply] using hpositive.nonneg v
 
-/-- The diagonal of the metric `v ↦ ω(v, J v)` is nonnegative. -/
-lemma symplecticForm_apply_self_nonneg (h : ω.Compatible J) (v : V) : 0 ≤ ω v (J v) :=
-  h.associatedBilinForm_self_nonneg v
+/-- The diagonal `ω(v, J v)` is nonnegative under positive-definiteness of the associated metric. -/
+lemma symplecticForm_apply_apply_self_nonneg
+    (hpositive : (ω.associatedBilinForm J).toQuadraticMap.PosDef) (v : V) : 0 ≤ ω v (J v) :=
+  associatedBilinForm_self_nonneg hpositive v
 
-/-- The metric is positive definite in the sense that `g(v, v) = 0` exactly when `v = 0`. -/
-lemma associatedBilinForm_self_eq_zero (h : ω.Compatible J) {v : V} :
+/-- Positive-definiteness of the associated metric detects zero vectors on the diagonal. -/
+lemma associatedBilinForm_self_eq_zero
+    (hpositive : (ω.associatedBilinForm J).toQuadraticMap.PosDef) {v : V} :
     ω.associatedBilinForm J v v = 0 ↔ v = 0 := by
-  refine ⟨fun hv => h.positive.anisotropic v ?_, ?_⟩
+  refine ⟨fun hv => hpositive.anisotropic v ?_, ?_⟩
   · simpa [LinearMap.BilinMap.toQuadraticMap_apply] using hv
   · rintro rfl
     simp
+
+namespace Compatible
+
+/-- The metric recovers the symplectic form: `g(J v, w) = ω(v, w)`. -/
+@[simp]
+lemma associatedBilinForm_apply_left_apply (h : ω.Compatible J) (v w : V) :
+    ω.associatedBilinForm J (J v) w = ω v w :=
+  h.invariant.associatedBilinForm_apply_left_apply v w
+
+/-- Pointwise recovery of the symplectic form from the metric and `J`: `ω(v, w) = g(J v, w)`. -/
+lemma symplecticForm_apply_eq_associatedBilinForm_apply_left_apply
+    (h : ω.Compatible J) (v w : V) :
+    ω v w = ω.associatedBilinForm J (J v) w :=
+  h.invariant.symplecticForm_apply_eq_associatedBilinForm_apply_left_apply v w
+
+/-- `J` is an isometry of the metric `g`: `g(J v, J w) = g(v, w)`. -/
+lemma associatedBilinForm_invariant (h : ω.Compatible J) (v w : V) :
+    ω.associatedBilinForm J (J v) (J w) = ω.associatedBilinForm J v w :=
+  h.invariant.associatedBilinForm_invariant v w
+
+/-- `J` is skew-adjoint for the metric `g`: `g(J v, w) = -g(v, J w)`. -/
+lemma associatedBilinForm_skewAdjoint (h : ω.Compatible J) (v w : V) :
+    ω.associatedBilinForm J (J v) w = -ω.associatedBilinForm J v (J w) :=
+  h.invariant.associatedBilinForm_skewAdjoint v w
+
+/-- The metric `g(v, v) = ω(v, J v)` is nonnegative. -/
+lemma associatedBilinForm_self_nonneg (h : ω.Compatible J) (v : V) :
+    0 ≤ ω.associatedBilinForm J v v :=
+  SymplecticForm.associatedBilinForm_self_nonneg h.positive v
+
+/-- The diagonal `ω(v, J v)` of the associated metric is nonnegative. -/
+lemma symplecticForm_apply_apply_self_nonneg (h : ω.Compatible J) (v : V) : 0 ≤ ω v (J v) :=
+  SymplecticForm.symplecticForm_apply_apply_self_nonneg h.positive v
+
+/-- The metric is positive definite in the sense that `g(v, v) = 0` exactly when `v = 0`. -/
+lemma associatedBilinForm_self_eq_zero (h : ω.Compatible J) {v : V} :
+    ω.associatedBilinForm J v v = 0 ↔ v = 0 :=
+  SymplecticForm.associatedBilinForm_self_eq_zero h.positive
 
 /-- The metric of a compatible pair is nondegenerate. -/
 lemma associatedBilinForm_nondegenerate (h : ω.Compatible J) :
@@ -107,26 +156,22 @@ lemma associatedBilinForm_nondegenerate (h : ω.Compatible J) :
 
 /-- The metric of a compatible pair, packaged as an `InnerProductSpace.Core ℝ V`.
 
-The inner product is `⟪v, w⟫ = ω(v, J w)`: compatibility makes it symmetric (`conj_inner_symm`),
-nonnegative on the diagonal (`re_inner_nonneg`), and positive definite (`definite`), while
-bilinearity of `ω` supplies additivity and homogeneity in the first slot. This is the witness
-that the pointwise compatibility definition really yields a Euclidean inner product. -/
-@[reducible]
+The inner product is the associated metric `⟪v, w⟫ = ω(v, J w)`. -/
+@[implicit_reducible]
 noncomputable def innerProductCore (h : ω.Compatible J) : InnerProductSpace.Core ℝ V where
   inner v w := ω v (J w)
   conj_inner_symm v w := by
-    change (starRingEnd ℝ) (ω w (J v)) = ω v (J w)
-    rw [RCLike.conj_to_real, h.associatedBilinForm_apply_swap w v]
+    simpa [associatedBilinForm_apply, RCLike.conj_to_real]
+      using h.associatedBilinForm_apply_swap w v
   re_inner_nonneg v := by
-    simpa using h.symplecticForm_apply_self_nonneg v
+    simpa using h.symplecticForm_apply_apply_self_nonneg v
   add_left v w x := by
-    change ω.toBilinForm (v + w) (J x) = ω.toBilinForm v (J x) + ω.toBilinForm w (J x)
-    rw [map_add, LinearMap.add_apply]
+    simp
   smul_left v w r := by
-    change ω.toBilinForm (r • v) (J w) = (starRingEnd ℝ) r * ω.toBilinForm v (J w)
-    rw [RCLike.conj_to_real, map_smul, LinearMap.smul_apply, smul_eq_mul]
+    simp [smul_eq_mul]
   definite v hv := h.associatedBilinForm_self_eq_zero.mp hv
 
+/-- The inner product from `innerProductCore` is the associated metric `ω(v, J w)`. -/
 @[simp]
 lemma innerProductCore_inner (h : ω.Compatible J) (v w : V) :
     @inner ℝ V h.innerProductCore.toInner v w = ω v (J w) :=
