@@ -3,6 +3,7 @@ Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Mathlib.NumberTheory.NumberField.Basic
+import Mathlib.RingTheory.Discriminant
 import Mathlib.RingTheory.Trace.Basic
 
 /-!
@@ -12,8 +13,12 @@ This file collects reusable trace facts for finite field extensions.
 
 ## Main results
 
+* `TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range`: in a finite extension,
+  `x² ∈ F` and `x ∉ F` imply `Tr x = 0`.
 * `TauCeti.NumberField.trace_eq_zero_of_sq_ratCast_of_not_mem_range`: the number-field
-  helper saying that `x² ∈ ℚ`, `x ∉ ℚ` implies `Tr x = 0`.
+  specialization saying that `x² ∈ ℚ`, `x ∉ ℚ` implies `Tr x = 0`.
+* `TauCeti.Algebra.discr_one_self_eq_of_sq`: in a quadratic extension, the trace-form
+  discriminant of the square-root basis `{1, x}` is `4a` when `x² = a`.
 
 ## Provenance
 
@@ -23,13 +28,13 @@ formalization of L. Alpöge's disproof of the uniform-constant Erdős unit-dista
 conjecture, where these trace facts supported square-root basis computations over number fields.
 -/
 
-open Polynomial
+open Module Polynomial
 
 namespace TauCeti
 
 /-- In a finite field extension, an element outside the base field whose square lies in the
 base field has trace zero. -/
-private theorem trace_eq_zero_of_sq_algebraMap_of_not_mem_range {F L : Type*} [Field F] [Field L]
+theorem trace_eq_zero_of_sq_algebraMap_of_not_mem_range {F L : Type*} [Field F] [Field L]
     [Algebra F L] [FiniteDimensional F L] {x : L} {r : F}
     (hx2 : x ^ 2 = algebraMap F L r) (hx : x ∉ (algebraMap F L).range) :
     Algebra.trace F L x = 0 := by
@@ -58,6 +63,44 @@ private theorem trace_eq_zero_of_sq_algebraMap_of_not_mem_range {F L : Type*} [F
       (by rw [Polynomial.natDegree_X_pow_sub_C]; norm_num)]
     simp [Polynomial.coeff_X_pow]
   rw [hnc]; simp
+
+namespace Algebra
+
+variable {F L : Type*} [Field F] [Field L] [Algebra F L] [FiniteDimensional F L]
+
+/-- For a quadratic extension `L / F` and an element `x ∉ F` whose square is `a ∈ F`, the
+trace-form discriminant of the square-root basis `{1, x}` equals `4 a`. -/
+theorem discr_one_self_eq_of_sq {x : L} {a : F} (hfin : finrank F L = 2)
+    (hx2 : x ^ 2 = algebraMap F L a) (hx : x ∉ (algebraMap F L).range) :
+    Algebra.discr F ![1, x] = 4 * a := by
+  have htr0 : Algebra.trace F L x = 0 :=
+    TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range hx2 hx
+  have hone : (1 : L) = algebraMap F L 1 := (map_one _).symm
+  have hxmul : x * x = algebraMap F L a := by
+    rw [← pow_two]
+    exact hx2
+  have e00 : Algebra.traceMatrix F ![1, x] 0 0 = 2 := by
+    rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply]
+    simp only [Matrix.cons_val_zero, mul_one]
+    rw [hone, Algebra.trace_algebraMap, hfin]
+    simp
+  have e11 : Algebra.traceMatrix F ![1, x] 1 1 = 2 * a := by
+    rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply]
+    simp only [Matrix.cons_val_one, Matrix.cons_val_zero]
+    rw [hxmul, Algebra.trace_algebraMap, hfin]
+    simp [nsmul_eq_mul]
+  have e01 : Algebra.traceMatrix F ![1, x] 0 1 = 0 := by
+    rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, one_mul]
+    exact htr0
+  have e10 : Algebra.traceMatrix F ![1, x] 1 0 = 0 := by
+    rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, mul_one]
+    exact htr0
+  rw [Algebra.discr_def, Matrix.det_fin_two, e00, e11, e01, e10]
+  ring
+
+end Algebra
 
 namespace NumberField
 
