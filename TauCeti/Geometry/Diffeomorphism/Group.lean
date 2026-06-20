@@ -100,7 +100,6 @@ theorem mul_apply (f g : M ≃ₘ^n⟮I, I⟯ M) (x : M) : (f * g) x = f (g x) :
 theorem one_apply (x : M) : (1 : M ≃ₘ^n⟮I, I⟯ M) x = x := rfl
 
 /-- The inverse in the self-diffeomorphism group acts as the inverse diffeomorphism. -/
-@[simp]
 theorem inv_apply (f : M ≃ₘ^n⟮I, I⟯ M) (x : M) : f⁻¹ x = f.symm x := rfl
 
 /-- The underlying equivalence of the unit self-diffeomorphism is the unit permutation. -/
