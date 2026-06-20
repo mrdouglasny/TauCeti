@@ -43,21 +43,21 @@ private theorem not_isSquare_of_squarefree_of_not_isUnit {R : Type*} [CommMonoid
 /-- **Square-class independence of distinct primes.** If the selected `p i` are prime and pairwise
 distinct, then no nonempty subset product `∏_{i ∈ S} (p i : ℚ)` is a square in `ℚ`. This is the
 hypothesis the multiquadratic degree theorem `finrank_adjoin_range` consumes. -/
-theorem not_isSquare_prod_primes {ι : Type*} (p : ι → ℕ)
-    (hp : ∀ i, (p i).Prime) {S : Finset ι}
+theorem not_isSquare_prod_primes {ι : Type*} (p : ι → ℕ) {S : Finset ι}
+    (hp : ∀ i ∈ S, (p i).Prime)
     (hdist : Set.Pairwise (S : Set ι) (fun i j => p i ≠ p j))
     (hS : S.Nonempty) :
     ¬ IsSquare (∏ i ∈ S, (p i : ℚ)) := by
   rw [← Nat.cast_prod, Rat.isSquare_natCast_iff]
   refine not_isSquare_of_squarefree_of_not_isUnit ?_ ?_
-  · refine Finset.squarefree_prod_of_pairwise_isCoprime (fun i _ j _ hij => ?_)
-      (fun i _ => (hp i).prime.squarefree)
+  · refine Finset.squarefree_prod_of_pairwise_isCoprime (fun i hi j hj hij => ?_)
+      (fun i hi => (hp i hi).prime.squarefree)
     exact Nat.coprime_iff_isRelPrime.mp
-      ((Nat.coprime_primes (hp i) (hp j)).mpr fun h => hdist ‹i ∈ S› ‹j ∈ S› hij h)
+      ((Nat.coprime_primes (hp i hi) (hp j hj)).mpr fun h => hdist hi hj hij h)
   · rw [Nat.isUnit_iff]
     obtain ⟨i, hi⟩ := hS
     intro hprod
-    exact (hp i).ne_one (Nat.dvd_one.mp (hprod ▸ Finset.dvd_prod_of_mem p hi))
+    exact (hp i hi).ne_one (Nat.dvd_one.mp (hprod ▸ Finset.dvd_prod_of_mem p hi))
 
 /-- **Degree of a prime-radicand multiquadratic field.** For a finite family of distinct primes
 `p : ι → ℕ`, the field generated over `ℚ` by their real square roots has degree `2^|ι|`. This is the
@@ -70,7 +70,7 @@ theorem finrank_adjoin_sqrt_primes {ι : Type*} [Finite ι] (p : ι → ℕ)
   refine finrank_adjoin_range (d := fun i => (p i : ℚ))
     (root := fun i => Real.sqrt (p i)) (fun i => ?_) (fun S hS => ?_)
   · rw [Real.sq_sqrt (Nat.cast_nonneg _), map_natCast]
-  · refine not_isSquare_prod_primes p hp ?_ hS
+  · refine not_isSquare_prod_primes p (fun i _ => hp i) ?_ hS
     intro i _ j _ hij h
     exact hij (hinj h)
 
