@@ -78,6 +78,8 @@ private theorem isInducing_of_isClosed_cover {Z W : Type*} [TopologicalSpace Z]
     obtain ⟨V, hV, hVsub⟩ := hUsub
     refine ⟨V, hV, ?_⟩
     rintro y ⟨hyV, hyD⟩
+    -- The restricted map applies definitionally to `f y`, so this `show` only changes
+    -- `hyV : f y ∈ V` into the preimage-membership type expected by `hVsub`.
     exact hVsub (show ((f ⁻¹' D).restrict f) ⟨y, hyD⟩ ∈ V from hyV)
   have wstep : ∀ D : Set W, IsClosed D → IsInducing ((f ⁻¹' D).restrict f) →
       ∃ V ∈ 𝓝 (f z), f ⁻¹' V ∩ f ⁻¹' D ⊆ U := by
@@ -204,6 +206,18 @@ private theorem injective_half : Function.Injective half := fun a b hab =>
 private theorem injective_halfRight : Function.Injective halfRight := fun a b hab =>
   Subtype.ext (by have := congrArg Subtype.val hab; simp only [coe_halfRight] at this; linarith)
 
+private theorem half_left_inv (t : I) (ht : (t : ℝ) ≤ 1 / 2) :
+    half (⟨2 * t, ⟨by linarith [t.2.1], by linarith [ht]⟩⟩ : I) = t := by
+  apply Subtype.ext
+  simp only [coe_half]
+  ring
+
+private theorem halfRight_right_inv (t : I) (ht : 1 / 2 ≤ (t : ℝ)) :
+    halfRight (⟨2 * t - 1, ⟨by linarith [ht], by linarith [t.2.2]⟩⟩ : I) = t := by
+  apply Subtype.ext
+  simp only [coe_halfRight]
+  ring
+
 private theorem isEmbedding_half : IsEmbedding half :=
   ((Continuous.subtype_mk (by fun_prop) _).isClosedEmbedding injective_half).isEmbedding
 
@@ -215,14 +229,14 @@ private theorem range_half : Set.range half = {t : I | (t : ℝ) ≤ 1 / 2} := b
   simp only [Set.mem_range, Set.mem_setOf_eq]
   refine ⟨?_, fun ht => ⟨⟨2 * t, ⟨by linarith [t.2.1], by linarith⟩⟩, ?_⟩⟩
   · rintro ⟨s, rfl⟩; rw [coe_half]; linarith [s.2.2]
-  · apply Subtype.ext; change (2 * (t : ℝ)) / 2 = (t : ℝ); ring
+  · exact half_left_inv t ht
 
 private theorem range_halfRight : Set.range halfRight = {t : I | 1 / 2 ≤ (t : ℝ)} := by
   ext t
   simp only [Set.mem_range, Set.mem_setOf_eq]
   refine ⟨?_, fun ht => ⟨⟨2 * t - 1, ⟨by linarith, by linarith [t.2.2]⟩⟩, ?_⟩⟩
   · rintro ⟨s, rfl⟩; rw [coe_halfRight]; linarith [s.2.1]
-  · apply Subtype.ext; change (2 * (t : ℝ) - 1) / 2 + 1 / 2 = (t : ℝ); ring
+  · exact halfRight_right_inv t ht
 
 private theorem trans_half (F : Isotopy f₀ f₁) (G : Isotopy f₁ f₂) (s : I) (x : X) :
     (F.toHomotopy.trans G.toHomotopy) (half s, x) = F.toHomotopy (s, x) := by
