@@ -33,6 +33,9 @@ Only the basic state/diagram operation and its point-set lemmas live here, paral
 * `TauCeti.GridState.rotate_pointSet`, `TauCeti.GridDiagram.rotate_OSet`,
   `TauCeti.GridDiagram.rotate_XSet`: the point sets of a rotated state or diagram are the
   half-turn rotation of the original point sets.
+* `TauCeti.GridState.relabelRows_rotate`, `TauCeti.GridState.relabelColumns_rotate`,
+  `TauCeti.GridDiagram.swapMarkings_rotate`: rotation interacts predictably with the existing
+  relabeling, swap, and marking-swap operations.
 
 ## References
 
@@ -44,8 +47,6 @@ Chapter 3.
 
 namespace TauCeti
 
-namespace GridState
-
 variable {n : ℕ}
 
 /-- Reversing both coordinates of a grid square twice returns the original square. -/
@@ -53,6 +54,27 @@ private theorem rev2_rev2 (p : Fin n × Fin n) :
     Prod.map Fin.rev Fin.rev (Prod.map Fin.rev Fin.rev p) = p := by
   obtain ⟨a, b⟩ := p
   simp [Fin.rev_rev]
+
+/-- Conjugating a row or column swap by coordinate reversal swaps the reversed indices. -/
+private theorem revPerm_trans_swap_trans_revPerm (a b : Fin n) :
+    Fin.revPerm.trans ((Equiv.swap a b).trans Fin.revPerm) = Equiv.swap a.rev b.rev := by
+  ext c
+  by_cases hca : c = a.rev
+  · subst hca
+    simp
+  · by_cases hcb : c = b.rev
+    · subst hcb
+      simp
+    · have hca' : c.rev ≠ a := by
+        intro h
+        exact hca (Fin.rev_eq_iff.mp h)
+      have hcb' : c.rev ≠ b := by
+        intro h
+        exact hcb (Fin.rev_eq_iff.mp h)
+      simp [Equiv.swap_apply_of_ne_of_ne hca hcb, Equiv.swap_apply_of_ne_of_ne hca' hcb',
+        Fin.rev_rev]
+
+namespace GridState
 
 /-- The half-turn rotation of a grid state.
 
@@ -91,6 +113,38 @@ theorem rotate_pointSet (x : GridState n) :
 theorem rotate_rotate (x : GridState n) : x.rotate.rotate = x := by
   ext c
   simp [Fin.rev_rev]
+
+/-- Row relabeling before rotation becomes row relabeling by the conjugate permutation after
+rotation. -/
+@[simp]
+theorem relabelRows_rotate (ρ : Equiv.Perm (Fin n)) (x : GridState n) :
+    (x.relabelRows ρ).rotate = x.rotate.relabelRows (Fin.revPerm.trans (ρ.trans Fin.revPerm)) := by
+  ext c
+  simp [rotate, Fin.rev_rev]
+
+/-- Column relabeling before rotation becomes column relabeling by the conjugate permutation
+after rotation. -/
+@[simp]
+theorem relabelColumns_rotate (κ : Equiv.Perm (Fin n)) (x : GridState n) :
+    (x.relabelColumns κ).rotate =
+      x.rotate.relabelColumns (Fin.revPerm.trans (κ.trans Fin.revPerm)) := by
+  ext c
+  simp [rotate, Fin.rev_rev]
+
+/-- Swapping rows before rotation is the same as swapping the reversed rows after rotation. -/
+@[simp]
+theorem swapRows_rotate (a b : Fin n) (x : GridState n) :
+    (x.swapRows a b).rotate = x.rotate.swapRows a.rev b.rev := by
+  rw [swapRows, relabelRows_rotate, revPerm_trans_swap_trans_revPerm]
+  rfl
+
+/-- Swapping columns before rotation is the same as swapping the reversed columns after
+rotation. -/
+@[simp]
+theorem swapColumns_rotate (a b : Fin n) (x : GridState n) :
+    (x.swapColumns a b).rotate = x.rotate.swapColumns a.rev b.rev := by
+  rw [swapColumns, relabelColumns_rotate, revPerm_trans_swap_trans_revPerm]
+  rfl
 
 end GridState
 
@@ -146,6 +200,41 @@ theorem mem_XSet_rotate (p : Fin n × Fin n) :
 @[simp]
 theorem rotate_rotate : G.rotate.rotate = G := by
   ext c <;> simp
+
+/-- Row relabeling before rotation becomes row relabeling by the conjugate permutation after
+rotation. -/
+@[simp]
+theorem relabelRows_rotate (ρ : Equiv.Perm (Fin n)) :
+    (G.relabelRows ρ).rotate = G.rotate.relabelRows (Fin.revPerm.trans (ρ.trans Fin.revPerm)) := by
+  ext c <;> simp
+
+/-- Column relabeling before rotation becomes column relabeling by the conjugate permutation
+after rotation. -/
+@[simp]
+theorem relabelColumns_rotate (κ : Equiv.Perm (Fin n)) :
+    (G.relabelColumns κ).rotate =
+      G.rotate.relabelColumns (Fin.revPerm.trans (κ.trans Fin.revPerm)) := by
+  ext c <;> simp
+
+/-- Swapping rows before rotation is the same as swapping the reversed rows after rotation. -/
+@[simp]
+theorem swapRows_rotate (a b : Fin n) :
+    (G.swapRows a b).rotate = G.rotate.swapRows a.rev b.rev := by
+  rw [swapRows, relabelRows_rotate, revPerm_trans_swap_trans_revPerm]
+  rfl
+
+/-- Swapping columns before rotation is the same as swapping the reversed columns after
+rotation. -/
+@[simp]
+theorem swapColumns_rotate (a b : Fin n) :
+    (G.swapColumns a b).rotate = G.rotate.swapColumns a.rev b.rev := by
+  rw [swapColumns, relabelColumns_rotate, revPerm_trans_swap_trans_revPerm]
+  rfl
+
+/-- Exchanging the two marking states commutes with the half-turn rotation. -/
+@[simp]
+theorem swapMarkings_rotate : G.swapMarkings.rotate = G.rotate.swapMarkings := by
+  ext c <;> simp [GridDiagram.rotate]
 
 end GridDiagram
 
