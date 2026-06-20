@@ -13,12 +13,10 @@ This file collects reusable trace facts for finite field extensions.
 
 ## Main results
 
-* `TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range`: in a finite extension,
-  `x² ∈ F` and `x ∉ F` imply `Tr x = 0`.
 * `TauCeti.NumberField.trace_eq_zero_of_sq_ratCast_of_not_mem_range`: the number-field
   specialization saying that `x² ∈ ℚ`, `x ∉ ℚ` implies `Tr x = 0`.
 * `TauCeti.Algebra.discr_one_self_eq_of_sq`: in a quadratic extension, the trace-form
-  discriminant of the square-root basis `{1, x}` is `4a` when `x² = a`.
+  discriminant of the square-root basis `{1, x}` is `4a` when `x² = a` and `x ∉ F`.
 
 ## Provenance
 
@@ -34,7 +32,7 @@ namespace TauCeti
 
 /-- In a finite field extension, an element outside the base field whose square lies in the
 base field has trace zero. -/
-theorem trace_eq_zero_of_sq_algebraMap_of_not_mem_range {F L : Type*} [Field F] [Field L]
+private theorem trace_eq_zero_of_sq_algebraMap_of_not_mem_range {F L : Type*} [Field F] [Field L]
     [Algebra F L] [FiniteDimensional F L] {x : L} {r : F}
     (hx2 : x ^ 2 = algebraMap F L r) (hx : x ∉ (algebraMap F L).range) :
     Algebra.trace F L x = 0 := by
@@ -74,7 +72,7 @@ theorem discr_one_self_eq_of_sq {x : L} {a : F} (hfin : finrank F L = 2)
     (hx2 : x ^ 2 = algebraMap F L a) (hx : x ∉ (algebraMap F L).range) :
     Algebra.discr F ![1, x] = 4 * a := by
   have htr0 : Algebra.trace F L x = 0 :=
-    TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range hx2 hx
+    trace_eq_zero_of_sq_algebraMap_of_not_mem_range hx2 hx
   have hone : (1 : L) = algebraMap F L 1 := (map_one _).symm
   have hxmul : x * x = algebraMap F L a := by
     rw [← pow_two]
@@ -109,6 +107,6 @@ theorem trace_eq_zero_of_sq_ratCast_of_not_mem_range {K : Type*} [Field K] [Numb
     {x : K} {r : ℚ} (hx2 : x ^ 2 = algebraMap ℚ K r)
     (hx : x ∉ (algebraMap ℚ K).range) :
     Algebra.trace ℚ K x = 0 :=
-  TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range hx2 hx
+  trace_eq_zero_of_sq_algebraMap_of_not_mem_range hx2 hx
 
 end TauCeti.NumberField

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import TauCeti.FieldTheory.Trace
 import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+import Mathlib.RingTheory.Complex
 
 /-!
 # Trace-form diagonalisation for square-root bases
@@ -20,8 +21,6 @@ discriminant API from `TauCeti.FieldTheory.Trace`.
 
 ## Main results
 
-* `TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range`: if `x² ∈ K` (as an element
-  of a finite field extension `L / K`) but `x ∉ K`, then `Tr_{L/K} x = 0`.
 * `TauCeti.NumberField.trace_eq_zero_of_sq_ratCast_of_not_mem_range`: the number-field
   specialization, for `x` in a number field `K` with `x² ∈ ℚ` and `x ∉ ℚ`.
 * `TauCeti.Algebra.discr_one_self_eq_of_sq`: for a quadratic extension `L / K` and
@@ -48,10 +47,8 @@ namespace Algebra
 
 /-- `Complex.I` squares to the real number `-1`, so its trace over `ℝ` vanishes. -/
 example : Algebra.trace ℝ ℂ Complex.I = 0 := by
-  refine TauCeti.trace_eq_zero_of_sq_algebraMap_of_not_mem_range (r := -1) ?_ ?_
-  · rw [Complex.I_sq]; simp
-  · rintro ⟨r, hr⟩
-    simpa [Complex.ext_iff, Complex.I_im] using congrArg Complex.im hr
+  rw [Algebra.trace_complex_apply, Complex.I_re]
+  norm_num
 
 /-- The trace-form discriminant of the basis `{1, I}` of `ℂ` over `ℝ` is `-4`, recovering
 `|disc {1, i}| = 4` of the roadmap's `ℚ(i)` worked example. -/
