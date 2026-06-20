@@ -23,13 +23,15 @@ roadmap needs. Mathlib's qualitative Hermite–Minkowski theorem
 (`NumberField.finite_of_discr_bdd`) already bounds the degree and the coefficients of a
 generating polynomial of each number field of bounded discriminant, but it only concludes
 *finiteness* of the resulting polynomial family (through `Polynomial.bUnion_roots_finite` over a
-finite coefficient box); it never counts it. The explicit count below is what turns that
-finiteness into an explicit upper bound on the number of fields.
+finite coefficient box); it never counts it. The existing explicit count
+`TauCeti.Polynomial.ncard_natDegree_le_abs_intCoeff_le` is what turns that finiteness into an
+explicit upper bound on the number of fields.
 
 ## Main results
 
-* `TauCeti.NumberField.card_intPolynomial_degree_height_le`: the explicit count
-  `#{p : ℤ[X] | p.natDegree ≤ D ∧ ∀ i, |p.coeff i| ≤ C} ≤ (2·C + 1)^(D + 1)`.
+The explicit count is `TauCeti.Polynomial.ncard_natDegree_le_abs_intCoeff_le`.
+
+* `TauCeti.NumberField.intPolynomialBox`: the polynomial box in the effective-bounds namespace.
 * `TauCeti.NumberField.finite_intPolynomial_degree_height`: the same family is finite.
 -/
 
@@ -66,30 +68,9 @@ theorem coeffVec_injOn :
     rw [coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hp.1 hn'),
       coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hq.1 hn')]
 
-/-- **Counting integer polynomials of bounded degree and height.** There are at most
-`(2·C + 1)^(D + 1)` integer polynomials of degree at most `D` whose coefficients are all bounded in
-absolute value by `C`. -/
-theorem card_intPolynomial_degree_height_le :
-    (intPolynomialBox D C).ncard ≤ (2 * C + 1) ^ (D + 1) := by
-  have hbox : intPolynomialBox D C =
-      {p : ℤ[X] | p.natDegree ≤ D ∧ ∀ i, |p.coeff i| ≤ (C : ℤ)} := by
-    ext p
-    constructor
-    · intro hp
-      refine ⟨hp.1, fun i => ?_⟩
-      rw [Int.abs_eq_natAbs]
-      exact_mod_cast hp.2 i
-    · intro hp
-      refine ⟨hp.1, fun i => ?_⟩
-      have hcoeff : |p.coeff i| ≤ (C : ℤ) := hp.2 i
-      rw [Int.abs_eq_natAbs] at hcoeff
-      exact_mod_cast hcoeff
-  rw [hbox]
-  exact TauCeti.Polynomial.ncard_natDegree_le_abs_intCoeff_le D C
-
 /-- The family of integer polynomials of degree at most `D` with coefficients bounded by `C` is
-finite. (The explicit count above bounds its cardinality; this records finiteness on its own, since
-`Set.ncard` carries no finiteness information for an a priori possibly-infinite set.) -/
+finite. This records finiteness on its own, since `Set.ncard` carries no finiteness information
+for an a priori possibly-infinite set. -/
 theorem finite_intPolynomial_degree_height : (intPolynomialBox D C).Finite := by
   classical
   let T : Finset ℤ := Finset.Icc (-(C : ℤ)) (C : ℤ)
