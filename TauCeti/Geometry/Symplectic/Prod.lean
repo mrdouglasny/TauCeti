@@ -2,7 +2,6 @@
 Copyright (c) 2026 The Tau Ceti contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.Algebra.Module.Equiv.Basic
 import Mathlib.LinearAlgebra.Prod
 import TauCeti.Geometry.Symplectic.AlmostComplex
 import TauCeti.Geometry.Symplectic.Transport
@@ -124,6 +123,24 @@ lemma transport_prod (J₁ : AlmostComplexStructure V) (J₂ : AlmostComplexStru
 end Prod
 
 end AlmostComplexStructure
+
+section ComplexLinearMap
+
+variable [AddCommGroup V] [Module ℝ V] [AddCommGroup W] [Module ℝ W]
+variable [AddCommGroup V'] [Module ℝ V'] [AddCommGroup W'] [Module ℝ W']
+
+/-- A product map of complex-linear maps is complex-linear for the direct-sum almost complex
+structures. -/
+lemma IsComplexLinearMap.prodMap {J₁ : AlmostComplexStructure V} {J₂ : AlmostComplexStructure W}
+    {K₁ : AlmostComplexStructure V'} {K₂ : AlmostComplexStructure W'} {F : V →ₗ[ℝ] V'}
+    {G : W →ₗ[ℝ] W'} (hF : IsComplexLinearMap J₁ K₁ F)
+    (hG : IsComplexLinearMap J₂ K₂ G) :
+    IsComplexLinearMap (J₁.prod J₂) (K₁.prod K₂) (F.prodMap G) := by
+  rw [isComplexLinearMap_iff_apply] at hF hG ⊢
+  rintro ⟨v, w⟩
+  simp [hF, hG]
+
+end ComplexLinearMap
 
 namespace SymplecticForm
 
