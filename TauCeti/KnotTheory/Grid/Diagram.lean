@@ -476,7 +476,7 @@ theorem swapColumns_transpose (a b : Fin n) (x : GridState n) :
 /-- A square lies in the reflected state exactly when its diagonal reflection lies in the
 original state. -/
 @[simp]
-theorem mem_transpose_pointSet (x : GridState n) (p : Fin n × Fin n) :
+theorem mem_pointSet_transpose (x : GridState n) (p : Fin n × Fin n) :
     p ∈ x.transpose.pointSet ↔ Prod.swap p ∈ x.pointSet := by
   simp only [mem_pointSet, transpose_apply]
   rw [Equiv.symm_apply_eq, eq_comm]
@@ -486,7 +486,7 @@ theorem mem_transpose_pointSet (x : GridState n) (p : Fin n × Fin n) :
 theorem transpose_pointSet (x : GridState n) :
     x.transpose.pointSet = x.pointSet.image Prod.swap := by
   ext p
-  rw [mem_transpose_pointSet, Finset.mem_image]
+  rw [mem_pointSet_transpose, Finset.mem_image]
   constructor
   · intro hp
     exact ⟨Prod.swap p, hp, Prod.swap_swap p⟩
@@ -849,7 +849,7 @@ reflection lies in the original `O`-marking set. -/
 theorem mem_OSet_transpose (p : Fin n × Fin n) :
     p ∈ G.transpose.OSet ↔ Prod.swap p ∈ G.OSet := by
   rw [OSet, OSet, transpose_O]
-  exact GridState.mem_transpose_pointSet G.O p
+  exact GridState.mem_pointSet_transpose G.O p
 
 /-- A square lies in the reflected diagram's `X`-marking set exactly when its diagonal
 reflection lies in the original `X`-marking set. -/
@@ -857,7 +857,7 @@ reflection lies in the original `X`-marking set. -/
 theorem mem_XSet_transpose (p : Fin n × Fin n) :
     p ∈ G.transpose.XSet ↔ Prod.swap p ∈ G.XSet := by
   rw [XSet, XSet, transpose_X]
-  exact GridState.mem_transpose_pointSet G.X p
+  exact GridState.mem_pointSet_transpose G.X p
 
 end GridDiagram
 
