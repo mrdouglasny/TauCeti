@@ -443,6 +443,36 @@ theorem transpose_transpose (x : GridState n) : x.transpose.transpose = x := by
   cases x
   simp [transpose]
 
+/-- Reflecting after a row relabeling is the same as column relabeling after reflecting. -/
+@[simp]
+theorem relabelRows_transpose (ρ : Equiv.Perm (Fin n)) (x : GridState n) :
+    (x.relabelRows ρ).transpose = x.transpose.relabelColumns ρ := by
+  ext c
+  exact congrArg Fin.val <| by
+    apply (x.relabelRows ρ).toPerm.injective
+    simp
+
+/-- Reflecting after a column relabeling is the same as row relabeling after reflecting. -/
+@[simp]
+theorem relabelColumns_transpose (κ : Equiv.Perm (Fin n)) (x : GridState n) :
+    (x.relabelColumns κ).transpose = x.transpose.relabelRows κ := by
+  ext c
+  exact congrArg Fin.val <| by
+    apply (x.relabelColumns κ).toPerm.injective
+    simp
+
+/-- Reflecting after a row swap is the same as the corresponding column swap after reflecting. -/
+@[simp]
+theorem swapRows_transpose (a b : Fin n) (x : GridState n) :
+    (x.swapRows a b).transpose = x.transpose.swapColumns a b := by
+  simp [swapRows, swapColumns]
+
+/-- Reflecting after a column swap is the same as the corresponding row swap after reflecting. -/
+@[simp]
+theorem swapColumns_transpose (a b : Fin n) (x : GridState n) :
+    (x.swapColumns a b).transpose = x.transpose.swapRows a b := by
+  simp [swapRows, swapColumns]
+
 /-- A square lies in the reflected state exactly when its diagonal reflection lies in the
 original state. -/
 @[simp]
@@ -760,9 +790,9 @@ def transpose (G : GridDiagram n) : GridDiagram n where
   X := G.X.transpose
   disjoint := by
     intro c h
-    have h' : G.O.toPerm.symm c = G.X.toPerm.symm c := h
+    simp only [GridState.transpose_apply] at h
     refine G.disjoint (G.O.toPerm.symm c) ?_
-    rw [Equiv.apply_symm_apply, h', Equiv.apply_symm_apply]
+    rw [Equiv.apply_symm_apply, h, Equiv.apply_symm_apply]
 
 /-- The `O` marking state of the reflected diagram is the reflected `O` marking state. -/
 @[simp]
@@ -778,6 +808,30 @@ theorem transpose_X : G.transpose.X = G.X.transpose :=
 @[simp]
 theorem transpose_transpose : G.transpose.transpose = G := by
   ext c <;> simp
+
+/-- Reflecting after a row relabeling is the same as column relabeling after reflecting. -/
+@[simp]
+theorem relabelRows_transpose (ρ : Equiv.Perm (Fin n)) :
+    (G.relabelRows ρ).transpose = G.transpose.relabelColumns ρ := by
+  ext c <;> simp
+
+/-- Reflecting after a column relabeling is the same as row relabeling after reflecting. -/
+@[simp]
+theorem relabelColumns_transpose (κ : Equiv.Perm (Fin n)) :
+    (G.relabelColumns κ).transpose = G.transpose.relabelRows κ := by
+  ext c <;> simp
+
+/-- Reflecting after a row swap is the same as the corresponding column swap after reflecting. -/
+@[simp]
+theorem swapRows_transpose (a b : Fin n) :
+    (G.swapRows a b).transpose = G.transpose.swapColumns a b := by
+  simp [swapRows, swapColumns]
+
+/-- Reflecting after a column swap is the same as the corresponding row swap after reflecting. -/
+@[simp]
+theorem swapColumns_transpose (a b : Fin n) :
+    (G.swapColumns a b).transpose = G.transpose.swapRows a b := by
+  simp [swapRows, swapColumns]
 
 /-- The `O`-marking set of the reflected diagram is the diagonal reflection of the original
 `O`-marking set. -/
