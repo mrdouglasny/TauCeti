@@ -46,17 +46,22 @@ explicit (never hidden in a `∃ C`):
 * `TauCeti.PDE.energyIntegrand_one_zero_zero_apply`,
   `TauCeti.PDE.energyIntegrand_one_zero_zero_self`: the Laplacian model `−Δ`, whose jet form
   is the Dirichlet integrand `⟨∇u, ∇v⟩`, with diagonal `‖∇u‖²`.
+* `TauCeti.PDE.norm_energyIntegrand_apply_le_of_bounds`,
+  `TauCeti.PDE.opNorm_energyIntegrand_le_of_bounds`: boundedness with explicit constant
+  `Λ + β + γ`.
+* `TauCeti.PDE.garding_energyIntegrand_self_of_bounds`: the pointwise Gårding lower bound
+  on the diagonal.
 * `TauCeti.PDE.UniformlyEllipticOn.norm_energyIntegrand_apply_le`,
-  `TauCeti.PDE.UniformlyEllipticOn.opNorm_energyIntegrand_le`: boundedness with explicit
-  constant `Λ + β + γ`.
-* `TauCeti.PDE.UniformlyEllipticOn.garding_energyIntegrand_self`: the pointwise Gårding
-  lower bound on the diagonal.
+  `TauCeti.PDE.UniformlyEllipticOn.opNorm_energyIntegrand_le`, and
+  `TauCeti.PDE.UniformlyEllipticOn.garding_energyIntegrand_self`: bundled-hypothesis
+  corollaries of the pointwise estimates.
 -/
 
 namespace TauCeti
 
 namespace PDE
 
+open Matrix
 open scoped InnerProductSpace
 
 variable {X n : Type*} [Fintype n] [DecidableEq n]
@@ -90,6 +95,7 @@ lemma energyIntegrand_apply (A : Matrix n n ℝ) (b : EuclideanSpace ℝ n) (c :
   simp [energyIntegrand]
 
 /-- The diagonal of the jet form, the energy density `⟨a ∇u, ∇u⟩ + ⟪b, ∇u⟫ u + c u²`. -/
+@[simp]
 lemma energyIntegrand_self (A : Matrix n n ℝ) (b : EuclideanSpace ℝ n) (c : ℝ)
     (U : ℝ × EuclideanSpace ℝ n) :
     energyIntegrand A b c U U
@@ -105,21 +111,40 @@ lemma energyIntegrand_one_zero_zero_apply (U V : ℝ × EuclideanSpace ℝ n) :
   simp [energyIntegrand_apply]
 
 /-- The diagonal of the Laplacian model's jet form is the Dirichlet energy density `‖∇u‖²`. -/
+@[simp]
 lemma energyIntegrand_one_zero_zero_self (U : ℝ × EuclideanSpace ℝ n) :
     energyIntegrand (1 : Matrix n n ℝ) 0 0 U U = ‖U.2‖ ^ 2 := by
   rw [energyIntegrand_self, toQuadraticForm'_one]
   simp
 
-namespace UniformlyEllipticOn
-
 variable {Ω : Set X} {a : X → Matrix n n ℝ} {b : X → EuclideanSpace ℝ n} {c : X → ℝ}
 variable {lam Lam beta gamma : ℝ}
+
+/-- Weighted Young inequality in the form used to absorb the first-order drift term into
+half of the ellipticity floor. -/
+lemma mul_norm_abs_le_half_mul_sq_add (hlam : 0 < lam) (beta u : ℝ) (r : ℝ) :
+    beta * r * |u| ≤ lam / 2 * r ^ 2 + beta ^ 2 / (2 * lam) * u ^ 2 := by
+  have hkey := two_mul_le_add_sq (lam * r) (beta * |u|)
+  rw [mul_pow, mul_pow, sq_abs] at hkey
+  have h2lam : (0 : ℝ) < 2 * lam := mul_pos two_pos hlam
+  rw [← sub_nonneg]
+  have expand : lam / 2 * r ^ 2 + beta ^ 2 / (2 * lam) * u ^ 2 - beta * r * |u|
+      = (lam ^ 2 * r ^ 2 + beta ^ 2 * u ^ 2 - 2 * lam * beta * r * |u|)
+          / (2 * lam) := by
+    field_simp
+  rw [expand]
+  apply div_nonneg _ h2lam.le
+  nlinarith [hkey]
 
 /-- Pointwise boundedness of the jet form with explicit constant `Λ + β + γ`: at every
 point of the domain, the principal, drift, and mass contributions are each controlled by
 the corresponding constant times the jet norms. -/
-lemma norm_energyIntegrand_apply_le (he : UniformlyEllipticOn Ω a lam Lam)
-    (hbc : LowerOrderBoundedOn Ω b c beta gamma) {x : X} (hx : x ∈ Ω)
+lemma norm_energyIntegrand_apply_le_of_bounds (hLam : 0 ≤ Lam) (hbeta : 0 ≤ beta)
+    (hgamma : 0 ≤ gamma)
+    (ha : ∀ ⦃x⦄, x ∈ Ω → ∀ η ξ : EuclideanSpace ℝ n,
+      |η ⬝ᵥ (a x *ᵥ ξ)| ≤ Lam * ‖η‖ * ‖ξ‖)
+    (hb : ∀ ⦃x⦄, x ∈ Ω → ‖b x‖ ≤ beta)
+    (hc : ∀ ⦃x⦄, x ∈ Ω → ‖c x‖ ≤ gamma) {x : X} (hx : x ∈ Ω)
     (U V : ℝ × EuclideanSpace ℝ n) :
     ‖energyIntegrand (a x) (b x) (c x) U V‖ ≤ (Lam + beta + gamma) * ‖U‖ * ‖V‖ := by
   have step : ∀ {K p q : ℝ}, 0 ≤ K → 0 ≤ p → 0 ≤ q → p ≤ ‖U‖ → q ≤ ‖V‖ →
@@ -130,18 +155,20 @@ lemma norm_energyIntegrand_apply_le (he : UniformlyEllipticOn Ω a lam Lam)
           mul_le_mul_of_nonneg_left (mul_le_mul hpU hqV hq (hp.trans hpU)) hK
       _ = K * ‖U‖ * ‖V‖ := by ring
   have hmat : ‖matrixBilinearForm (a x) V.2 U.2‖ ≤ Lam * ‖U‖ * ‖V‖ := by
-    have h := he.norm_point_matrixBilinearForm_le hx V.2 U.2
+    have h := norm_matrixBilinearForm_le_of_upper_bound (a x) (ha hx) V.2 U.2
     rw [mul_right_comm] at h
-    exact h.trans (step he.upper_nonneg (norm_nonneg _) (norm_nonneg _)
+    exact h.trans (step hLam (norm_nonneg _) (norm_nonneg _)
       (norm_snd_le U) (norm_snd_le V))
   have hdrift : ‖driftForm (b x) V.1 U.2‖ ≤ beta * ‖U‖ * ‖V‖ := by
-    have h := hbc.norm_driftForm_le hx V.1 U.2
+    have hb' : DriftBoundedOn Ω b beta := DriftBoundedOn.of_bound hbeta hb
+    have h := hb'.norm_driftForm_le hx V.1 U.2
     rw [mul_right_comm] at h
-    exact h.trans (step hbc.beta_nonneg (norm_nonneg _) (norm_nonneg _)
+    exact h.trans (step hbeta (norm_nonneg _) (norm_nonneg _)
       (norm_snd_le U) (norm_fst_le V))
   have hmass : ‖massForm (c x) U.1 V.1‖ ≤ gamma * ‖U‖ * ‖V‖ := by
-    have h := hbc.norm_massForm_le hx U.1 V.1
-    exact h.trans (step hbc.gamma_nonneg (norm_nonneg _) (norm_nonneg _)
+    have hc' : MassBoundedOn Ω c gamma := MassBoundedOn.of_bound hgamma hc
+    have h := hc'.norm_massForm_le hx U.1 V.1
+    exact h.trans (step hgamma (norm_nonneg _) (norm_nonneg _)
       (norm_fst_le U) (norm_fst_le V))
   rw [energyIntegrand_apply]
   calc ‖matrixBilinearForm (a x) V.2 U.2 + driftForm (b x) V.1 U.2 + massForm (c x) U.1 V.1‖
@@ -156,31 +183,37 @@ lemma norm_energyIntegrand_apply_le (he : UniformlyEllipticOn Ω a lam Lam)
 /-- The operator norm of the jet form is at most `Λ + β + γ`. This is the boundedness
 hypothesis of Lax--Milgram, with the constant explicit in the ellipticity, drift, and mass
 bounds. -/
-lemma opNorm_energyIntegrand_le (he : UniformlyEllipticOn Ω a lam Lam)
-    (hbc : LowerOrderBoundedOn Ω b c beta gamma) {x : X} (hx : x ∈ Ω) :
+lemma opNorm_energyIntegrand_le_of_bounds (hLam : 0 ≤ Lam) (hbeta : 0 ≤ beta)
+    (hgamma : 0 ≤ gamma)
+    (ha : ∀ ⦃x⦄, x ∈ Ω → ∀ η ξ : EuclideanSpace ℝ n,
+      |η ⬝ᵥ (a x *ᵥ ξ)| ≤ Lam * ‖η‖ * ‖ξ‖)
+    (hb : ∀ ⦃x⦄, x ∈ Ω → ‖b x‖ ≤ beta)
+    (hc : ∀ ⦃x⦄, x ∈ Ω → ‖c x‖ ≤ gamma) {x : X} (hx : x ∈ Ω) :
     ‖energyIntegrand (a x) (b x) (c x)‖ ≤ Lam + beta + gamma := by
   refine (energyIntegrand (a x) (b x) (c x)).opNorm_le_bound₂
-    (_root_.add_nonneg (_root_.add_nonneg he.upper_nonneg hbc.beta_nonneg) hbc.gamma_nonneg) ?_
+    (_root_.add_nonneg (_root_.add_nonneg hLam hbeta) hgamma) ?_
   intro U V
-  exact he.norm_energyIntegrand_apply_le hbc hx U V
+  exact norm_energyIntegrand_apply_le_of_bounds hLam hbeta hgamma ha hb hc hx U V
 
 /-- **Pointwise Gårding inequality.** With a nonnegative mass coefficient (`c ≥ 0`), the
 diagonal of the jet form is bounded below by `(λ/2)‖∇u‖² − (β²/2λ)|u|²`. The ellipticity
 floor `λ‖∇u‖²` pays for the drift term via Young's inequality, leaving half the floor and a
 mass defect proportional to `β²/λ`. Integrating over `Ω` this is Gårding's inequality
 `a(u, u) ≥ (λ/2)‖∇u‖²_{L²} − (β²/2λ)‖u‖²_{L²}`. -/
-lemma garding_energyIntegrand_self (he : UniformlyEllipticOn Ω a lam Lam)
-    (hb : DriftBoundedOn Ω b beta) (hc : NonnegMassOn Ω c gamma) {x : X} (hx : x ∈ Ω)
+lemma garding_energyIntegrand_self_of_bounds (hlam : 0 < lam)
+    (hQ : ∀ ⦃x⦄, x ∈ Ω → ∀ ξ : EuclideanSpace ℝ n,
+      lam * ‖ξ‖ ^ 2 ≤ (a x).toQuadraticForm' ξ)
+    (hb : ∀ ⦃x⦄, x ∈ Ω → ‖b x‖ ≤ beta)
+    (hc : ∀ ⦃x⦄, x ∈ Ω → 0 ≤ c x) {x : X} (hx : x ∈ Ω)
     (U : ℝ × EuclideanSpace ℝ n) :
     lam / 2 * ‖U.2‖ ^ 2 - beta ^ 2 / (2 * lam) * U.1 ^ 2
       ≤ energyIntegrand (a x) (b x) (c x) U U := by
   rw [energyIntegrand_self]
-  have hlam := he.pos
-  have hQ : lam * ‖U.2‖ ^ 2 ≤ (a x).toQuadraticForm' U.2 := he.lower_bound hx U.2
-  have hM : 0 ≤ c x * U.1 ^ 2 := mul_nonneg (hc.nonneg hx) (sq_nonneg _)
+  have hQ' : lam * ‖U.2‖ ^ 2 ≤ (a x).toQuadraticForm' U.2 := hQ hx U.2
+  have hM : 0 ≤ c x * U.1 ^ 2 := mul_nonneg (hc hx) (sq_nonneg _)
   have hbip : |⟪b x, U.2⟫_ℝ| ≤ beta * ‖U.2‖ :=
     (abs_real_inner_le_norm (b x) U.2).trans
-      (mul_le_mul_of_nonneg_right (hb.bound hx) (norm_nonneg _))
+      (mul_le_mul_of_nonneg_right (hb hx) (norm_nonneg _))
   have hD : -(beta * ‖U.2‖ * |U.1|) ≤ ⟪b x, U.2⟫_ℝ * U.1 := by
     have habs : |⟪b x, U.2⟫_ℝ * U.1| ≤ beta * ‖U.2‖ * |U.1| := by
       rw [abs_mul]
@@ -188,20 +221,43 @@ lemma garding_energyIntegrand_self (he : UniformlyEllipticOn Ω a lam Lam)
     have := neg_abs_le (⟪b x, U.2⟫_ℝ * U.1)
     linarith
   have hYoung : beta * ‖U.2‖ * |U.1| ≤
-      lam / 2 * ‖U.2‖ ^ 2 + beta ^ 2 / (2 * lam) * U.1 ^ 2 := by
-    have hkey := two_mul_le_add_sq (lam * ‖U.2‖) (beta * |U.1|)
-    rw [mul_pow, mul_pow, sq_abs] at hkey
-    have h2lam : (0 : ℝ) < 2 * lam := mul_pos two_pos hlam
-    rw [← sub_nonneg]
-    have expand : lam / 2 * ‖U.2‖ ^ 2 + beta ^ 2 / (2 * lam) * U.1 ^ 2
-        - beta * ‖U.2‖ * |U.1|
-        = (lam ^ 2 * ‖U.2‖ ^ 2 + beta ^ 2 * U.1 ^ 2
-            - 2 * lam * beta * ‖U.2‖ * |U.1|) / (2 * lam) := by
-      field_simp
-    rw [expand]
-    apply div_nonneg _ h2lam.le
-    nlinarith [hkey]
-  nlinarith [hQ, hM, hD, hYoung]
+      lam / 2 * ‖U.2‖ ^ 2 + beta ^ 2 / (2 * lam) * U.1 ^ 2 :=
+    mul_norm_abs_le_half_mul_sq_add hlam beta U.1 ‖U.2‖
+  nlinarith [hQ', hM, hD, hYoung]
+
+namespace UniformlyEllipticOn
+
+variable {Ω : Set X} {a : X → Matrix n n ℝ} {b : X → EuclideanSpace ℝ n} {c : X → ℝ}
+variable {lam Lam beta gamma : ℝ}
+
+/-- Bundled-hypothesis corollary of pointwise boundedness of the jet form. -/
+@[grind =>]
+lemma norm_energyIntegrand_apply_le (he : UniformlyEllipticOn Ω a lam Lam)
+    (hbc : LowerOrderBoundedOn Ω b c beta gamma) {x : X} (hx : x ∈ Ω)
+    (U V : ℝ × EuclideanSpace ℝ n) :
+    ‖energyIntegrand (a x) (b x) (c x) U V‖ ≤ (Lam + beta + gamma) * ‖U‖ * ‖V‖ :=
+  norm_energyIntegrand_apply_le_of_bounds he.upper_nonneg hbc.beta_nonneg hbc.gamma_nonneg
+    (fun {_} hx => he.upper_bound hx) (fun {_} hx => hbc.drift_bound hx)
+    (fun {_} hx => hbc.mass_bound hx) hx U V
+
+/-- Bundled-hypothesis corollary of the operator-norm bound for the jet form. -/
+@[grind =>]
+lemma opNorm_energyIntegrand_le (he : UniformlyEllipticOn Ω a lam Lam)
+    (hbc : LowerOrderBoundedOn Ω b c beta gamma) {x : X} (hx : x ∈ Ω) :
+    ‖energyIntegrand (a x) (b x) (c x)‖ ≤ Lam + beta + gamma :=
+  opNorm_energyIntegrand_le_of_bounds he.upper_nonneg hbc.beta_nonneg hbc.gamma_nonneg
+    (fun {_} hx => he.upper_bound hx) (fun {_} hx => hbc.drift_bound hx)
+    (fun {_} hx => hbc.mass_bound hx) hx
+
+/-- Bundled-hypothesis corollary of the pointwise Gårding lower bound on the diagonal. -/
+@[grind =>]
+lemma garding_energyIntegrand_self (he : UniformlyEllipticOn Ω a lam Lam)
+    (hb : DriftBoundedOn Ω b beta) (hc : NonnegMassOn Ω c gamma) {x : X} (hx : x ∈ Ω)
+    (U : ℝ × EuclideanSpace ℝ n) :
+    lam / 2 * ‖U.2‖ ^ 2 - beta ^ 2 / (2 * lam) * U.1 ^ 2
+      ≤ energyIntegrand (a x) (b x) (c x) U U :=
+  garding_energyIntegrand_self_of_bounds he.pos (fun {_} hx => he.lower_bound hx)
+    (fun {_} hx => hb.bound hx) (fun {_} hx => hc.nonneg hx) hx U
 
 end UniformlyEllipticOn
 
