@@ -6,6 +6,7 @@ import Mathlib.Data.Real.Basic
 import Mathlib.LinearAlgebra.BilinearForm.Hom
 import Mathlib.LinearAlgebra.BilinearForm.Properties
 import Mathlib.LinearAlgebra.QuadraticForm.Basic
+import TauCeti.LinearAlgebra.ComplexLinearPart
 
 /-!
 # Almost complex structures and compatible symplectic forms
@@ -21,6 +22,7 @@ on tangent fibers rather than restating the linear algebra.
 ## Main declarations
 
 * `TauCeti.AlmostComplexStructure`: a real-linear endomorphism `J` with `J^2 = -1`.
+* `TauCeti.IsComplexLinearMap`: a real-linear map intertwining two almost complex structures.
 * `TauCeti.SymplecticForm`: an alternating, nondegenerate real bilinear form.
 * `TauCeti.SymplecticForm.Tames`: the positivity condition `0 < ω v (J v)` for `v ≠ 0`.
 * `TauCeti.SymplecticForm.Compatible`: `J`-invariance plus positivity of `ω(·, J ·)`.
@@ -36,7 +38,7 @@ namespace TauCeti
 
 open LinearMap
 
-variable {V W : Type*}
+variable {V W X : Type*}
 
 /-- A pointwise almost complex structure is a real-linear endomorphism whose square is `-1`.
 
@@ -52,6 +54,14 @@ structure AlmostComplexStructure (V : Type*) [AddCommGroup V] [Module ℝ V] whe
 namespace AlmostComplexStructure
 
 variable [AddCommGroup V] [Module ℝ V]
+
+/-- The underlying linear map determines an almost complex structure: the only data is the
+endomorphism, the defining identity being a proposition. -/
+theorem toLinearMap_injective :
+    Function.Injective (toLinearMap : AlmostComplexStructure V → (V →ₗ[ℝ] V)) := by
+  rintro ⟨L, hL⟩ ⟨L', hL'⟩ h
+  subst h
+  rfl
 
 instance : CoeFun (AlmostComplexStructure V) fun _ => V → V :=
   ⟨fun J => J.toLinearMap⟩
@@ -146,6 +156,96 @@ lemma product_apply (v : V × V) :
     product V v = (-v.2, v.1) := rfl
 
 end AlmostComplexStructure
+
+section ComplexLinearMap
+
+variable [AddCommGroup V] [Module ℝ V]
+variable [AddCommGroup W] [Module ℝ W]
+variable [AddCommGroup X] [Module ℝ X]
+
+/-- A real-linear map is complex-linear with respect to two fixed pointwise
+almost complex structures if it intertwines them. -/
+def IsComplexLinearMap (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W)
+    (F : V →ₗ[ℝ] W) : Prop :=
+  F.comp J.toLinearMap = J'.toLinearMap.comp F
+
+/-- The bundled almost-complex predicate is the raw complex-linearity predicate applied to the
+underlying endomorphisms. -/
+lemma isComplexLinearMap_iff_isComplexLinear (J : AlmostComplexStructure V)
+    (J' : AlmostComplexStructure W) (F : V →ₗ[ℝ] W) :
+    IsComplexLinearMap J J' F ↔ IsComplexLinear J.toLinearMap J'.toLinearMap F :=
+  Iff.rfl
+
+/-- Rewrite complex-linearity of a real-linear map as the pointwise equation
+`F (J v) = J' (F v)`. -/
+lemma isComplexLinearMap_iff_apply (J : AlmostComplexStructure V)
+    (J' : AlmostComplexStructure W) (F : V →ₗ[ℝ] W) :
+    IsComplexLinearMap J J' F ↔ ∀ v, F (J v) = J' (F v) :=
+  LinearMap.ext_iff
+
+/-- Complex-linearity for almost complex structures is membership in the existing submodule of
+raw-linear complex-linear maps. -/
+lemma isComplexLinearMap_iff_mem_complexLinearMaps (J : AlmostComplexStructure V)
+    (J' : AlmostComplexStructure W) (F : V →ₗ[ℝ] W) :
+    IsComplexLinearMap J J' F ↔ F ∈ complexLinearMaps J.toLinearMap J'.toLinearMap := by
+  rw [isComplexLinearMap_iff_isComplexLinear, mem_complexLinearMaps]
+
+/-- The zero map is complex-linear for any source and target almost complex structures. -/
+@[simp]
+lemma isComplexLinearMap_zero (J : AlmostComplexStructure V) (J' : AlmostComplexStructure W) :
+    IsComplexLinearMap J J' (0 : V →ₗ[ℝ] W) := by
+  rw [isComplexLinearMap_iff_apply]
+  intro v
+  simp
+
+/-- Complex-linear maps are closed under addition. -/
+lemma IsComplexLinearMap.add {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
+    {F G : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F)
+    (hG : IsComplexLinearMap J J' G) : IsComplexLinearMap J J' (F + G) := by
+  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF hG ⊢
+  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).add_mem hF hG
+
+/-- Complex-linear maps are closed under negation. -/
+lemma IsComplexLinearMap.neg {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
+    {F : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F) :
+    IsComplexLinearMap J J' (-F) := by
+  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF ⊢
+  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).neg_mem hF
+
+/-- Complex-linear maps are closed under subtraction. -/
+lemma IsComplexLinearMap.sub {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
+    {F G : V →ₗ[ℝ] W} (hF : IsComplexLinearMap J J' F)
+    (hG : IsComplexLinearMap J J' G) : IsComplexLinearMap J J' (F - G) := by
+  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF hG ⊢
+  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).sub_mem hF hG
+
+/-- Complex-linear maps are closed under real scalar multiplication. -/
+lemma IsComplexLinearMap.smul {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
+    {F : V →ₗ[ℝ] W} (c : ℝ) (hF : IsComplexLinearMap J J' F) :
+    IsComplexLinearMap J J' (c • F) := by
+  rw [isComplexLinearMap_iff_mem_complexLinearMaps] at hF ⊢
+  exact (complexLinearMaps J.toLinearMap J'.toLinearMap).smul_mem c hF
+
+/-- The identity map is complex-linear with respect to the same almost complex structure. -/
+@[simp]
+lemma isComplexLinearMap_id (J : AlmostComplexStructure V) :
+    IsComplexLinearMap J J (LinearMap.id : V →ₗ[ℝ] V) := by
+  rw [isComplexLinearMap_iff_apply]
+  intro v
+  simp [LinearMap.id_apply]
+
+/-- Complex-linear maps are closed under composition. -/
+lemma IsComplexLinearMap.comp {J : AlmostComplexStructure V} {J' : AlmostComplexStructure W}
+    {J'' : AlmostComplexStructure X} {F : V →ₗ[ℝ] W} {G : W →ₗ[ℝ] X}
+    (hG : IsComplexLinearMap J' J'' G) (hF : IsComplexLinearMap J J' F) :
+    IsComplexLinearMap J J'' (G.comp F) := by
+  rw [isComplexLinearMap_iff_apply] at hF hG ⊢
+  intro v
+  calc
+    G (F (J v)) = G (J' (F v)) := by rw [hF v]
+    _ = J'' (G (F v)) := hG (F v)
+
+end ComplexLinearMap
 
 /-- A symplectic form on a real module is an alternating, nondegenerate bilinear form.
 
