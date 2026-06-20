@@ -2,14 +2,14 @@ import Mathlib.LinearAlgebra.Prod
 import Mathlib.LinearAlgebra.Projection
 
 /-!
-# Totally real linear subspaces
+# Maximal totally real linear subspaces
 
-This file supplies the linear-algebra notion of a totally real subspace with respect to a
-linear endomorphism `J` over an arbitrary scalar semiring.  This is the algebraic pointwise
+This file supplies the linear-algebra notion of a maximal totally real subspace with respect to
+a linear endomorphism `J` over an arbitrary scalar semiring.  This is the algebraic pointwise
 model for totally real boundary conditions in the analytic Heegaard Floer roadmap: a boundary
-tangent space `L` is totally real when `L` and its `J`-image are complementary.  The name is
-borrowed from the usual real-linear situation, but the complement API itself is purely
-module-theoretic.
+tangent space `L` is maximal totally real when `L` and its `J`-image are complementary.  The
+terminology is borrowed from the usual real-linear situation, but the complement API itself is
+purely module-theoretic.
 
 No integrability, topology, or symplectic form is bundled here.
 -/
@@ -26,50 +26,61 @@ variable [Semiring R]
 variable [AddCommMonoid E] [Module R E]
 variable [AddCommMonoid F] [Module R F]
 
-/-- A submodule is totally real with respect to `J` if it is complementary to its `J`-image. -/
-def IsTotallyReal (J : E →ₗ[R] E) (L : Submodule R E) : Prop :=
+/-- A submodule is maximal totally real with respect to `J` if it is complementary to its
+`J`-image. -/
+def IsMaximalTotallyReal (J : E →ₗ[R] E) (L : Submodule R E) : Prop :=
   IsCompl L (L.map J)
 
-/-- The totally real predicate unfolds to complementarity of `L` and its `J`-image. -/
-@[simp]
-theorem isTotallyReal_iff (J : E →ₗ[R] E) (L : Submodule R E) :
-    IsTotallyReal J L ↔ IsCompl L (L.map J) :=
+/-- The maximal totally real predicate unfolds to complementarity of `L` and its `J`-image. -/
+theorem isMaximalTotallyReal_iff (J : E →ₗ[R] E) (L : Submodule R E) :
+    IsMaximalTotallyReal J L ↔ IsCompl L (L.map J) :=
   Iff.rfl
 
-namespace IsTotallyReal
+namespace IsCompl
 
-variable {J : E →ₗ[R] E} {K : F →ₗ[R] F} {L L' : Submodule R E} {M : Submodule R F}
+variable {L₁ L₂ : Submodule R E} {M₁ M₂ : Submodule R F}
 
-/-- A totally real submodule is complementary to its `J`-image. -/
-theorem isCompl (hL : IsTotallyReal J L) : IsCompl L (L.map J) :=
-  hL
-
-/-- A totally real submodule is disjoint from its `J`-image. -/
-theorem disjoint (hL : IsTotallyReal J L) : Disjoint L (L.map J) :=
-  hL.isCompl.disjoint
-
-/-- The intersection of a totally real submodule with its `J`-image is bottom. -/
-theorem inf_eq_bot (hL : IsTotallyReal J L) : L ⊓ L.map J = ⊥ :=
-  hL.isCompl.inf_eq_bot
-
-/-- A totally real submodule spans codisjointly with its `J`-image. -/
-theorem codisjoint (hL : IsTotallyReal J L) : Codisjoint L (L.map J) :=
-  hL.isCompl.codisjoint
-
-/-- A totally real submodule and its `J`-image span the whole module. -/
-theorem sup_eq_top (hL : IsTotallyReal J L) : L ⊔ L.map J = ⊤ :=
-  hL.isCompl.sup_eq_top
-
-/-- Products of totally real submodules are totally real for `LinearMap.prodMap`. -/
-theorem prod (hL : IsTotallyReal J L) (hM : IsTotallyReal K M) :
-    IsTotallyReal (LinearMap.prodMap J K) (L.prod M) := by
-  rw [isTotallyReal_iff]
-  rw [LinearMap.prodMap_map_prod]
+/-- Products of complementary submodules are complementary. -/
+theorem prod (hL : IsCompl L₁ L₂) (hM : IsCompl M₁ M₂) :
+    IsCompl (L₁.prod M₁) (L₂.prod M₂) := by
   refine IsCompl.of_eq ?_ ?_
   · rw [Submodule.prod_inf_prod, hL.inf_eq_bot, hM.inf_eq_bot, Submodule.prod_bot]
   · rw [Submodule.prod_sup_prod, hL.sup_eq_top, hM.sup_eq_top, Submodule.prod_top]
 
-end IsTotallyReal
+end IsCompl
+
+namespace IsMaximalTotallyReal
+
+variable {J : E →ₗ[R] E} {K : F →ₗ[R] F} {L L' : Submodule R E} {M : Submodule R F}
+
+/-- A maximal totally real submodule is complementary to its `J`-image. -/
+theorem isCompl (hL : IsMaximalTotallyReal J L) : IsCompl L (L.map J) :=
+  hL
+
+/-- A maximal totally real submodule is disjoint from its `J`-image. -/
+theorem disjoint (hL : IsMaximalTotallyReal J L) : Disjoint L (L.map J) :=
+  hL.isCompl.disjoint
+
+/-- The intersection of a maximal totally real submodule with its `J`-image is bottom. -/
+theorem inf_eq_bot (hL : IsMaximalTotallyReal J L) : L ⊓ L.map J = ⊥ :=
+  hL.isCompl.inf_eq_bot
+
+/-- A maximal totally real submodule spans codisjointly with its `J`-image. -/
+theorem codisjoint (hL : IsMaximalTotallyReal J L) : Codisjoint L (L.map J) :=
+  hL.isCompl.codisjoint
+
+/-- A maximal totally real submodule and its `J`-image span the whole module. -/
+theorem sup_eq_top (hL : IsMaximalTotallyReal J L) : L ⊔ L.map J = ⊤ :=
+  hL.isCompl.sup_eq_top
+
+/-- Products of maximal totally real submodules are maximal totally real for `LinearMap.prodMap`. -/
+theorem prod (hL : IsMaximalTotallyReal J L) (hM : IsMaximalTotallyReal K M) :
+    IsMaximalTotallyReal (LinearMap.prodMap J K) (L.prod M) := by
+  rw [isMaximalTotallyReal_iff]
+  rw [LinearMap.prodMap_map_prod]
+  exact TauCeti.IsCompl.prod hL.isCompl hM.isCompl
+
+end IsMaximalTotallyReal
 
 end Basic
 
@@ -114,27 +125,23 @@ theorem map_prod_bot_top_skewSwap :
     refine ⟨(0, -x.1), by simp, ?_⟩
     ext <;> simp [hx2]
 
-/-- The first factor in `E × E` is totally real for the standard doubled-module complex
+/-- The first factor in `E × E` is maximal totally real for the standard doubled-module complex
 structure. -/
-theorem isTotallyReal_prod_top_bot_skewSwap :
-    IsTotallyReal (LinearEquiv.skewSwap R E E).toLinearMap
+theorem isMaximalTotallyReal_prod_top_bot_skewSwap :
+    IsMaximalTotallyReal (LinearEquiv.skewSwap R E E).toLinearMap
       ((⊤ : Submodule R E).prod (⊥ : Submodule R E)) := by
-  rw [isTotallyReal_iff]
+  rw [isMaximalTotallyReal_iff]
   rw [map_prod_top_bot_skewSwap]
-  refine IsCompl.of_eq ?_ ?_
-  · rw [Submodule.prod_inf_prod, inf_bot_eq, bot_inf_eq, Submodule.prod_bot]
-  · rw [Submodule.prod_sup_prod, top_sup_eq, bot_sup_eq, Submodule.prod_top]
+  exact TauCeti.IsCompl.prod isCompl_top_bot isCompl_bot_top
 
-/-- The second factor in `E × E` is totally real for the standard doubled-module complex
+/-- The second factor in `E × E` is maximal totally real for the standard doubled-module complex
 structure. -/
-theorem isTotallyReal_prod_bot_top_skewSwap :
-    IsTotallyReal (LinearEquiv.skewSwap R E E).toLinearMap
+theorem isMaximalTotallyReal_prod_bot_top_skewSwap :
+    IsMaximalTotallyReal (LinearEquiv.skewSwap R E E).toLinearMap
       ((⊥ : Submodule R E).prod (⊤ : Submodule R E)) := by
-  rw [isTotallyReal_iff]
+  rw [isMaximalTotallyReal_iff]
   rw [map_prod_bot_top_skewSwap]
-  refine IsCompl.of_eq ?_ ?_
-  · rw [Submodule.prod_inf_prod, bot_inf_eq, inf_bot_eq, Submodule.prod_bot]
-  · rw [Submodule.prod_sup_prod, bot_sup_eq, top_sup_eq, Submodule.prod_top]
+  exact TauCeti.IsCompl.prod isCompl_bot_top isCompl_top_bot
 
 end Submodule
 
@@ -145,38 +152,44 @@ section Ring
 variable [Ring R]
 variable [AddCommGroup E] [Module R E]
 
-namespace IsTotallyReal
+namespace IsMaximalTotallyReal
 
 variable {J : E →ₗ[R] E} {L : Submodule R E}
 
-/-- If `J² = -1`, the image `J(L)` is totally real whenever `L` is totally real. -/
-theorem image (hL : IsTotallyReal J L) (hJ : J.comp J = -LinearMap.id) :
-    IsTotallyReal J (L.map J) := by
-  rw [isTotallyReal_iff, ← Submodule.map_comp J J L, hJ, Submodule.map_neg, Submodule.map_id]
+/-- If `J² = -1`, applying `J` twice to a submodule returns the original submodule. -/
+private theorem map_map_eq (hJ : J.comp J = -LinearMap.id) : (L.map J).map J = L := by
+  rw [← Submodule.map_comp J J L, hJ, Submodule.map_neg, Submodule.map_id]
+
+/-- If `J² = -1`, the image `J(L)` is maximal totally real whenever `L` is maximal totally
+real. -/
+theorem image (hL : IsMaximalTotallyReal J L) (hJ : J.comp J = -LinearMap.id) :
+    IsMaximalTotallyReal J (L.map J) := by
+  rw [isMaximalTotallyReal_iff, map_map_eq hJ]
   exact hL.isCompl.symm
 
-/-- Under `J² = -1`, `L` is totally real if and only if its image `J(L)` is totally real. -/
+/-- Under `J² = -1`, `L` is maximal totally real if and only if its image `J(L)` is maximal
+totally real. -/
 theorem image_iff (hJ : J.comp J = -LinearMap.id) :
-    IsTotallyReal J (L.map J) ↔ IsTotallyReal J L := by
+    IsMaximalTotallyReal J (L.map J) ↔ IsMaximalTotallyReal J L := by
   constructor
   · intro h
     have h' := h.image hJ
-    rwa [← Submodule.map_comp J J L, hJ, Submodule.map_neg, Submodule.map_id] at h'
+    rwa [map_map_eq hJ] at h'
   · intro h
     exact h.image hJ
 
-end IsTotallyReal
+end IsMaximalTotallyReal
 
-namespace IsTotallyReal
+namespace IsMaximalTotallyReal
 
 variable {J : E →ₗ[R] E} {L : Submodule R E}
 
 /-- Every vector decomposes uniquely as an element of `L` plus an element of `J(L)`. -/
-theorem existsUnique_add (hL : IsTotallyReal J L) (x : E) :
+theorem existsUnique_add (hL : IsMaximalTotallyReal J L) (x : E) :
     ∃! y : L × L.map J, (y.1 : E) + y.2 = x :=
   Submodule.existsUnique_add_of_isCompl_prod hL.isCompl x
 
-end IsTotallyReal
+end IsMaximalTotallyReal
 
 end Ring
 
