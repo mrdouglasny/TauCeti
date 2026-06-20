@@ -114,6 +114,11 @@ theorem rotate_rotate (x : GridState n) : x.rotate.rotate = x := by
   ext c
   simp [Fin.rev_rev]
 
+/-- Diagonal reflection commutes with the half-turn rotation of a grid state. -/
+@[simp]
+theorem transpose_rotate (x : GridState n) : x.transpose.rotate = x.rotate.transpose := by
+  simp [rotate, GridState.relabelRows_relabelColumns]
+
 /-- Row relabeling before rotation becomes row relabeling by the conjugate permutation after
 rotation. -/
 @[simp]
@@ -200,6 +205,11 @@ theorem mem_XSet_rotate (p : Fin n × Fin n) :
 @[simp]
 theorem rotate_rotate : G.rotate.rotate = G := by
   ext c <;> simp
+
+/-- Diagonal reflection commutes with the half-turn rotation of a grid diagram. -/
+@[simp]
+theorem transpose_rotate : G.transpose.rotate = G.rotate.transpose := by
+  ext c <;> simp [GridState.transpose_rotate]
 
 /-- Row relabeling before rotation becomes row relabeling by the conjugate permutation after
 rotation. -/
