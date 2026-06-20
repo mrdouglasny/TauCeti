@@ -501,6 +501,16 @@ def JX (x : GridState n) : ℚ :=
 theorem JX_def (x : GridState n) : GridDiagram.JX G x = GridPoint.J x.pointSet G.XSet :=
   rfl
 
+/-- `JO` is invariant under reflecting the diagram and state across the diagonal. -/
+theorem JO_transpose (x : GridState n) :
+    GridDiagram.JO G.transpose x.transpose = GridDiagram.JO G x := by
+  rw [JO_def, JO_def, GridState.transpose_pointSet, transpose_OSet, GridPoint.J_image_swap]
+
+/-- `JX` is invariant under reflecting the diagram and state across the diagonal. -/
+theorem JX_transpose (x : GridState n) :
+    GridDiagram.JX G.transpose x.transpose = GridDiagram.JX G x := by
+  rw [JX_def, JX_def, GridState.transpose_pointSet, transpose_XSet, GridPoint.J_image_swap]
+
 /-- `JO` may equivalently be read with the `O`-markings as the left input. -/
 theorem JO_comm (x : GridState n) : GridDiagram.JO G x = GridPoint.J G.OSet x.pointSet := by
   rw [JO, GridPoint.J_comm]
