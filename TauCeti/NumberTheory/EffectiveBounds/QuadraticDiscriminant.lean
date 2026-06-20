@@ -5,6 +5,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import TauCeti.NumberTheory.EffectiveBounds.Discriminant
 import TauCeti.FieldTheory.Trace
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
+import Mathlib.Algebra.Polynomial.Monic
 
 /-!
 # The effective discriminant bound for a quadratic field, evaluated on a square-root basis
@@ -31,8 +33,8 @@ outside `ℚ` makes `{1, x}` linearly independent, and in a quadratic field that
 
 * `TauCeti.NumberField.abs_discr_le_of_sq_intCast`: `|d_K| ≤ 4·|a|` (over `ℚ`) for a
   quadratic field `K` and `x : K` with `x² = a ∈ ℤ` and `x ∉ ℚ`.
-* `TauCeti.NumberField.abs_discr_le_of_sq_intCast'`: the same bound stated entirely over
-  `ℤ`, `|d_K| ≤ 4·|a|`.
+* `TauCeti.NumberField.abs_discr_le_int_of_sq_intCast`: the same bound stated entirely
+  over `ℤ`, `|d_K| ≤ 4·|a|`.
 
 ## Provenance
 
@@ -50,11 +52,7 @@ namespace TauCeti
 namespace NumberField
 
 /-- For a quadratic number field `K` and an element `x : K` whose square is an integer
-`a` and which is not rational, the field discriminant satisfies `|d_K| ≤ 4·|a|`.
-
-The square-root basis `{1, x}` consists of algebraic integers, so the effective bound
-`abs_discr_le_of_basis_isIntegral` applies, and the trace-form diagonalisation evaluates
-its discriminant as `disc ℚ {1, x} = 4·a`. -/
+`a` and which is not rational, the field discriminant satisfies `|d_K| ≤ 4·|a|`. -/
 theorem abs_discr_le_of_sq_intCast {K : Type*} [Field K] [NumberField K]
     {x : K} {a : ℤ} (hfin : finrank ℚ K = 2)
     (hx2 : x ^ 2 = algebraMap ℤ K a) (hx : x ∉ (algebraMap ℚ K).range) :
@@ -90,18 +88,17 @@ theorem abs_discr_le_of_sq_intCast {K : Type*} [Field K] [NumberField K]
     rw [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C, ← hx2, sub_self]
   have hb_int : ∀ i, IsIntegral ℤ (b i) := by
     intro i
-    rw [show (b i) = ![1, x] i from by rw [hbcoe]]
     fin_cases i
-    · simpa using (isIntegral_one : IsIntegral ℤ (1 : K))
-    · simpa using hxint
+    · simpa [hbcoe] using (isIntegral_one : IsIntegral ℤ (1 : K))
+    · simpa [hbcoe] using hxint
   -- Combine the effective bound with the trace-form evaluation `disc ℚ {1, x} = 4·a`.
   have hmain := TauCeti.NumberField.abs_discr_le_of_basis_isIntegral b hb_int
   rw [hbcoe, TauCeti.Algebra.discr_one_elem_eq_of_sq_algebraMap hfin hx2' hx] at hmain
-  rwa [abs_mul, show |(4 : ℚ)| = 4 by norm_num] at hmain
+  simpa [abs_mul] using hmain
 
 /-- The integer form of the quadratic discriminant bound: `|d_K| ≤ 4·|a|` over `ℤ`, for a
 quadratic field `K` with `x² = a ∈ ℤ` and `x ∉ ℚ`. -/
-theorem abs_discr_le_of_sq_intCast' {K : Type*} [Field K] [NumberField K]
+theorem abs_discr_le_int_of_sq_intCast {K : Type*} [Field K] [NumberField K]
     {x : K} {a : ℤ} (hfin : finrank ℚ K = 2)
     (hx2 : x ^ 2 = algebraMap ℤ K a) (hx : x ∉ (algebraMap ℚ K).range) :
     |NumberField.discr K| ≤ 4 * |a| := by
