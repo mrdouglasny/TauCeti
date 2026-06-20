@@ -97,6 +97,7 @@ theorem mem_target_pointSet_iff (p : Fin n × Fin n) :
 /-- The two side columns carry the four corners of a rectangle, so a square that the two states
 share must avoid both side columns. Conversely, away from the side columns the two states agree,
 so every source square off the side columns is shared. -/
+@[simp]
 theorem mem_pointSet_inter_iff (p : Fin n × Fin n) :
     p ∈ x.pointSet ∩ y.pointSet ↔
       p ∈ x.pointSet ∧ p.1 ≠ R.left ∧ p.1 ≠ R.right := by
