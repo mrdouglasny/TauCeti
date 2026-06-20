@@ -188,7 +188,9 @@ theorem unitOfPoint_comp (φ : A →ₐ[R] B) (f : R[T;T⁻¹] →ₐ[R] A) :
 theorem pointEquiv_comp (φ : A →ₐ[R] B) (f : R[T;T⁻¹] →ₐ[R] A) :
     pointEquiv (R := R) (A := B) (φ.comp f) =
       Units.map φ.toMonoidHom (pointEquiv (R := R) (A := A) f) :=
-  unitOfPoint_comp φ f
+  by
+    rw [pointEquiv_apply, pointEquiv_apply]
+    exact unitOfPoint_comp φ f
 
 /-- Naturality of the inverse plain points equivalence in the value algebra. -/
 @[simp]
@@ -216,7 +218,9 @@ theorem pointsMulEquiv_mapValue (φ : A →ₐ[R] B)
     pointsMulEquiv (R := R) (A := B)
         (AlgHom.mapValue (H := R[T;T⁻¹]) φ f) =
       Units.map φ.toMonoidHom (pointsMulEquiv f) :=
-  unitOfPoint_mapValue φ f
+  by
+    rw [pointsMulEquiv_apply, pointsMulEquiv_apply]
+    exact unitOfPoint_mapValue φ f
 
 /-- Naturality of the inverse `𝔾ₘ` points equivalence in the value algebra. -/
 @[simp]
