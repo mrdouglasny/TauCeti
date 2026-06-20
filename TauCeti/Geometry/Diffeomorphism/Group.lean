@@ -60,7 +60,7 @@ instance instMul : Mul (M ≃ₘ^n⟮I, I⟯ M) where mul f g := g.trans f
 instance instInv : Inv (M ≃ₘ^n⟮I, I⟯ M) where inv f := f.symm
 
 /-- Composition of diffeomorphisms is associative. -/
-theorem trans_assoc
+private theorem trans_assoc
     {E' : Type*} [NormedAddCommGroup E'] [NormedSpace 𝕜 E']
     {F : Type*} [NormedAddCommGroup F] [NormedSpace 𝕜 F]
     {F' : Type*} [NormedAddCommGroup F'] [NormedSpace 𝕜 F']
