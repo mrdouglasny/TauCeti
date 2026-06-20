@@ -90,6 +90,17 @@ lemma IsEffective.inf {D E : WeilDivisor X} (hD : IsEffective D) (hE : IsEffecti
   isEffective_iff_zero_le.mpr
     (le_inf (isEffective_iff_zero_le.mp hD) (isEffective_iff_zero_le.mp hE))
 
+/-- A pointwise minimum is effective exactly when both divisors are effective. -/
+@[simp]
+lemma isEffective_inf_iff {D E : WeilDivisor X} :
+    IsEffective (D ⊓ E) ↔ IsEffective D ∧ IsEffective E := by
+  rw [isEffective_iff_zero_le, isEffective_iff_zero_le, isEffective_iff_zero_le]
+  constructor
+  · intro h
+    exact ⟨le_trans h inf_le_left, le_trans h inf_le_right⟩
+  · rintro ⟨hD, hE⟩
+    exact le_inf hD hE
+
 /-! ### Positive and negative parts -/
 
 /-- The coefficient of the positive part is the positive part of the coefficient. -/
