@@ -29,14 +29,14 @@ recovered through the time-duplicating embedding `(t, x, x') ↦ ((t, x), (t, x'
 
 * `TauCeti.Isotopy.prodMap`: the product of an isotopy `f₀ ≈ f₁` and an isotopy `g₀ ≈ g₁`, an
   isotopy `f₀.prodMap g₀ ≈ f₁.prodMap g₁`.
-* `TauCeti.AmbientIsotopy.prod`: the product of an ambient isotopy of `Y` and one of `Y'`, an
+* `TauCeti.AmbientIsotopy.prodCongr`: the product of an ambient isotopy of `Y` and one of `Y'`, an
   ambient isotopy of `Y × Y'`.
 
 ## Main results
 
 * `TauCeti.Isotopic.prodMap`: the same closure on the isotopy *relation*.
-* `TauCeti.AmbientIsotopy.final_prod`: the final homeomorphism of a product ambient isotopy is the
-  product of the two final homeomorphisms.
+* `TauCeti.AmbientIsotopy.final_prodCongr`: the final homeomorphism of a product ambient isotopy
+  is the product of the two final homeomorphisms.
 * `TauCeti.AmbientIsotopic.prodMap`: the product closure on the ambient-isotopy relation.
 -/
 
@@ -121,7 +121,7 @@ namespace AmbientIsotopy
 is `(Φ (t, y), Ψ (t, y'))`. Its total map is a homeomorphism, being an embedding (by
 `isEmbedding_mergeTotal`) and surjective (each factor is surjective at every time, by
 `AmbientIsotopy.isHomeomorph_apply`). -/
-def prod (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') : AmbientIsotopy (Y × Y') where
+def prodCongr (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') : AmbientIsotopy (Y × Y') where
   toContinuousMap :=
     ⟨fun p => (Φ.toContinuousMap (p.1, p.2.1), Ψ.toContinuousMap (p.1, p.2.2)), by fun_prop⟩
   isHomeomorph_total' := by
@@ -135,15 +135,15 @@ def prod (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') : AmbientIsotopy (Y ×
   map_zero_left' y := Prod.ext (Φ.map_zero_left y.1) (Ψ.map_zero_left y.2)
 
 @[simp]
-theorem prod_apply (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (p : I × (Y × Y')) :
-    (Φ.prod Ψ).toContinuousMap p =
+theorem prodCongr_apply (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (p : I × (Y × Y')) :
+    (Φ.prodCongr Ψ).toContinuousMap p =
       (Φ.toContinuousMap (p.1, p.2.1), Ψ.toContinuousMap (p.1, p.2.2)) := rfl
 
 /-- The final homeomorphism of a product ambient isotopy is the product of the two final
 homeomorphisms. -/
 @[simp]
-theorem final_prod (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (y : Y × Y') :
-    (Φ.prod Ψ).final y = (Φ.final y.1, Ψ.final y.2) := rfl
+theorem final_prodCongr (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (y : Y × Y') :
+    (Φ.prodCongr Ψ).final y = (Φ.final y.1, Ψ.final y.2) := rfl
 
 end AmbientIsotopy
 
@@ -158,8 +158,8 @@ theorem prodMap (h : AmbientIsotopic f f') (h' : AmbientIsotopic g g') :
     AmbientIsotopic (f.prodMap g) (f'.prodMap g') := by
   obtain ⟨Φ, rfl⟩ := h
   obtain ⟨Ψ, rfl⟩ := h'
-  refine ⟨Φ.prod Ψ, ContinuousMap.ext fun p => ?_⟩
-  exact AmbientIsotopy.final_prod Φ Ψ ((f.prodMap g) p)
+  refine ⟨Φ.prodCongr Ψ, ContinuousMap.ext fun p => ?_⟩
+  exact AmbientIsotopy.final_prodCongr Φ Ψ ((f.prodMap g) p)
 
 end AmbientIsotopic
 
