@@ -17,9 +17,10 @@ square-root bases `{1, x}` with `x² ∈ K`, and on those the trace form is diag
 element whose square lies in the base field has trace zero.
 
 This file declares no new results: it records the EffectiveBounds square-root worked
-examples by reusing the trace and discriminant API from `TauCeti.FieldTheory.Trace`
-(`TauCeti.NumberField.trace_eq_zero_of_sq_ratCast` and
-`TauCeti.Algebra.discr_one_elem_eq_of_sq_algebraMap`).
+examples. The discriminant example reuses `TauCeti.Algebra.discr_one_elem_eq_of_sq_algebraMap`
+from `TauCeti.FieldTheory.Trace` (which in turn evaluates the off-diagonal trace via the
+trace-vanishing criterion); the trace example computes `Tr_{ℂ/ℝ} I` directly via
+`Algebra.trace_complex_apply`.
 
 ## Worked examples
 
