@@ -35,8 +35,8 @@ recovered through the time-duplicating embedding `(t, x, x') ↦ ((t, x), (t, x'
 ## Main results
 
 * `TauCeti.Isotopic.prodMap`: the same closure on the isotopy *relation*.
-* `TauCeti.AmbientIsotopy.final_prodCongr`: the final homeomorphism of a product ambient isotopy
-  is the product of the two final homeomorphisms.
+* `TauCeti.AmbientIsotopy.final_prodCongr`: the final map of a product ambient isotopy
+  is the product of the two final maps.
 * `TauCeti.AmbientIsotopic.prodMap`: the product closure on the ambient-isotopy relation.
 -/
 
@@ -139,8 +139,7 @@ theorem prodCongr_apply (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (p : I 
     (Φ.prodCongr Ψ).toContinuousMap p =
       (Φ.toContinuousMap (p.1, p.2.1), Ψ.toContinuousMap (p.1, p.2.2)) := rfl
 
-/-- The final homeomorphism of a product ambient isotopy is the product of the two final
-homeomorphisms. -/
+/-- The final map of a product ambient isotopy is the product of the two final maps. -/
 @[simp]
 theorem final_prodCongr (Φ : AmbientIsotopy Y) (Ψ : AmbientIsotopy Y') (y : Y × Y') :
     (Φ.prodCongr Ψ).final y = (Φ.final y.1, Ψ.final y.2) := rfl
