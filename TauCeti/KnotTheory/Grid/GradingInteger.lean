@@ -38,6 +38,9 @@ so `M_O(x)` is an integer. The same computation handles `M_X`.
 * `TauCeti.GridDiagram.maslovOℤ_transpose`, `TauCeti.GridDiagram.maslovXℤ_transpose`,
   `TauCeti.GridDiagram.alexanderTwoℤ_transpose`: the integer-valued gradings are invariant
   under the diagonal reflection of a grid state and diagram.
+* `TauCeti.GridDiagram.maslovOℤ_rotate`, `TauCeti.GridDiagram.maslovXℤ_rotate`,
+  `TauCeti.GridDiagram.alexanderTwoℤ_rotate`: the integer-valued gradings are invariant
+  under the half-turn rotation of a grid state and diagram.
 * `TauCeti.GridDiagram.maslovOℤ_swapMarkings`, `TauCeti.GridDiagram.maslovXℤ_swapMarkings`,
   `TauCeti.GridDiagram.alexanderTwoℤ_swapMarkings`: the integer-valued gradings transform
   under the marking swap.
@@ -153,6 +156,24 @@ reflection. -/
 theorem alexanderTwoℤ_transpose (x : GridState n) :
     G.transpose.alexanderTwoℤ x.transpose = G.alexanderTwoℤ x := by
   rw [alexanderTwoℤ_def, alexanderTwoℤ_def, maslovOℤ_transpose, maslovXℤ_transpose]
+
+/-- The integer-valued `O`-Maslov grading is invariant under the half-turn rotation. -/
+theorem maslovOℤ_rotate (x : GridState n) :
+    G.rotate.maslovOℤ x.rotate = G.maslovOℤ x := by
+  rw [maslovOℤ_def, maslovOℤ_def, GridState.rotate_pointSet, rotate_OSet,
+    GridPoint.I_image_rev, GridPoint.JNum_image_rev, GridPoint.I_image_rev]
+
+/-- The integer-valued `X`-Maslov grading is invariant under the half-turn rotation. -/
+theorem maslovXℤ_rotate (x : GridState n) :
+    G.rotate.maslovXℤ x.rotate = G.maslovXℤ x := by
+  rw [maslovXℤ_def, maslovXℤ_def, GridState.rotate_pointSet, rotate_XSet,
+    GridPoint.I_image_rev, GridPoint.JNum_image_rev, GridPoint.I_image_rev]
+
+/-- The integer numerator of twice the Alexander grading is invariant under the half-turn
+rotation. -/
+theorem alexanderTwoℤ_rotate (x : GridState n) :
+    G.rotate.alexanderTwoℤ x.rotate = G.alexanderTwoℤ x := by
+  rw [alexanderTwoℤ_def, alexanderTwoℤ_def, maslovOℤ_rotate, maslovXℤ_rotate]
 
 /-- The marking swap exchanges the integer-valued Maslov gradings. -/
 @[simp]
