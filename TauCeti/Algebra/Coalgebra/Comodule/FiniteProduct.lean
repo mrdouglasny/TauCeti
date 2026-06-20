@@ -26,7 +26,6 @@ tensor products, duals, and the rigid monoidal category can be built.
 
 ## Main declarations
 
-* `TauCeti.FGComoduleCat.prod`: the concrete product of two finitely generated comodules.
 * `TauCeti.FGComoduleCat.hasBinaryProduct`: the categorical binary product instance using
   the concrete product object.
 * `TauCeti.FGComoduleCat.hasBinaryProducts`, `hasFiniteProducts`: product infrastructure
@@ -58,7 +57,7 @@ variable (C : Type v) [AddCommMonoid C] [Module R C] [Coalgebra R C]
 
 /-- The product of two finitely generated comodules, carried by the product of the
 underlying modules. -/
-abbrev prod (M N : FGComoduleCat.{u, v, w} R C) : FGComoduleCat.{u, v, w} R C where
+private abbrev prod (M N : FGComoduleCat.{u, v, w} R C) : FGComoduleCat.{u, v, w} R C where
   obj := ComoduleCat.prod R C M.obj N.obj
   property := by
     -- `ComoduleCat.prod` is carried definitionally by the raw product `M × N`, so the finite
@@ -86,12 +85,6 @@ private theorem prodFst_hom (M N : FGComoduleCat.{u, v, w} R C) :
 
 private theorem prodSnd_hom (M N : FGComoduleCat.{u, v, w} R C) :
     (prodSnd M N).hom = ComoduleCat.prodSnd M.obj N.obj :=
-  rfl
-
-/-- The ambient comodule underlying the finitely generated product is the ambient product. -/
-@[simp]
-theorem prod_obj (M N : FGComoduleCat.{u, v, w} R C) :
-    (prod R C M N).obj = ComoduleCat.prod R C M.obj N.obj :=
   rfl
 
 private theorem prodLift_fst {P M N : FGComoduleCat.{u, v, w} R C} (f : P ⟶ M) (g : P ⟶ N) :
