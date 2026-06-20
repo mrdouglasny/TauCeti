@@ -132,18 +132,15 @@ private theorem coact_mem_range_comap_toLinearMap
   letI : AddCommGroup C := Module.addCommMonoidToAddCommGroup R (M := C)
   letI : AddCommGroup M := Module.addCommMonoidToAddCommGroup R (M := M)
   letI : AddCommGroup N := Module.addCommMonoidToAddCommGroup R (M := N)
-  let fLinear : M →ₗ[R] N :=
-    { toFun := f.toLinearMap
-      map_add' := f.toLinearMap.map_add
-      map_smul' := f.toLinearMap.map_smul }
-  have hfLinear : fLinear = f.toLinearMap := by
-    ext m
-    rfl
   refine tensor_mem_range_comap (R := R) (C := C) (M₁ := M) (N₁ := N)
-    B.toSubmodule fLinear ?_
+    B.toSubmodule f.toLinearMap ?_
   rw [LinearMap.rTensor_comp_apply]
-  simp only [LinearMap.rTensor_def]
-  rw [hfLinear, Comodule.Hom.map_coact_apply f m]
+  rw [LinearMap.rTensor_def, LinearMap.rTensor_def]
+  rw [Comodule.Hom.map_coact_apply f m]
+  -- The preceding rewrites expose the quotient-after-coaction calculation.  The public
+  -- `Subcomodule` API is monoid-level, while the tensor exactness proof temporarily uses the
+  -- additive-group instances derived from the `R`-module structures; this `change` is only the
+  -- resulting `rTensor`/`TensorProduct.map` wrapper conversion.
   change LinearMap.rTensor C B.toSubmodule.mkQ
     (Comodule.coact (R := R) (C := C) (M := N) (f.toLinearMap m)) = 0
   rcases B.coact_mem hm with ⟨t, ht⟩
