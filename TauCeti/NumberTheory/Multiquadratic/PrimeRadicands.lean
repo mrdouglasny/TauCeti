@@ -23,7 +23,6 @@ factor), so it is not a square.
 
 ## Main results
 
-* `TauCeti.Multiquadratic.not_isSquare_of_squarefree`: a squarefree non-unit is not a square.
 * `TauCeti.Multiquadratic.not_isSquare_prod_primes`: for distinct primes `p i`, no nonempty subset
   product `∏_{i ∈ S} (p i : ℚ)` is a square — square-class independence in the form the degree
   theorem consumes.
@@ -36,26 +35,25 @@ open scoped Function
 
 namespace TauCeti.Multiquadratic
 
-/-- A squarefree non-unit is not a square: if `a = r * r` then `r * r ∣ a` forces `r` to be a unit,
-hence `a` a unit. -/
-theorem not_isSquare_of_squarefree {R : Type*} [CommMonoid R] {a : R}
+private theorem not_isSquare_of_squarefree_of_not_isUnit {R : Type*} [CommMonoid R] {a : R}
     (ha : Squarefree a) (hu : ¬ IsUnit a) : ¬ IsSquare a := by
   rintro ⟨r, rfl⟩
   exact hu ((ha r dvd_rfl).mul (ha r dvd_rfl))
 
-/-- **Square-class independence of distinct primes.** If the `p i` are prime and pairwise distinct,
-then no nonempty subset product `∏_{i ∈ S} (p i : ℚ)` is a square in `ℚ`. This is the hypothesis the
-multiquadratic degree theorem `finrank_adjoin_range` consumes. -/
+/-- **Square-class independence of distinct primes.** If the selected `p i` are prime and pairwise
+distinct, then no nonempty subset product `∏_{i ∈ S} (p i : ℚ)` is a square in `ℚ`. This is the
+hypothesis the multiquadratic degree theorem `finrank_adjoin_range` consumes. -/
 theorem not_isSquare_prod_primes {ι : Type*} (p : ι → ℕ)
-    (hp : ∀ i, (p i).Prime) (hinj : Function.Injective p)
-    {S : Finset ι} (hS : S.Nonempty) :
+    (hp : ∀ i, (p i).Prime) {S : Finset ι}
+    (hdist : Set.Pairwise (S : Set ι) (fun i j => p i ≠ p j))
+    (hS : S.Nonempty) :
     ¬ IsSquare (∏ i ∈ S, (p i : ℚ)) := by
   rw [← Nat.cast_prod, Rat.isSquare_natCast_iff]
-  refine not_isSquare_of_squarefree ?_ ?_
+  refine not_isSquare_of_squarefree_of_not_isUnit ?_ ?_
   · refine Finset.squarefree_prod_of_pairwise_isCoprime (fun i _ j _ hij => ?_)
       (fun i _ => (hp i).prime.squarefree)
     exact Nat.coprime_iff_isRelPrime.mp
-      ((Nat.coprime_primes (hp i) (hp j)).mpr fun h => hij (hinj h))
+      ((Nat.coprime_primes (hp i) (hp j)).mpr fun h => hdist ‹i ∈ S› ‹j ∈ S› hij h)
   · rw [Nat.isUnit_iff]
     obtain ⟨i, hi⟩ := hS
     intro hprod
@@ -72,7 +70,9 @@ theorem finrank_adjoin_sqrt_primes {ι : Type*} [Finite ι] (p : ι → ℕ)
   refine finrank_adjoin_range (d := fun i => (p i : ℚ))
     (root := fun i => Real.sqrt (p i)) (fun i => ?_) (fun S hS => ?_)
   · rw [Real.sq_sqrt (Nat.cast_nonneg _), map_natCast]
-  · exact not_isSquare_prod_primes p hp hinj hS
+  · refine not_isSquare_prod_primes p hp ?_ hS
+    intro i _ j _ hij h
+    exact hij (hinj h)
 
 /-- **Worked example: `[ℚ(√2, √3) : ℚ] = 4`.** The smallest nontrivial multiquadratic degree,
 obtained from `finrank_adjoin_sqrt_primes` with the primes `2` and `3`. -/
