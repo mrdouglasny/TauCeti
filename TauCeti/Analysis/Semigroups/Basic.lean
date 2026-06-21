@@ -18,7 +18,7 @@ import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 # Strongly continuous semigroups and the Hille–Yosida resolvent
 
 Strongly continuous one-parameter semigroups (C₀-semigroups) on a real Banach space `X`,
-their infinitesimal generators with dense domain, the resolvent as the Laplace transform of
+their infinitesimal generators with domain, the resolvent as the Laplace transform of
 the semigroup, and the resolvent identities of the Hille–Yosida theory.
 
 ## Main definitions
@@ -36,7 +36,7 @@ the semigroup, and the resolvent identities of the Hille–Yosida theory.
 
 * `StronglyContinuousSemigroup.existsGrowthBound`: `‖S t‖ ≤ M e^{ω t}` for some `M ≥ 1`, `ω`.
 * `StronglyContinuousSemigroup.strongContAt`: strong continuity at every `t₀ ≥ 0`.
-* `hilleYosidaResolventBound`: `‖R λ‖ ≤ 1/λ` for a contraction semigroup (`λ > 0`).
+* `ContractionSemigroup.resolvent_norm_le`: `‖R λ‖ ≤ 1/λ` for a contraction semigroup (`λ > 0`).
 * `ContractionSemigroup.resolventMapsToDomain`: `R λ x ∈ D(A)`.
 * `ContractionSemigroup.resolventRightInv`: `(λ - A) R λ = I` on the domain.
 
@@ -92,7 +92,7 @@ structure StronglyContinuousSemigroup where
     (fun t => operator t x) (nhdsWithin 0 (Set.Ici 0)) (nhds x)
 
 /-- A contraction semigroup: `‖S(t)‖ ≤ 1` for all `t ≥ 0`
-([EN] Def. I.5.6, [Linares] Def. 3). Corresponds to growth bound `ω₀ = 0`. -/
+([EN] Def. I.5.6, [Linares] Def. 3). Has the growth estimate `M = 1`, `ω = 0`. -/
 structure ContractionSemigroup extends StronglyContinuousSemigroup X where
   /-- `‖S(t)‖ ≤ 1` for all `t ≥ 0`. -/
   contracting : ∀ (t : ℝ), 0 ≤ t → ‖operator t‖ ≤ 1
@@ -329,87 +329,81 @@ theorem StronglyContinuousSemigroup.strongContAt
 
 /-! ## The Infinitesimal Generator -/
 
+/-- The generator difference quotient `(S t x - x)/t`; its `t → 0⁺` limit (when it
+exists) is the generator value at `x`. -/
+private def StronglyContinuousSemigroup.genQuot (S : StronglyContinuousSemigroup X)
+    (x : X) (t : ℝ) : X := (1 / t) • (S.operator t x - x)
+
 /-- Membership predicate for the generator's domain: the difference quotient
 `(S t x - x)/t` converges as `t → 0⁺` ([EN] Def. II.1.2, [Linares] Def. 2).
-Equivalently `x ∈ S.domain`; the generator operator itself is
+Equivalently `x ∈ S.domain`; the generator itself is the `LinearPMap`
 `StronglyContinuousSemigroup.generator`. -/
 def StronglyContinuousSemigroup.IsInGeneratorDomain (S : StronglyContinuousSemigroup X)
     (x : X) : Prop :=
-  ∃ (Ax : X), Filter.Tendsto
-    (fun t => (1/t) • (S.operator t x - x))
-    (nhdsWithin 0 (Set.Ioi 0))
-    (nhds Ax)
+  ∃ Ax : X, Filter.Tendsto (S.genQuot x) (nhdsWithin 0 (Set.Ioi 0)) (nhds Ax)
+
+omit [CompleteSpace X] in
+/-- The generator difference quotient is additive in the limit. -/
+private theorem StronglyContinuousSemigroup.genQuot_tendsto_add
+    (S : StronglyContinuousSemigroup X) {x y Ax Ay : X}
+    (hx : Filter.Tendsto (S.genQuot x) (nhdsWithin 0 (Set.Ioi 0)) (nhds Ax))
+    (hy : Filter.Tendsto (S.genQuot y) (nhdsWithin 0 (Set.Ioi 0)) (nhds Ay)) :
+    Filter.Tendsto (S.genQuot (x + y)) (nhdsWithin 0 (Set.Ioi 0)) (nhds (Ax + Ay)) := by
+  have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
+      S.genQuot (x + y) t = S.genQuot x t + S.genQuot y t := by
+    filter_upwards with t
+    simp only [StronglyContinuousSemigroup.genQuot]
+    rw [map_add, add_sub_add_comm, smul_add]
+  exact (hx.add hy).congr' (heq.mono (fun _ h => h.symm))
+
+omit [CompleteSpace X] in
+/-- The generator difference quotient is `ℝ`-homogeneous in the limit. -/
+private theorem StronglyContinuousSemigroup.genQuot_tendsto_smul
+    (S : StronglyContinuousSemigroup X) (c : ℝ) {x Ax : X}
+    (hx : Filter.Tendsto (S.genQuot x) (nhdsWithin 0 (Set.Ioi 0)) (nhds Ax)) :
+    Filter.Tendsto (S.genQuot (c • x)) (nhdsWithin 0 (Set.Ioi 0)) (nhds (c • Ax)) := by
+  have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
+      S.genQuot (c • x) t = c • S.genQuot x t := by
+    filter_upwards with t
+    simp only [StronglyContinuousSemigroup.genQuot, map_smul, smul_sub, smul_comm c (1 / t)]
+  exact (hx.const_smul c).congr' (heq.mono (fun _ h => h.symm))
 
 /-- The domain `D(A)` of the generator, as a `ℝ`-submodule of `X`. -/
 def StronglyContinuousSemigroup.domain (S : StronglyContinuousSemigroup X) :
     Submodule ℝ X where
   carrier := { x | S.IsInGeneratorDomain x }
   add_mem' := by
-    intro x y hx hy
-    obtain ⟨Ax, hAx⟩ := hx
-    obtain ⟨Ay, hAy⟩ := hy
-    refine ⟨Ax + Ay, ?_⟩
-    have : Filter.Tendsto
-        (fun t => (1/t) • (S.operator t (x + y) - (x + y)))
-        (nhdsWithin 0 (Set.Ioi 0)) (nhds (Ax + Ay)) := by
-      have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
-          (1/t) • (S.operator t (x + y) - (x + y)) =
-            (1/t) • (S.operator t x - x) + (1/t) • (S.operator t y - y) := by
-        filter_upwards with t
-        rw [map_add, add_sub_add_comm, smul_add]
-      exact (hAx.add hAy).congr' (heq.mono (fun _ h => h.symm))
-    exact this
+    rintro x y ⟨Ax, hAx⟩ ⟨Ay, hAy⟩
+    exact ⟨Ax + Ay, S.genQuot_tendsto_add hAx hAy⟩
   zero_mem' := by
     refine ⟨0, ?_⟩
-    have : (fun t => (1/t) • (S.operator t (0 : X) - 0)) = fun _ => 0 := by
-      ext t; simp [map_zero]
-    rw [this]; exact tendsto_const_nhds
+    have h0 : S.genQuot (0 : X) = fun _ => (0 : X) := by
+      ext t; simp [StronglyContinuousSemigroup.genQuot]
+    rw [h0]; exact tendsto_const_nhds
   smul_mem' := by
-    intro c x hx
-    obtain ⟨Ax, hAx⟩ := hx
-    refine ⟨c • Ax, ?_⟩
-    have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
-        (1/t) • (S.operator t (c • x) - c • x) =
-          c • ((1/t) • (S.operator t x - x)) := by
-      filter_upwards with t
-      simp only [map_smul, smul_sub, smul_comm c (1/t)]
-    exact (hAx.const_smul c).congr' (heq.mono (fun _ h => h.symm))
+    rintro c x ⟨Ax, hAx⟩
+    exact ⟨c • Ax, S.genQuot_tendsto_smul c hAx⟩
 
-/-- The infinitesimal generator `A` as a linear map from its dense domain to `X`,
-`A x = lim_{t→0⁺} (S t x - x)/t`. -/
-noncomputable def StronglyContinuousSemigroup.generator
+/-- The underlying linear map of the generator, on its domain submodule. -/
+noncomputable def StronglyContinuousSemigroup.genMap
     (S : StronglyContinuousSemigroup X) : S.domain →ₗ[ℝ] X where
   toFun := fun x => Classical.choose x.property
-  map_add' := by
-    intro ⟨x, hx⟩ ⟨y, hy⟩
-    have hAx := Classical.choose_spec hx
-    have hAy := Classical.choose_spec hy
-    have hxy := Classical.choose_spec (S.domain.add_mem hx hy)
-    have hsum : Filter.Tendsto
-        (fun t => (1/t) • (S.operator t (x + y) - (x + y)))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (Classical.choose hx + Classical.choose hy)) := by
-      have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
-          (1/t) • (S.operator t (x + y) - (x + y)) =
-            (1/t) • (S.operator t x - x) + (1/t) • (S.operator t y - y) := by
-        filter_upwards with t; rw [map_add, add_sub_add_comm, smul_add]
-      exact (hAx.add hAy).congr' (heq.mono (fun _ h => h.symm))
-    exact tendsto_nhds_unique hxy hsum
-  map_smul' := by
-    intro c ⟨x, hx⟩
-    have hAx := Classical.choose_spec hx
-    have hcx := Classical.choose_spec (S.domain.smul_mem c hx)
-    have hscaled : Filter.Tendsto
-        (fun t => (1/t) • (S.operator t (c • x) - c • x))
-        (nhdsWithin 0 (Set.Ioi 0))
-        (nhds (c • Classical.choose hx)) := by
-      have heq : ∀ᶠ t in nhdsWithin 0 (Set.Ioi 0),
-          (1/t) • (S.operator t (c • x) - c • x) =
-            c • ((1/t) • (S.operator t x - x)) := by
-        filter_upwards with t
-        simp only [map_smul, smul_sub, smul_comm c (1/t)]
-      exact (hAx.const_smul c).congr' (heq.mono (fun _ h => h.symm))
-    exact tendsto_nhds_unique hcx hscaled
+  map_add' := fun x y =>
+    tendsto_nhds_unique (Classical.choose_spec (x + y).property)
+      (S.genQuot_tendsto_add (Classical.choose_spec x.property)
+        (Classical.choose_spec y.property))
+  map_smul' := fun c x =>
+    tendsto_nhds_unique (Classical.choose_spec (c • x).property)
+      (S.genQuot_tendsto_smul c (Classical.choose_spec x.property))
+
+/-- The infinitesimal generator `A` as an unbounded operator (`LinearPMap`),
+`A x = lim_{t→0⁺} (S t x - x)/t` on the domain `D(A)` where the limit exists
+([EN] Def. II.1.2). Modelled as `X →ₗ.[ℝ] X` so it composes with Mathlib's
+unbounded-operator API. -/
+noncomputable def StronglyContinuousSemigroup.generator
+    (S : StronglyContinuousSemigroup X) : X →ₗ.[ℝ] X where
+  domain := S.domain
+  toFun := S.genMap
 
 omit [CompleteSpace X] in
 /-- Domain membership unfolds to the generator-domain predicate. -/
@@ -418,12 +412,17 @@ omit [CompleteSpace X] in
     x ∈ S.domain ↔ S.IsInGeneratorDomain x := Iff.rfl
 
 omit [CompleteSpace X] in
+/-- `S.generator.domain` is the generator domain submodule. -/
+@[simp] theorem StronglyContinuousSemigroup.generator_domain
+    (S : StronglyContinuousSemigroup X) : S.generator.domain = S.domain := rfl
+
+omit [CompleteSpace X] in
 /-- Characteristic property of the generator: for `x` in the domain, the difference
 quotient `(S t x - x)/t` converges to `S.generator x` as `t → 0⁺`. -/
 theorem StronglyContinuousSemigroup.generator_tendsto
     (S : StronglyContinuousSemigroup X) (x : S.domain) :
-    Filter.Tendsto (fun t => (1 / t) • (S.operator t (x : X) - (x : X)))
-      (nhdsWithin 0 (Set.Ioi 0)) (nhds (S.generator x)) :=
+    Filter.Tendsto (S.genQuot (x : X)) (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (S.generator x)) :=
   Classical.choose_spec x.property
 
 /-! ## The Resolvent (for Contraction Semigroups) -/
@@ -757,21 +756,18 @@ theorem. -/
 theorem ContractionSemigroup.resolventRightInv
     (S : ContractionSemigroup X)
     (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    let Rlx := S.resolvent lambda hlam x
-    let Rlx_dom : S.toStronglyContinuousSemigroup.domain :=
-      ⟨Rlx, S.resolventMapsToDomain lambda hlam x⟩
-    lambda • Rlx - S.toStronglyContinuousSemigroup.generator Rlx_dom = x := by
-  simp only
-  -- generator = Classical.choose of the generator existential
-  -- By tendsto_nhds_unique: it equals λ Rlx - x
-  have h_gen_eq : S.toStronglyContinuousSemigroup.generator
-      ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩ =
-      lambda • S.resolvent lambda hlam x - x :=
+    lambda • S.resolvent lambda hlam x
+      - S.toStronglyContinuousSemigroup.generator
+          ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩ = x := by
+  -- `A (R λ x) = λ • R λ x - x` by uniqueness of the generator limit (tendsto_nhds_unique).
+  rw [show S.toStronglyContinuousSemigroup.generator
+        ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩
+      = lambda • S.resolvent lambda hlam x - x from
     tendsto_nhds_unique
       (S.toStronglyContinuousSemigroup.generator_tendsto
         ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩)
-      (S.resolvent_generator_tendsto lambda hlam x)
-  rw [h_gen_eq]; abel
+      (S.resolvent_generator_tendsto lambda hlam x)]
+  abel
 
 /-! ## Hille-Yosida Theorem -/
 
@@ -786,7 +782,7 @@ defined, with `‖(λI - A)⁻¹‖ ≤ 1/λ`) requires the converse: constructi
 the semigroup from the operator, which needs the Yosida approximation.
 
 Ref: Hille (1948), Yosida (1948); Reed-Simon I §VIII.3; Engel-Nagel Ch. II -/
-theorem hilleYosidaResolventBound
+theorem ContractionSemigroup.resolvent_norm_le
     (S : ContractionSemigroup X)
     (lambda : ℝ) (hlam : 0 < lambda) :
     ‖S.resolvent lambda hlam‖ ≤ 1 / lambda :=
