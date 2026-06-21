@@ -11,9 +11,15 @@ Tau Ceti is being incubated jointly by the [Lean FRO](https://lean-lang.org/fro/
 in partnership with academic and industry groups.
 
 Our goal is to build as much mathematics as we can in a collaborative, coherent library,
-at the highest quality we can given that everything is written by AIs. It's an experiment, and could use your help!
+at the highest quality we can, subject to the constraint that everything is written by AIs. It's an experiment, and could use your help!
 
-Humans own the roadmap, which lives in the
+We hope that by building Tau Ceti we can ensure that a significant part of AI formalization work is performed in an open-source, human curated library. Tau Ceti will be built for reuse and generality. Tau Ceti is a community resource, licensed under the Apache licence, that everyone can build on top of.
+
+We've long dreamt about formalizing all the "basic material" in mathematics.
+While we're explicitly **not** aiming here at curating and digesting mathematical knowledge in the way that a human authored library can,
+we hope that we can efficiently build a reusable library at significant scale. With Tau Ceti built, we'll be closer to the point where computers can genuinely help us explore the mathematical universe (the Lean kernel verifying, the Lean langauge providing automation in proof construction, AIs assisting with proof exploration, and Tau Ceti providing the knowledge necessary to reach the research frontier).
+
+Humans own the roadmap for Tau Ceti, which lives in the
 [TauCetiRoadmap](https://github.com/FormalFrontier/TauCetiRoadmap) repo (mostly markdown, a
 small amount of Lean); changes are made via human-reviewed pull requests there.
 
