@@ -229,8 +229,7 @@ private theorem StronglyContinuousSemigroup.normBoundedOnInterval
 /-- Strong continuity at every `t₀ ≥ 0`, not just at 0
 ([EN] Prop. I.5.3, [Linares] Cor. 1).
 
-From continuity at 0: `S(t)x → x` as `t → 0⁺`. Then at `t₀`:
-`S(t₀ + h)x = S(t₀)(S(h)x) → S(t₀)x` as `h → 0⁺` by continuity of `S(t₀)`. -/
+Strong continuity holds at every `t₀ ≥ 0`, not only at `0`. -/
 theorem StronglyContinuousSemigroup.strongContAt
     (S : StronglyContinuousSemigroup X) (x : X) (t₀ : ℝ) (ht₀ : 0 ≤ t₀) :
     Filter.Tendsto (fun t => S.operator t x)
