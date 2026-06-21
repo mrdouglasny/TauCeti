@@ -27,26 +27,29 @@ the semigroup, and the resolvent identities of the Hille–Yosida theory.
   `t ≥ 0` with `S 0 = id`, `S (s + t) = S s ∘ S t`, and strong continuity at `0`.
 * `TauCeti.Semigroups.ContractionSemigroup`: the subclass of contraction semigroups
   (`‖S t‖ ≤ 1`); the growth-bound case `M = 1`, `ω = 0`.
-* `TauCeti.Semigroups.StronglyContinuousSemigroup.domain`: the generator domain `D(A)` as a
-  `Submodule ℝ X`, with `generator` the generator `A` as a `LinearMap` on it.
-* `TauCeti.Semigroups.ContractionSemigroup.resolvent`: `R λ x = ∫₀^∞ e^{-λ t} S t x dt`
-  (pointwise Bochner integral), with the built-in bound `‖R λ‖ ≤ 1/λ`.
+* `TauCeti.Semigroups.StronglyContinuousSemigroup.generator`: the generator `A` as an
+  unbounded operator (`LinearPMap`, `X →ₗ.[ℝ] X`) on its domain `D(A)`.
+* `TauCeti.Semigroups.StronglyContinuousSemigroup.resolvent`: `R λ x = ∫₀^∞ e^{-λ t} S t x dt`
+  (pointwise Bochner integral) for a growth bound `(ω, M)` and `λ > ω`; `ContractionSemigroup`
+  gets the `M = 1`, `ω = 0` case.
 
 ## Main results
 
 * `StronglyContinuousSemigroup.existsGrowthBound`: `‖S t‖ ≤ M e^{ω t}` for some `M ≥ 1`, `ω`.
 * `StronglyContinuousSemigroup.strongContAt`: strong continuity at every `t₀ ≥ 0`.
-* `ContractionSemigroup.resolvent_norm_le`: `‖R λ‖ ≤ 1/λ` for a contraction semigroup (`λ > 0`).
-* `ContractionSemigroup.resolventMapsToDomain`: `R λ x ∈ D(A)`.
-* `ContractionSemigroup.resolventRightInv`: `(λ - A) R λ = I` on the domain.
+* `StronglyContinuousSemigroup.resolvent_norm_le`: `‖R λ‖ ≤ M/(λ-ω)` for `λ > ω`; the
+  contraction corollary is `‖R λ‖ ≤ 1/λ`.
+* `StronglyContinuousSemigroup.resolventMapsToDomain`: `R λ x ∈ D(A)`.
+* `StronglyContinuousSemigroup.resolventRightInv`: `(λ - A) R λ = I` on the domain.
 
 ## Implementation notes
 
 Ported and adapted (Apache 2.0) from the AI-authored development
-[`mrdouglasny/hille-yosida`](https://github.com/mrdouglasny/hille-yosida). The generator
-domain is modelled as a `Submodule` with the generator a `LinearMap` on it. The generation
-theorem (Yosida approximation / Lumer–Phillips) is a separate roadmap milestone, not in this
-file.
+[`mrdouglasny/hille-yosida`](https://github.com/mrdouglasny/hille-yosida). The generator is
+modelled as a `LinearPMap` (Mathlib's unbounded-operator type); the resolvent is a pointwise
+`X`-valued Bochner integral, defined at the general growth-bound level with the contraction
+case as a corollary. The generation theorem (Yosida approximation / Lumer–Phillips) is a
+separate roadmap milestone, not in this file.
 
 ## References
 
@@ -424,75 +427,68 @@ theorem StronglyContinuousSemigroup.generator_tendsto
       (nhds (S.generator x)) :=
   Classical.choose_spec x.property
 
+/-! ## Exponential growth bounds -/
+
+/-- A C₀-semigroup has exponential growth bound `(ω, M)`: `‖S t‖ ≤ M e^{ω t}` for `t ≥ 0`,
+with `M ≥ 1` ([EN] eq. I.(5.1)). The infimal admissible `ω` is the growth bound `ω₀`. -/
+def StronglyContinuousSemigroup.HasGrowthBound
+    (S : StronglyContinuousSemigroup X) (ω : ℝ) (M : ℝ) : Prop :=
+  1 ≤ M ∧ ∀ (t : ℝ), 0 ≤ t → ‖S.operator t‖ ≤ M * Real.exp (ω * t)
+
+omit [CompleteSpace X] in
+/-- A contraction semigroup has growth bound `(0, 1)`. -/
+theorem ContractionSemigroup.hasGrowthBound (S : ContractionSemigroup X) :
+    S.toStronglyContinuousSemigroup.HasGrowthBound 0 1 :=
+  ⟨le_rfl, fun t ht => by simpa using S.contracting t ht⟩
+
 /-! ## The Resolvent (for Contraction Semigroups) -/
 
 open MeasureTheory
 
-/-- The pointwise integrand of the Laplace transform is integrable on `(0, ∞)`.
-
-For a **contraction** semigroup (`‖S(t)‖ ≤ 1`), the integrand satisfies
-`‖e^{-λt} S(t) x‖ ≤ e^{-λt} ‖x‖`, which is integrable for `λ > 0`.
-
-**Why contraction?** A general C₀-semigroup can have exponential growth
-`‖S(t)‖ ≤ M e^{ωt}`. If `λ ≤ ω`, the integrand diverges and the Bochner
-integral returns junk (zero). This breaks `integral_add` (which requires
-both summands to be `Integrable`), making it impossible to prove linearity
-of the resolvent. Restricting to contractions (`ω = 0`) ensures `λ > 0`
-suffices for convergence. -/
-lemma ContractionSemigroup.integrable_resolvent_integrand
-    (S : ContractionSemigroup X) (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    IntegrableOn (fun t => Real.exp (-(lambda * t)) • S.operator t x)
-      (Set.Ioi 0) := by
+/-- The Laplace-transform integrand `e^{-λt} S(t) x` is integrable on `(0, ∞)` whenever
+`ω < λ`: by the growth bound `‖e^{-λt} S(t) x‖ ≤ M ‖x‖ e^{-(λ-ω)t}`, which is integrable. -/
+lemma StronglyContinuousSemigroup.integrable_resolvent_integrand
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) :
+    IntegrableOn (fun t => Real.exp (-(lambda * t)) • S.operator t x) (Set.Ioi 0) := by
+  have hpos : 0 < lambda - ω := by linarith
   unfold MeasureTheory.IntegrableOn
-  -- Bound by ‖x‖ * exp(-λt), which is integrable for λ > 0
   apply MeasureTheory.Integrable.mono'
-    ((exp_neg_integrableOn_Ioi 0 hlam).smul (‖x‖))
-  · -- AEStronglyMeasurable: follows from ContinuousOn → measurable
-    apply ContinuousOn.aestronglyMeasurable _ measurableSet_Ioi
+    ((exp_neg_integrableOn_Ioi 0 hpos).smul (M * ‖x‖))
+  · apply ContinuousOn.aestronglyMeasurable _ measurableSet_Ioi
     apply ContinuousOn.smul
-    · -- exp(-λt) is continuous everywhere, hence on Ioi 0
-      exact (Real.continuous_exp.comp
+    · exact (Real.continuous_exp.comp
         ((continuous_const.mul continuous_id).neg)).continuousOn
-    · -- S(t)x is continuous on [0, ∞) by strongContAt, hence on (0, ∞)
-      have h_cont : ContinuousOn (fun t => S.operator t x) (Set.Ici 0) :=
-        fun t₀ ht₀ => S.toStronglyContinuousSemigroup.strongContAt x t₀ ht₀
+    · have h_cont : ContinuousOn (fun t => S.operator t x) (Set.Ici 0) :=
+        fun t₀ ht₀ => S.strongContAt x t₀ ht₀
       exact h_cont.mono Set.Ioi_subset_Ici_self
-  · -- Norm bound: ‖exp(-λt) • S(t)x‖ ≤ ‖x‖ * exp(-λt) a.e. on Ioi 0
-    apply (ae_restrict_mem measurableSet_Ioi).mono
+  · apply (ae_restrict_mem measurableSet_Ioi).mono
     intro t (ht : 0 < t)
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _),
-        Pi.smul_apply, smul_eq_mul]
+    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), Pi.smul_apply,
+        smul_eq_mul]
     calc Real.exp (-(lambda * t)) * ‖(S.operator t) x‖
-        ≤ Real.exp (-(lambda * t)) * (‖S.operator t‖ * ‖x‖) := by
-          gcongr; exact ContinuousLinearMap.le_opNorm _ _
-      _ ≤ Real.exp (-(lambda * t)) * (1 * ‖x‖) := by
-          gcongr; exact S.contracting t (le_of_lt ht)
-      _ = ‖x‖ * Real.exp (-(lambda * t)) := by ring
-      _ = ‖x‖ * Real.exp (-lambda * t) := by rw [neg_mul]
+        ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
+          gcongr
+          exact le_trans (ContinuousLinearMap.le_opNorm _ _)
+            (by gcongr; exact hb.2 t ht.le)
+      _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
+          rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring, Real.exp_add]
+          ring
 
-/-- The resolvent operator `R(λ) x = ∫₀^∞ e^{-λt} S(t)x dt` for `λ > 0`.
-
-Defined on **contraction semigroups** to guarantee integrability (see
-`integrable_resolvent_integrand`). Constructed via `LinearMap.mkContinuous`
-which simultaneously provides the linear map and the operator norm bound
-`‖R(λ)‖ ≤ 1/λ`.
-
-**Implementation note**: The integral is defined pointwise for each `x ∈ X`,
-not as an operator-valued integral. This is necessary because `t ↦ S(t)` is
-only strongly continuous, so `t ↦ S(t)` is not strongly measurable as a
-function into `X →L[ℝ] X`. The pointwise integral `x ↦ ∫ e^{-λt} S(t)x dt`
-is well-defined because `t ↦ S(t)x` IS strongly measurable for each `x`. -/
-noncomputable def ContractionSemigroup.resolvent
-    (S : ContractionSemigroup X)
-    (lambda : ℝ) (hlam : 0 < lambda) : X →L[ℝ] X :=
+/-- The resolvent `R(λ) x = ∫₀^∞ e^{-λt} S(t)x dt` of a C₀-semigroup with growth bound
+`(ω, M)`, for `λ > ω`. A pointwise `X`-valued Bochner integral (so it is well-defined for
+the merely strongly continuous `t ↦ S t`), with built-in norm bound `‖R λ‖ ≤ M/(λ-ω)`. -/
+noncomputable def StronglyContinuousSemigroup.resolvent
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) : X →L[ℝ] X :=
   LinearMap.mkContinuous
     { toFun := fun x =>
         ∫ t in Set.Ioi (0 : ℝ), Real.exp (-(lambda * t)) • S.operator t x
       map_add' := fun x y => by
         simp only [map_add, smul_add]
         exact integral_add
-          (S.integrable_resolvent_integrand lambda hlam x)
-          (S.integrable_resolvent_integrand lambda hlam y)
+          (S.integrable_resolvent_integrand hb lambda hlam x)
+          (S.integrable_resolvent_integrand hb lambda hlam y)
       map_smul' := fun c x => by
         simp only [RingHom.id_apply, map_smul]
         have h : ∀ t : ℝ, Real.exp (-(lambda * t)) • c • (S.operator t) x =
@@ -501,45 +497,42 @@ noncomputable def ContractionSemigroup.resolvent
         simp_rw [h]
         exact integral_smul (μ := volume.restrict (Set.Ioi (0 : ℝ))) c
           (fun t => Real.exp (-(lambda * t)) • (S.operator t) x) }
-    (1 / lambda)
+    (M / (lambda - ω))
     (by
+      have hpos : 0 < lambda - ω := by linarith
       intro x; simp only [LinearMap.coe_mk, AddHom.coe_mk]
-      -- ‖∫ exp(-λt) • S(t)x‖ ≤ (1/λ) * ‖x‖
-      -- Step 1: bound the norm of the integral
       calc ‖∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • (S.operator t) x‖
-          ≤ ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) * ‖x‖ := by
+          ≤ ∫ t in Set.Ioi 0, M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
             apply MeasureTheory.norm_integral_le_of_norm_le
-            · -- Integrability of exp(-λt) * ‖x‖ on Ioi 0
-              have h := (exp_neg_integrableOn_Ioi 0 hlam).integrable.mul_const ‖x‖
-              simp only [neg_mul] at h; exact h
+            · exact (exp_neg_integrableOn_Ioi 0 hpos).integrable.const_mul (M * ‖x‖)
             · apply (ae_restrict_mem measurableSet_Ioi).mono
               intro t (ht : 0 < t)
               rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
-              gcongr
-              calc ‖(S.operator t) x‖
-                  ≤ ‖S.operator t‖ * ‖x‖ := ContinuousLinearMap.le_opNorm _ _
-                _ ≤ 1 * ‖x‖ := by gcongr; exact S.contracting t (le_of_lt ht)
-                _ = ‖x‖ := one_mul _
-        -- Step 2: evaluate ∫ exp(-λt) * ‖x‖ = (1/λ) * ‖x‖
-        _ = 1 / lambda * ‖x‖ := by
-            -- Pull out constant ‖x‖
-            -- Evaluate ∫ exp(-λt) = 1/λ via substitution
-            have h_eval : ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) = lambda⁻¹ := by
-              have h := integral_comp_mul_left_Ioi (fun t => Real.exp (-t)) 0 hlam
-              simp only [mul_zero] at h
-              rw [h, integral_exp_neg_Ioi_zero, smul_eq_mul, mul_one]
-            -- Pull constant ‖x‖ out and apply evaluation
-            rw [show (fun t => Real.exp (-(lambda * t)) * ‖x‖) =
-                (fun t => ‖x‖ • Real.exp (-(lambda * t))) from by ext; simp [mul_comm]]
+              calc Real.exp (-(lambda * t)) * ‖(S.operator t) x‖
+                  ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
+                    gcongr
+                    exact le_trans (ContinuousLinearMap.le_opNorm _ _)
+                      (by gcongr; exact hb.2 t ht.le)
+                _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
+                    rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring,
+                      Real.exp_add]; ring
+        _ = M / (lambda - ω) * ‖x‖ := by
+            rw [show (fun t => M * ‖x‖ * Real.exp (-(lambda - ω) * t)) =
+                (fun t => (M * ‖x‖) • Real.exp (-(lambda - ω) * t)) from by
+                  ext t; simp [smul_eq_mul]]
             rw [integral_smul (μ := volume.restrict (Set.Ioi (0 : ℝ)))]
-            simp only [smul_eq_mul, h_eval, one_div]
-            ring
-            )
+            have h_eval : ∫ t in Set.Ioi 0, Real.exp (-(lambda - ω) * t) = (lambda - ω)⁻¹ := by
+              have h := integral_comp_mul_left_Ioi (fun t => Real.exp (-t)) 0 hpos
+              simp only [mul_zero] at h
+              simp only [neg_mul]
+              rw [h, integral_exp_neg_Ioi_zero, smul_eq_mul, mul_one]
+            rw [smul_eq_mul, h_eval, div_eq_mul_inv]; ring)
 
 /-- The resolvent in integral form (characteristic lemma). -/
-@[simp] theorem ContractionSemigroup.resolvent_apply (S : ContractionSemigroup X)
-    (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    S.resolvent lambda hlam x
+@[simp] theorem StronglyContinuousSemigroup.resolvent_apply
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) :
+    S.resolvent hb lambda hlam x
       = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.operator t x := rfl
 
 /-! ## Resolvent-Generator Interface
@@ -578,13 +571,14 @@ private lemma integral_Ioi_eq_Ioc_add_Ioi (f : ℝ → X) {h : ℝ} (hh : 0 < h)
 
 /-- The generator difference quotient for `R(λ)x` converges to `λ R(λ)x - x`.
 This is the core computation shared by `resolventMapsToDomain` and `resolventRightInv`. -/
-private theorem ContractionSemigroup.resolvent_generator_tendsto
-    (S : ContractionSemigroup X) (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    Filter.Tendsto (fun t => (1 / t) • (S.operator t (S.resolvent lambda hlam x) -
-      S.resolvent lambda hlam x))
+private theorem StronglyContinuousSemigroup.resolvent_generator_tendsto
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) :
+    Filter.Tendsto (fun t => (1 / t) • (S.operator t (S.resolvent hb lambda hlam x) -
+      S.resolvent hb lambda hlam x))
       (nhdsWithin 0 (Set.Ioi 0))
-      (nhds (lambda • S.resolvent lambda hlam x - x)) := by
-  set Rlx := S.resolvent lambda hlam x
+      (nhds (lambda • S.resolvent hb lambda hlam x - x)) := by
+  set Rlx := S.resolvent hb lambda hlam x
   set f := fun t => Real.exp (-(lambda * t)) • S.operator t x
   -- Full integral shift computation ([EN] Thm. II.1.10(i), [Linares] eq. 0.15)
   -- The proof establishes the key identity for h > 0 and takes the limit.
@@ -598,10 +592,10 @@ private theorem ContractionSemigroup.resolvent_generator_tendsto
       S.operator h Rlx = Real.exp (lambda * h) •
         ∫ u in Set.Ioi h, f u := by
     intro h hh
-    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply lambda hlam x
+    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
     -- Step 1: Push S(h) inside integral
     rw [hRlx, ← ContinuousLinearMap.integral_comp_comm _
-      (S.integrable_resolvent_integrand lambda hlam x)]
+      (S.integrable_resolvent_integrand hb lambda hlam x)]
     -- Goal: ∫ t in Ioi 0, S(h)(f(t)) = e^{λh} • ∫ u in Ioi h, f u
     -- Step 2: Rewrite integrand on Ioi 0 (where t > 0 hence t ≥ 0)
     have h_eq : ∀ t ∈ Set.Ioi (0 : ℝ),
@@ -625,9 +619,9 @@ private theorem ContractionSemigroup.resolvent_generator_tendsto
       ∫ u in Set.Ioi h, f u = Rlx - ∫ u in Set.Ioc 0 h, f u := by
     intro h hh
     have hsplit := integral_Ioi_eq_Ioc_add_Ioi f hh
-      (S.integrable_resolvent_integrand lambda hlam x)
+      (S.integrable_resolvent_integrand hb lambda hlam x)
     -- Rlx = ∫ t in Ioi 0, f t by definition of resolvent
-    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply lambda hlam x
+    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
     rw [hRlx, hsplit]; abel
   -- Step 3: Combine into the key identity
   have h_identity : ∀ (h : ℝ), 0 < h →
@@ -694,7 +688,7 @@ private theorem ContractionSemigroup.resolvent_generator_tendsto
                 have := hca.tendsto
                 simp [mul_zero, Real.exp_zero] at this
                 exact this.mono_left nhdsWithin_le_nhds
-              have h2 := S.toStronglyContinuousSemigroup.strong_cont x
+              have h2 := S.strong_cont x
               -- exp(-λt) • S(t)x → 1 • x = x
               simpa [one_smul] using h1.smul h2).congr' (by
               filter_upwards [self_mem_nhdsWithin] with t (ht : 0 ≤ t)
@@ -714,13 +708,13 @@ private theorem ContractionSemigroup.resolvent_generator_tendsto
             intro t ht
             have := frontier_Ici_subset (a := (0:ℝ)) ht
             simp only [Set.mem_singleton_iff] at this; subst this
-            simp [f, S.toStronglyContinuousSemigroup.at_zero, Real.exp_zero]
+            simp [f, S.at_zero, Real.exp_zero]
           · -- ContinuousOn f (closure (Ici 0)) = ContinuousOn f (Ici 0)
             rw [closure_Ici]
             exact ContinuousOn.smul
               ((Real.continuous_exp.comp (continuous_neg.comp
                 (Continuous.mul continuous_const continuous_id))).continuousOn)
-              (fun t₀ ht₀ => S.toStronglyContinuousSemigroup.strongContAt x t₀ ht₀)
+              (fun t₀ ht₀ => S.strongContAt x t₀ ht₀)
           · exact continuousOn_const
         -- FTC for g: HasDerivAt (fun u => ∫₀ᵘ g) x 0
         have h_ftc : HasDerivAt (fun u => ∫ t in (0 : ℝ)..u, g t) x 0 :=
@@ -739,12 +733,11 @@ private theorem ContractionSemigroup.resolvent_generator_tendsto
 
 /-- The resolvent maps all of `X` into the domain of the generator
 ([EN] Thm. II.1.10(i), [Linares] eq. 0.15). -/
-theorem ContractionSemigroup.resolventMapsToDomain
-    (S : ContractionSemigroup X)
-    (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    (S.resolvent lambda hlam x) ∈
-      S.toStronglyContinuousSemigroup.domain :=
-  ⟨_, S.resolvent_generator_tendsto lambda hlam x⟩
+theorem StronglyContinuousSemigroup.resolventMapsToDomain
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) :
+    (S.resolvent hb lambda hlam x) ∈ S.domain :=
+  ⟨_, S.resolvent_generator_tendsto hb lambda hlam x⟩
 
 /-- The fundamental resolvent identity: `(λI - A) R(λ) x = x`.
 
@@ -752,50 +745,62 @@ This is the right-inverse half of eq. 0.16 in [Linares]: `(λI - A) R(λ) x = x`
 for every `x`. The left inverse / injectivity (hence `R λ = (λI - A)⁻¹` and
 `(0, ∞) ⊆ ρ(A)`) is not proved here; it belongs to the deferred generation
 theorem. -/
-theorem ContractionSemigroup.resolventRightInv
-    (S : ContractionSemigroup X)
-    (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
-    lambda • S.resolvent lambda hlam x
-      - S.toStronglyContinuousSemigroup.generator
-          ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩ = x := by
+theorem StronglyContinuousSemigroup.resolventRightInv
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) :
+    lambda • S.resolvent hb lambda hlam x
+      - S.generator
+          ⟨S.resolvent hb lambda hlam x, S.resolventMapsToDomain hb lambda hlam x⟩ = x := by
   -- `A (R λ x) = λ • R λ x - x` by uniqueness of the generator limit (tendsto_nhds_unique).
-  rw [show S.toStronglyContinuousSemigroup.generator
-        ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩
-      = lambda • S.resolvent lambda hlam x - x from
+  rw [show S.generator
+        ⟨S.resolvent hb lambda hlam x, S.resolventMapsToDomain hb lambda hlam x⟩
+      = lambda • S.resolvent hb lambda hlam x - x from
     tendsto_nhds_unique
-      (S.toStronglyContinuousSemigroup.generator_tendsto
-        ⟨S.resolvent lambda hlam x, S.resolventMapsToDomain lambda hlam x⟩)
-      (S.resolvent_generator_tendsto lambda hlam x)]
+      (S.generator_tendsto
+        ⟨S.resolvent hb lambda hlam x, S.resolventMapsToDomain hb lambda hlam x⟩)
+      (S.resolvent_generator_tendsto hb lambda hlam x)]
   abel
 
-/-! ## Hille-Yosida Theorem -/
+/-- **Hille–Yosida resolvent bound** (forward direction): `‖R λ‖ ≤ M/(λ-ω)` for a C₀
+semigroup with growth bound `(ω, M)` and `λ > ω` (Hille 1948, Yosida 1948; Engel–Nagel
+Ch. II). The full theorem (an operator generates such a semigroup iff the iterated bounds
+hold) needs the converse via the Yosida approximation. -/
+theorem StronglyContinuousSemigroup.resolvent_norm_le
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) :
+    ‖S.resolvent hb lambda hlam‖ ≤ M / (lambda - ω) :=
+  LinearMap.mkContinuous_norm_le _
+    (div_nonneg (by linarith [hb.1]) (by linarith)) _
 
-/-- **Hille-Yosida resolvent bound** (forward direction).
+/-! ## Contraction-semigroup specializations (`M = 1`, `ω = 0`) -/
 
-For a contraction semigroup, the resolvent `R(λ) = ∫₀^∞ e^{-λt} S(t) dt`
-satisfies `‖R(λ)‖ ≤ 1/λ` for all `λ > 0`.
+/-- The resolvent of a contraction semigroup, the `(0, 1)` case. -/
+noncomputable def ContractionSemigroup.resolvent (S : ContractionSemigroup X)
+    (lambda : ℝ) (hlam : 0 < lambda) : X →L[ℝ] X :=
+  S.toStronglyContinuousSemigroup.resolvent S.hasGrowthBound lambda (by simpa using hlam)
 
-This is the forward direction of the Hille-Yosida theorem. The full theorem
-(an operator A generates a contraction semigroup iff it is closed, densely
-defined, with `‖(λI - A)⁻¹‖ ≤ 1/λ`) requires the converse: constructing
-the semigroup from the operator, which needs the Yosida approximation.
+@[simp] theorem ContractionSemigroup.resolvent_apply (S : ContractionSemigroup X)
+    (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
+    S.resolvent lambda hlam x
+      = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.operator t x := rfl
 
-Ref: Hille (1948), Yosida (1948); Reed-Simon I §VIII.3; Engel-Nagel Ch. II -/
-theorem ContractionSemigroup.resolvent_norm_le
-    (S : ContractionSemigroup X)
+/-- The contraction resolvent maps into the generator domain. -/
+theorem ContractionSemigroup.resolventMapsToDomain (S : ContractionSemigroup X)
+    (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
+    (S.resolvent lambda hlam x) ∈ S.toStronglyContinuousSemigroup.domain :=
+  S.toStronglyContinuousSemigroup.resolventMapsToDomain S.hasGrowthBound lambda
+    (by simpa using hlam) x
+
+/-- The contraction resolvent bound `‖R λ‖ ≤ 1/λ`, the `(0, 1)` case. -/
+theorem ContractionSemigroup.resolvent_norm_le (S : ContractionSemigroup X)
     (lambda : ℝ) (hlam : 0 < lambda) :
-    ‖S.resolvent lambda hlam‖ ≤ 1 / lambda :=
-  LinearMap.mkContinuous_norm_le _ (by positivity) _
+    ‖S.resolvent lambda hlam‖ ≤ 1 / lambda := by
+  have h := S.toStronglyContinuousSemigroup.resolvent_norm_le S.hasGrowthBound lambda
+    (by simpa using hlam)
+  rw [sub_zero] at h
+  exact h
 
 /-! ## Growth Bounds and Exponential Type -/
-
-/-- A C₀-semigroup has exponential growth bound `ω` if `‖S(t)‖ ≤ M e^{ωt}`
-for some constant `M ≥ 1` ([EN] eq. I.(5.1)). Contraction semigroups have
-`M = 1, ω = 0`. The infimum of all such `ω` is the growth bound `ω₀`
-([EN] Def. I.5.6). -/
-def StronglyContinuousSemigroup.HasGrowthBound
-    (S : StronglyContinuousSemigroup X) (ω : ℝ) (M : ℝ) : Prop :=
-  1 ≤ M ∧ ∀ (t : ℝ), 0 ≤ t → ‖S.operator t‖ ≤ M * Real.exp (ω * t)
 
 /-- Every C₀-semigroup has a finite exponential growth bound
 ([EN] Prop. I.5.5, [Linares] Thm. 1). -/
