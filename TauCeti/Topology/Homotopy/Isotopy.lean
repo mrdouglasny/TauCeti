@@ -480,6 +480,18 @@ def refl (Y : Type*) [TopologicalSpace Y] : AmbientIsotopy Y where
 /-- The final map of the constant ambient isotopy is the identity. -/
 theorem final_refl (y : Y) : (refl Y).final y = y := rfl
 
+/-- Every time slice of the constant ambient isotopy is the identity homeomorphism. -/
+@[simp]
+theorem homeomorph_refl (t : I) : (refl Y).homeomorph t = Homeomorph.refl Y := by
+  ext y
+  rw [homeomorph_apply, Homeomorph.refl_apply]
+  rfl
+
+/-- The final homeomorphism of the constant ambient isotopy is the identity. -/
+@[simp]
+theorem finalHomeomorph_refl : (refl Y).finalHomeomorph = Homeomorph.refl Y := by
+  rw [finalHomeomorph, homeomorph_refl]
+
 instance : Inhabited (AmbientIsotopy Y) := ⟨refl Y⟩
 
 private theorem isotopy_totalMap_eq {f : C(X, Y)} :
@@ -548,6 +560,21 @@ maps of `Φ` and `Ψ`: at the endpoint it is `Ψ.final ∘ Φ.final`. -/
 theorem final_trans (Ψ : AmbientIsotopy Y) (y : Y) :
     (Φ.trans Ψ).final y = Ψ.final (Φ.final y) := rfl
 
+/-- Every time slice of a composite ambient isotopy is the composite of the corresponding
+time slices. -/
+@[simp]
+theorem homeomorph_trans (Ψ : AmbientIsotopy Y) (t : I) :
+    (Φ.trans Ψ).homeomorph t = (Φ.homeomorph t).trans (Ψ.homeomorph t) := by
+  ext y
+  rw [homeomorph_apply, trans_apply, Homeomorph.trans_apply, homeomorph_apply, homeomorph_apply]
+
+/-- The final homeomorphism of a composite ambient isotopy is the composite of the final
+homeomorphisms. -/
+@[simp]
+theorem finalHomeomorph_trans (Ψ : AmbientIsotopy Y) :
+    (Φ.trans Ψ).finalHomeomorph = Φ.finalHomeomorph.trans Ψ.finalHomeomorph := by
+  rw [finalHomeomorph, finalHomeomorph, finalHomeomorph, homeomorph_trans]
+
 /-- **Inverse of an ambient isotopy**: undo `Φ_t` at each time `t`. -/
 noncomputable def symm : AmbientIsotopy Y where
   toContinuousMap := ⟨fun p => (Φ.totalHomeomorph.symm p).2,
@@ -589,6 +616,27 @@ theorem final_symm_final (y : Y) : Φ.final (Φ.symm.final y) = y := by
   simp only [final_apply, symm_apply]
   rw [hpair]
   exact (Prod.ext_iff.mp happ).2
+
+/-- Every time slice of the inverse ambient isotopy is the inverse of the corresponding
+time slice. -/
+@[simp]
+theorem homeomorph_symm (t : I) : Φ.symm.homeomorph t = (Φ.homeomorph t).symm := by
+  ext y
+  symm
+  apply (Φ.homeomorph t).symm_apply_eq.mpr
+  have hfst : (Φ.totalHomeomorph.symm (t, y)).1 = t := Φ.totalHomeomorph_symm_fst (t, y)
+  have happ := Φ.totalHomeomorph.apply_symm_apply (t, y)
+  rw [totalHomeomorph_apply] at happ
+  have hpair : (t, (Φ.totalHomeomorph.symm (t, y)).2) = Φ.totalHomeomorph.symm (t, y) :=
+    Prod.ext hfst.symm rfl
+  simp only [homeomorph_apply, symm_apply]
+  rw [hpair]
+  exact (Prod.ext_iff.mp happ).2.symm
+
+/-- The final homeomorphism of the inverse ambient isotopy is the inverse final homeomorphism. -/
+@[simp]
+theorem finalHomeomorph_symm : Φ.symm.finalHomeomorph = Φ.finalHomeomorph.symm := by
+  rw [finalHomeomorph, finalHomeomorph, homeomorph_symm]
 
 end AmbientIsotopy
 
