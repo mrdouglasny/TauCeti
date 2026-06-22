@@ -56,12 +56,12 @@ noncomputable abbrev quotient (H : _root_.CommHopfAlgCat.{v} R) (I : HopfIdeal R
 /-- The quotient morphism `H ⟶ H ⧸ I` in `CommHopfAlgCat`. -/
 noncomputable abbrev mkQuotient (H : _root_.CommHopfAlgCat.{v} R) (I : HopfIdeal R H) :
     H ⟶ quotient H I :=
-  _root_.CommHopfAlgCat.ofHom (HopfIdeal.mkBialgHom I)
+  _root_.CommHopfAlgCat.ofHom (Bialgebra.Quotient.mkBialgHom I.toIdeal)
 
 /-- The quotient morphism has the expected underlying bialgebra morphism. -/
 @[simp]
 lemma hom_mkQuotient (H : _root_.CommHopfAlgCat.{v} R) (I : HopfIdeal R H) :
-    (mkQuotient H I).hom = HopfIdeal.mkBialgHom I :=
+    (mkQuotient H I).hom = Bialgebra.Quotient.mkBialgHom I.toIdeal :=
   _root_.CommHopfAlgCat.hom_ofHom _
 
 /-- Deprecated compatibility alias for `hom_mkQuotient`. -/
@@ -72,8 +72,7 @@ alias toBialgHom_mkQuotient := hom_mkQuotient
 @[simp]
 lemma mkQuotient_apply (H : _root_.CommHopfAlgCat.{v} R) (I : HopfIdeal R H) (h : H) :
     (mkQuotient H I).hom h = Ideal.Quotient.mkₐ R I.toIdeal h := by
-  rw [hom_mkQuotient]
-  exact HopfIdeal.mkBialgHom_apply I h
+  rw [hom_mkQuotient, Bialgebra.Quotient.mkBialgHom_apply, Ideal.Quotient.mkₐ_eq_mk]
 
 /-- The kernel of the quotient morphism is the Hopf ideal being quotiented by. -/
 lemma mkQuotient_ker (H : _root_.CommHopfAlgCat.{v} R) (I : HopfIdeal R H) :
@@ -210,7 +209,8 @@ lemma liftQuotient_unique (I : HopfIdeal R H) (f : H ⟶ K)
     (hg : mkQuotient H I ≫ g = f) : g = liftQuotient I f hf := by
   apply (forget₂ (FiniteTypeCommHopfAlgCat.{u, v} R)
     (_root_.CommHopfAlgCat.{v} R)).map_injective
-  have hg' : _root_.CommHopfAlgCat.ofHom (HopfIdeal.mkBialgHom I) ≫ g.hom = f.hom :=
+  have hg' : _root_.CommHopfAlgCat.ofHom (Bialgebra.Quotient.mkBialgHom I.toIdeal) ≫ g.hom =
+      f.hom :=
     congrArg
       (fun φ => (forget₂ (FiniteTypeCommHopfAlgCat.{u, v} R)
         (_root_.CommHopfAlgCat.{v} R)).map φ) hg
