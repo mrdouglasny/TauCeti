@@ -458,6 +458,24 @@ theorem ContractionSemigroup.hasGrowthBound (S : ContractionSemigroup X) :
 
 open MeasureTheory
 
+omit [CompleteSpace X] in
+/-- The growth-bound estimate for the Laplace-transform integrand:
+`‖e^{-λt} S(t) x‖ ≤ M ‖x‖ e^{-(λ-ω)t}` for `t > 0`. Shared by the integrability of the
+integrand and the norm bound on the resolvent. -/
+private lemma StronglyContinuousSemigroup.norm_resolvent_integrand_le
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (x : X) {t : ℝ} (ht : 0 < t) :
+    ‖Real.exp (-(lambda * t)) • S.operator t x‖ ≤ M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
+  rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+  calc Real.exp (-(lambda * t)) * ‖(S.operator t) x‖
+      ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
+        gcongr
+        exact le_trans (ContinuousLinearMap.le_opNorm _ _)
+          (by gcongr; exact hb.2 t ht.le)
+    _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
+        rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring, Real.exp_add]
+        ring
+
 /-- The Laplace-transform integrand `e^{-λt} S(t) x` is integrable on `(0, ∞)` whenever
 `ω < λ`: by the growth bound `‖e^{-λt} S(t) x‖ ≤ M ‖x‖ e^{-(λ-ω)t}`, which is integrable. -/
 lemma StronglyContinuousSemigroup.integrable_resolvent_integrand
@@ -477,16 +495,7 @@ lemma StronglyContinuousSemigroup.integrable_resolvent_integrand
       exact h_cont.mono Set.Ioi_subset_Ici_self
   · apply (ae_restrict_mem measurableSet_Ioi).mono
     intro t (ht : 0 < t)
-    rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), Pi.smul_apply,
-        smul_eq_mul]
-    calc Real.exp (-(lambda * t)) * ‖(S.operator t) x‖
-        ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
-          gcongr
-          exact le_trans (ContinuousLinearMap.le_opNorm _ _)
-            (by gcongr; exact hb.2 t ht.le)
-      _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
-          rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring, Real.exp_add]
-          ring
+    simpa only [Pi.smul_apply, smul_eq_mul] using S.norm_resolvent_integrand_le hb lambda x ht
 
 /-- The resolvent `R(λ) x = ∫₀^∞ e^{-λt} S(t)x dt` of a C₀-semigroup with growth bound
 `(ω, M)`, for `λ > ω`. A pointwise `X`-valued Bochner integral (so it is well-defined for
@@ -520,15 +529,7 @@ noncomputable def StronglyContinuousSemigroup.resolvent
             · exact (exp_neg_integrableOn_Ioi 0 hpos).integrable.const_mul (M * ‖x‖)
             · apply (ae_restrict_mem measurableSet_Ioi).mono
               intro t (ht : 0 < t)
-              rw [norm_smul, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
-              calc Real.exp (-(lambda * t)) * ‖(S.operator t) x‖
-                  ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
-                    gcongr
-                    exact le_trans (ContinuousLinearMap.le_opNorm _ _)
-                      (by gcongr; exact hb.2 t ht.le)
-                _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
-                    rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring,
-                      Real.exp_add]; ring
+              exact S.norm_resolvent_integrand_le hb lambda x ht
         _ = M / (lambda - ω) * ‖x‖ := by
             rw [show (fun t => M * ‖x‖ * Real.exp (-(lambda - ω) * t)) =
                 (fun t => (M * ‖x‖) • Real.exp (-(lambda - ω) * t)) from by
@@ -582,6 +583,108 @@ private lemma integral_Ioi_eq_Ioc_add_Ioi (f : ℝ → X) {h : ℝ} (hh : 0 < h)
     (hf.mono_set Set.Ioc_subset_Ioi_self)
     (hf.mono_set (Set.Ioi_subset_Ioi (le_of_lt hh)))
 
+/-- The integral shift identity ([EN] Thm. II.1.10(i), [Linares] eq. 0.15):
+`S(h)(R(λ)x) - R(λ)x = (e^{λh} - 1) • R(λ)x - e^{λh} • ∫_{(0,h]} e^{-λu} S(u)x du`, for `h > 0`. -/
+private theorem StronglyContinuousSemigroup.resolvent_shift_identity
+    (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (lambda : ℝ) (hlam : ω < lambda) (x : X) {h : ℝ} (hh : 0 < h) :
+    S.operator h (S.resolvent hb lambda hlam x) - S.resolvent hb lambda hlam x =
+      (Real.exp (lambda * h) - 1) • S.resolvent hb lambda hlam x -
+      Real.exp (lambda * h) • ∫ u in Set.Ioc 0 h, Real.exp (-(lambda * u)) • S.operator u x := by
+  set Rlx := S.resolvent hb lambda hlam x
+  set f := fun t => Real.exp (-(lambda * t)) • S.operator t x
+  -- Step 1: push `S(h)` inside the integral via the semigroup property
+  have h_push : S.operator h Rlx = Real.exp (lambda * h) • ∫ u in Set.Ioi h, f u := by
+    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
+    rw [hRlx, ← ContinuousLinearMap.integral_comp_comm _
+      (S.integrable_resolvent_integrand hb lambda hlam x)]
+    have h_eq : ∀ t ∈ Set.Ioi (0 : ℝ),
+        (S.operator h) (f t) = Real.exp (lambda * h) • f (t + h) := by
+      intro t ht
+      simp only [f, ContinuousLinearMap.map_smul]
+      rw [← ContinuousLinearMap.comp_apply,
+          ← S.semigroup h t (le_of_lt hh) (le_of_lt (Set.mem_Ioi.mp ht)),
+          show h + t = t + h from add_comm h t]
+      symm; rw [← mul_smul, ← Real.exp_add]; congr 1; ring
+    rw [MeasureTheory.setIntegral_congr_fun measurableSet_Ioi h_eq]
+    rw [integral_smul (μ := volume.restrict (Set.Ioi (0 : ℝ)))]
+    congr 1
+    exact integral_comp_add_right_Ioi f h
+  -- Step 2: split `∫_{Ioi h} = Rlx - ∫_{Ioc 0 h} f`
+  have h_split : ∫ u in Set.Ioi h, f u = Rlx - ∫ u in Set.Ioc 0 h, f u := by
+    have hsplit := integral_Ioi_eq_Ioc_add_Ioi f hh
+      (S.integrable_resolvent_integrand hb lambda hlam x)
+    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
+    rw [hRlx, hsplit]; abel
+  -- Step 3: combine into the key identity
+  rw [h_push, h_split]
+  simp only [smul_sub, sub_smul, one_smul]
+  abel
+
+/-- The integral average `(1/t) • ∫_{(0,t]} e^{-λu} S(u)x du` tends to `x` as `t → 0⁺`: the
+integrand `e^{-λu} S(u)x` is continuous at `0` with value `x` (strong continuity), so the
+fundamental theorem of calculus gives the Cesàro limit. -/
+private theorem StronglyContinuousSemigroup.tendsto_average_resolvent_integrand
+    (S : StronglyContinuousSemigroup X) (lambda : ℝ) (x : X) :
+    Filter.Tendsto
+      (fun t => (1 / t) • ∫ u in Set.Ioc 0 t, Real.exp (-(lambda * u)) • S.operator u x)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds x) := by
+  set f := fun t => Real.exp (-(lambda * t)) • S.operator t x
+  -- Modify `f` for `t < 0` so the FTC sees two-sided continuity at `0`
+  set g : ℝ → X := fun t => if 0 ≤ t then f t else x with hg_def
+  -- `g` is continuous at `0` (right: strong continuity; left: constant `x`)
+  have hg_cont : Filter.Tendsto g (nhds 0) (nhds x) := by
+    rw [← nhdsLT_sup_nhdsGE (0 : ℝ)]
+    apply Filter.Tendsto.sup
+    · exact (tendsto_const_nhds (x := x)).congr' (by
+        filter_upwards [self_mem_nhdsWithin] with t (ht : t < 0)
+        simp only [g, if_neg (not_le.mpr ht)])
+    · exact (show Filter.Tendsto f (nhdsWithin 0 (Set.Ici 0)) (nhds x) from by
+        have h1 : Filter.Tendsto (fun t => Real.exp (-(lambda * t)))
+            (nhdsWithin 0 (Set.Ici 0)) (nhds 1) := by
+          have hca : ContinuousAt (fun t => Real.exp (-(lambda * t))) 0 :=
+            Real.continuous_exp.continuousAt.comp
+              ((continuousAt_const.mul continuousAt_id).neg)
+          have := hca.tendsto
+          simp [mul_zero, Real.exp_zero] at this
+          exact this.mono_left nhdsWithin_le_nhds
+        have h2 := S.strong_cont x
+        simpa [one_smul] using h1.smul h2).congr' (by
+        filter_upwards [self_mem_nhdsWithin] with t (ht : 0 ≤ t)
+        simp only [g, if_pos ht])
+  -- `g` agrees with `f` on `(0, ∞)`, so the set integrals match
+  have hg_eq : ∀ t, 0 < t →
+      ∫ u in Set.Ioc 0 t, g u = ∫ u in Set.Ioc 0 t, f u := by
+    intro t ht
+    apply MeasureTheory.setIntegral_congr_fun measurableSet_Ioc
+    intro u hu; simp [hg_def, hu.1.le]
+  -- `g` is continuous (piecewise of continuous pieces matching at `0`)
+  have hg_continuous : Continuous g := by
+    change Continuous (Set.piecewise (Set.Ici 0) f (fun _ => x))
+    apply continuous_piecewise
+    · intro t ht
+      have := frontier_Ici_subset (a := (0:ℝ)) ht
+      simp only [Set.mem_singleton_iff] at this; subst this
+      simp [f, S.at_zero, Real.exp_zero]
+    · rw [closure_Ici]
+      exact ContinuousOn.smul
+        ((Real.continuous_exp.comp (continuous_neg.comp
+          (Continuous.mul continuous_const continuous_id))).continuousOn)
+        (fun t₀ ht₀ => S.strongContAt x t₀ ht₀)
+    · exact continuousOn_const
+  -- FTC for `g`: `HasDerivAt (fun u => ∫₀ᵘ g) x 0`
+  have h_ftc : HasDerivAt (fun u => ∫ t in (0 : ℝ)..u, g t) x 0 :=
+    intervalIntegral.integral_hasDerivAt_of_tendsto_ae_right
+      IntervalIntegrable.refl
+      (hg_continuous.stronglyMeasurableAtFilter volume (nhds 0))
+      (hg_cont.mono_left inf_le_left)
+  have h_slope := h_ftc.tendsto_slope_zero_right
+  simp only [zero_add, intervalIntegral.integral_same, sub_zero] at h_slope
+  -- convert the interval integral to a set integral and `g` back to `f`
+  exact h_slope.congr' (by
+    filter_upwards [self_mem_nhdsWithin] with t (ht : 0 < t)
+    rw [one_div, intervalIntegral.integral_of_le (le_of_lt ht), hg_eq t ht])
+
 /-- The generator difference quotient for `R(λ)x` converges to `λ R(λ)x - x`.
 This is the core computation shared by `resolventMapsToDomain` and `resolventRightInv`. -/
 private theorem StronglyContinuousSemigroup.resolvent_generator_tendsto
@@ -591,158 +694,37 @@ private theorem StronglyContinuousSemigroup.resolvent_generator_tendsto
       S.resolvent hb lambda hlam x))
       (nhdsWithin 0 (Set.Ioi 0))
       (nhds (lambda • S.resolvent hb lambda hlam x - x)) := by
-  set Rlx := S.resolvent hb lambda hlam x
-  set f := fun t => Real.exp (-(lambda * t)) • S.operator t x
-  -- Full integral shift computation ([EN] Thm. II.1.10(i), [Linares] eq. 0.15)
-  -- The proof establishes the key identity for h > 0 and takes the limit.
-  -- Key identity ([EN] Thm. II.1.10(i), [Linares] eq. 0.15):
-  --   S(h)(Rlx) - Rlx = (e^{λh} - 1) • Rlx - e^{λh} • ∫_{Ioc 0 h} f(t) dt
-  -- Then (1/h)(S(h)(Rlx) - Rlx) → λ Rlx - x as h → 0⁺.
-  --
-  -- Each step below is proved.
-  -- Step 1: Push S(h) inside integral and use semigroup property
-  have h_push : ∀ (h : ℝ), 0 < h →
-      S.operator h Rlx = Real.exp (lambda * h) •
-        ∫ u in Set.Ioi h, f u := by
-    intro h hh
-    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
-    -- Step 1: Push S(h) inside integral
-    rw [hRlx, ← ContinuousLinearMap.integral_comp_comm _
-      (S.integrable_resolvent_integrand hb lambda hlam x)]
-    -- Goal: ∫ t in Ioi 0, S(h)(f(t)) = e^{λh} • ∫ u in Ioi h, f u
-    -- Step 2: Rewrite integrand on Ioi 0 (where t > 0 hence t ≥ 0)
-    have h_eq : ∀ t ∈ Set.Ioi (0 : ℝ),
-        (S.operator h) (f t) = Real.exp (lambda * h) • f (t + h) := by
-      intro t ht
-      simp only [f, ContinuousLinearMap.map_smul]
-      rw [← ContinuousLinearMap.comp_apply,
-          ← S.semigroup h t (le_of_lt hh) (le_of_lt (Set.mem_Ioi.mp ht)),
-          show h + t = t + h from add_comm h t]
-      -- exp(-λt) • S(t+h)x = exp(λh) • (exp(-λ(t+h)) • S(t+h)x)
-      -- Since • is right-assoc: RHS = exp(λh) • (exp(-λ(t+h)) • S(t+h)x)
-      -- Use mul_smul: a • (b • x) = (a * b) • x, then exp_add + ring.
-      symm; rw [← mul_smul, ← Real.exp_add]; congr 1; ring
-    rw [MeasureTheory.setIntegral_congr_fun measurableSet_Ioi h_eq]
-    -- Goal: ∫ t in Ioi 0, e^{λh} • f(t+h) = e^{λh} • ∫ u in Ioi h, f u
-    rw [integral_smul (μ := volume.restrict (Set.Ioi (0 : ℝ)))]
-    congr 1
-    exact integral_comp_add_right_Ioi f h
-  -- Step 2: Split ∫_{Ioi h} = Rlx - ∫_{Ioc 0 h} f
-  have h_split : ∀ (h : ℝ), 0 < h →
-      ∫ u in Set.Ioi h, f u = Rlx - ∫ u in Set.Ioc 0 h, f u := by
-    intro h hh
-    have hsplit := integral_Ioi_eq_Ioc_add_Ioi f hh
-      (S.integrable_resolvent_integrand hb lambda hlam x)
-    -- Rlx = ∫ t in Ioi 0, f t by definition of resolvent
-    have hRlx : Rlx = ∫ t in Set.Ioi 0, f t := S.resolvent_apply hb lambda hlam x
-    rw [hRlx, hsplit]; abel
-  -- Step 3: Combine into the key identity
-  have h_identity : ∀ (h : ℝ), 0 < h →
-      S.operator h Rlx - Rlx =
-        (Real.exp (lambda * h) - 1) • Rlx -
-        Real.exp (lambda * h) • ∫ u in Set.Ioc 0 h, f u := by
-    intro h hh
-    rw [h_push h hh, h_split h hh]
-    simp only [smul_sub, sub_smul, one_smul]
-    abel
-  -- Step 4: Take the limit as h → 0⁺
-  -- First establish the derivative (e^{λh}-1)/h → λ
+  -- the slope `(e^{λt}-1)/t → λ` from the derivative of `exp` at `0`
   have hderiv : HasDerivAt (fun t => Real.exp (lambda * t)) lambda 0 := by
     have h := (Real.hasDerivAt_exp (lambda * 0)).comp (0 : ℝ)
       ((hasDerivAt_id (0 : ℝ)).const_mul lambda)
     simp only [Real.exp_zero, mul_zero, one_mul, mul_one, Function.comp_def] at h
     exact h
-  -- Use h_identity to rewrite the generator quotient
+  -- rewrite via the shift identity, then take the limit term by term
   apply Filter.Tendsto.congr'
   · filter_upwards [self_mem_nhdsWithin] with t (ht : 0 < t)
-    rw [h_identity t ht, smul_sub, smul_smul, smul_smul]
-  -- Show ((e^{λt}-1)/t) • Rlx - ((e^{λt})/t) • ∫_{Ioc 0 t} f → λ • Rlx - x
-  · -- Decompose: first term → λ • Rlx, second term → x
+    rw [S.resolvent_shift_identity hb lambda hlam x ht, smul_sub, smul_smul, smul_smul]
+  · set Rlx := S.resolvent hb lambda hlam x
+    set f := fun t => Real.exp (-(lambda * t)) • S.operator t x
     apply Filter.Tendsto.sub
-    · -- (1/t * (e^{λt}-1)) • Rlx → λ • Rlx
+    · -- `(1/t * (e^{λt}-1)) • Rlx → λ • Rlx`
       apply Filter.Tendsto.smul _ tendsto_const_nhds
-      -- 1/t * (e^{λt}-1) → λ from the derivative of exp at 0
       have := hderiv.tendsto_slope_zero_right
       simp only [zero_add, Real.exp_zero, mul_zero] at this
       exact this.congr (fun t => by simp only [smul_eq_mul]; ring)
-    · -- (1/t * e^{λt}) • ∫_{Ioc 0 t} f → 1 • x = x
+    · -- `(1/t * e^{λt}) • ∫_{Ioc 0 t} f → 1 • x = x`
       rw [show x = (1 : ℝ) • x from (one_smul ℝ x).symm]
-      -- Rewrite (a * b) • v = a • (b • v) to separate exp and 1/t
-      simp_rw [show ∀ t, (1 / t * Real.exp (lambda * t)) •
-          ∫ u in Set.Ioc 0 t, f u =
+      simp_rw [show ∀ t, (1 / t * Real.exp (lambda * t)) • ∫ u in Set.Ioc 0 t, f u =
           Real.exp (lambda * t) • ((1 / t) • ∫ u in Set.Ioc 0 t, f u) from
         fun t => by rw [show 1 / t * Real.exp (lambda * t) =
           Real.exp (lambda * t) * (1 / t) from by ring, mul_smul]]
       apply Filter.Tendsto.smul
-      · -- exp(λt) → exp(0) = 1 as t → 0⁺ (continuity of exp)
-        have hexp_cont : Filter.Tendsto (fun t => Real.exp (lambda * t))
+      · have hexp_cont : Filter.Tendsto (fun t => Real.exp (lambda * t))
             (nhds 0) (nhds 1) := by
           have := hderiv.continuousAt.tendsto
           simpa using this
         exact hexp_cont.mono_left nhdsWithin_le_nhds
-      · -- (1/t) • ∫₀ᵗ f → f(0) = x as t → 0⁺ (FTC for Bochner integrals)
-        -- Modify f for t < 0 so FTC gets two-sided continuity at 0
-        set g : ℝ → X := fun t => if 0 ≤ t then f t else x with hg_def
-        -- g is continuous at 0 (right: strong continuity; left: constant x)
-        have hg_cont : Filter.Tendsto g (nhds 0) (nhds x) := by
-          rw [← nhdsLT_sup_nhdsGE (0 : ℝ)]
-          apply Filter.Tendsto.sup
-          · -- Left of 0: g(t) = x (constant), so Tendsto g = Tendsto const
-            exact (tendsto_const_nhds (x := x)).congr' (by
-              filter_upwards [self_mem_nhdsWithin] with t (ht : t < 0)
-              simp only [g, if_neg (not_le.mpr ht)])
-          · -- Right of 0: g(t) = f(t) → x by strong continuity + exp
-            exact (show Filter.Tendsto f (nhdsWithin 0 (Set.Ici 0)) (nhds x) from by
-              have h1 : Filter.Tendsto (fun t => Real.exp (-(lambda * t)))
-                  (nhdsWithin 0 (Set.Ici 0)) (nhds 1) := by
-                have hca : ContinuousAt (fun t => Real.exp (-(lambda * t))) 0 :=
-                  Real.continuous_exp.continuousAt.comp
-                    ((continuousAt_const.mul continuousAt_id).neg)
-                have := hca.tendsto
-                simp [mul_zero, Real.exp_zero] at this
-                exact this.mono_left nhdsWithin_le_nhds
-              have h2 := S.strong_cont x
-              -- exp(-λt) • S(t)x → 1 • x = x
-              simpa [one_smul] using h1.smul h2).congr' (by
-              filter_upwards [self_mem_nhdsWithin] with t (ht : 0 ≤ t)
-              simp only [g, if_pos ht])
-        -- g agrees with f on (0, ∞) so set integrals match
-        have hg_eq : ∀ t, 0 < t →
-            ∫ u in Set.Ioc 0 t, g u = ∫ u in Set.Ioc 0 t, f u := by
-          intro t ht
-          apply MeasureTheory.setIntegral_congr_fun measurableSet_Ioc
-          intro u hu; simp [hg_def, hu.1.le]
-        -- g is continuous (piecewise of continuous functions matching at 0)
-        have hg_continuous : Continuous g := by
-          -- `g`'s `if 0 ≤ t` is defeq to `Set.piecewise (Ici 0)` (same Decidable instance)
-          change Continuous (Set.piecewise (Set.Ici 0) f (fun _ => x))
-          apply continuous_piecewise
-          · -- Frontier condition: f 0 = x
-            intro t ht
-            have := frontier_Ici_subset (a := (0:ℝ)) ht
-            simp only [Set.mem_singleton_iff] at this; subst this
-            simp [f, S.at_zero, Real.exp_zero]
-          · -- ContinuousOn f (closure (Ici 0)) = ContinuousOn f (Ici 0)
-            rw [closure_Ici]
-            exact ContinuousOn.smul
-              ((Real.continuous_exp.comp (continuous_neg.comp
-                (Continuous.mul continuous_const continuous_id))).continuousOn)
-              (fun t₀ ht₀ => S.strongContAt x t₀ ht₀)
-          · exact continuousOn_const
-        -- FTC for g: HasDerivAt (fun u => ∫₀ᵘ g) x 0
-        have h_ftc : HasDerivAt (fun u => ∫ t in (0 : ℝ)..u, g t) x 0 :=
-          intervalIntegral.integral_hasDerivAt_of_tendsto_ae_right
-            IntervalIntegrable.refl
-            (hg_continuous.stronglyMeasurableAtFilter volume (nhds 0))
-            (hg_cont.mono_left inf_le_left)
-        -- Extract right Tendsto and convert
-        have h_slope := h_ftc.tendsto_slope_zero_right
-        simp only [zero_add, intervalIntegral.integral_same, sub_zero] at h_slope
-        -- h_slope : Tendsto (fun t => t⁻¹ • ∫₀ᵗ g) (nhdsWithin 0 (Ioi 0)) (nhds x)
-        -- Convert interval integral to set integral and g to f
-        exact h_slope.congr' (by
-          filter_upwards [self_mem_nhdsWithin] with t (ht : 0 < t)
-          rw [one_div, intervalIntegral.integral_of_le (le_of_lt ht), hg_eq t ht])
+      · exact S.tendsto_average_resolvent_integrand lambda x
 
 /-- The resolvent maps all of `X` into the domain of the generator
 ([EN] Thm. II.1.10(i), [Linares] eq. 0.15). -/
