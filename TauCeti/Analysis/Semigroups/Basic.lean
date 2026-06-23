@@ -468,7 +468,7 @@ theorem ContractionSemigroup.hasGrowthBound (S : ContractionSemigroup X) :
     S.toStronglyContinuousSemigroup.HasGrowthBound 0 1 :=
   ⟨le_rfl, fun t ht => by simpa using S.contracting t ht⟩
 
-/-! ## The Resolvent (for Contraction Semigroups) -/
+/-! ## The Resolvent (general growth bound) -/
 
 open MeasureTheory
 
@@ -545,16 +545,14 @@ noncomputable def StronglyContinuousSemigroup.resolvent
               intro t (ht : 0 < t)
               exact S.norm_resolvent_integrand_le hb lambda x ht
         _ = M / (lambda - ω) * ‖x‖ := by
-            rw [show (fun t => M * ‖x‖ * Real.exp (-(lambda - ω) * t)) =
-                (fun t => (M * ‖x‖) • Real.exp (-(lambda - ω) * t)) from by
-                  ext t; simp [smul_eq_mul]]
-            rw [integral_smul (μ := volume.restrict (Set.Ioi (0 : ℝ)))]
+            -- pull the constant `M * ‖x‖` out of the integral, then evaluate `∫ e^{-(λ-ω)t}`.
+            rw [MeasureTheory.integral_const_mul]
             have h_eval : ∫ t in Set.Ioi 0, Real.exp (-(lambda - ω) * t) = (lambda - ω)⁻¹ := by
               have h := integral_comp_mul_left_Ioi (fun t => Real.exp (-t)) 0 hpos
               simp only [mul_zero] at h
               simp only [neg_mul]
               rw [h, integral_exp_neg_Ioi_zero, smul_eq_mul, mul_one]
-            rw [smul_eq_mul, h_eval, div_eq_mul_inv]; ring)
+            rw [h_eval, div_eq_mul_inv]; ring)
 
 /-- The resolvent in integral form (characteristic lemma). -/
 theorem StronglyContinuousSemigroup.resolvent_apply
@@ -674,7 +672,9 @@ private theorem StronglyContinuousSemigroup.tendsto_average_resolvent_integrand
     intro u hu; simp [hg_def, hu.1.le]
   -- `g` is continuous (piecewise of continuous pieces matching at `0`)
   have hg_continuous : Continuous g := by
-    change Continuous (Set.piecewise (Set.Ici 0) f (fun _ => x))
+    -- the local `if 0 ≤ t` definition of `g` is exactly `Set.piecewise (Ici 0) …`
+    have hg_pw : g = Set.piecewise (Set.Ici 0) f (fun _ => x) := rfl
+    rw [hg_pw]
     apply continuous_piecewise
     · intro t ht
       have := frontier_Ici_subset (a := (0:ℝ)) ht
@@ -758,11 +758,13 @@ private theorem StronglyContinuousSemigroup.tendsto_average_orbit_at
   have h_slope := h_ftc.tendsto_slope_zero_right
   simpa [f, one_div, intervalIntegral.integral_same] using h_slope
 
-private theorem StronglyContinuousSemigroup.integral_orbit_mem_domain
+/-- The difference quotient of the local orbit integral `∫₀ᵗ S(u)x du` converges to
+`S t x - x` as the time-step `→ 0⁺` (the limit underlying [EN] Lemma II.1.3). -/
+private theorem StronglyContinuousSemigroup.tendsto_quot_integral_orbit
     (S : StronglyContinuousSemigroup X) (x : X) {t : ℝ} (ht : 0 < t) :
-    (∫ u in Set.Ioc 0 t, S.operator u x) ∈ S.domain := by
-  rw [S.mem_domain_iff_tendsto]
-  refine ⟨S.operator t x - x, ?_⟩
+    Filter.Tendsto (fun h => (1 / h) • (S.operator h (∫ u in Set.Ioc 0 t, S.operator u x)
+        - ∫ u in Set.Ioc 0 t, S.operator u x))
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (S.operator t x - x)) := by
   set y := ∫ u in (0 : ℝ)..t, S.operator u x
   have h_zero : Filter.Tendsto
       (fun h => (1 / h) • ∫ u in (0 : ℝ)..h, S.operator u x)
@@ -785,6 +787,21 @@ private theorem StronglyContinuousSemigroup.integral_orbit_mem_domain
     rw [StronglyContinuousSemigroup.local_integral_shift_identity S x ht hh]
     rw [smul_sub]
   simpa [y, intervalIntegral.integral_of_le ht.le] using h_interval
+
+/-- The local orbit integral `∫₀ᵗ S(u)x du` lies in the generator domain `D(A)`
+([EN] Lemma II.1.3). -/
+theorem StronglyContinuousSemigroup.integral_orbit_mem_domain
+    (S : StronglyContinuousSemigroup X) (x : X) {t : ℝ} (ht : 0 < t) :
+    (∫ u in Set.Ioc 0 t, S.operator u x) ∈ S.domain :=
+  (S.mem_domain_iff_tendsto _).mpr ⟨_, S.tendsto_quot_integral_orbit x ht⟩
+
+/-- The generator value on the local orbit integral: `A (∫₀ᵗ S(u)x du) = S t x - x`
+([EN] Lemma II.1.3). -/
+theorem StronglyContinuousSemigroup.generator_integral_orbit
+    (S : StronglyContinuousSemigroup X) (x : X) {t : ℝ} (ht : 0 < t) :
+    S.generator ⟨∫ u in Set.Ioc 0 t, S.operator u x, S.integral_orbit_mem_domain x ht⟩
+      = S.operator t x - x :=
+  S.generator_eq_of_tendsto _ (S.tendsto_quot_integral_orbit x ht)
 
 /-- The generator domain of a strongly continuous semigroup is dense
 ([EN] Lemma II.1.3 and its density corollary). -/
@@ -850,9 +867,9 @@ theorem StronglyContinuousSemigroup.resolvent_mem_domain
 /-- The fundamental resolvent identity: `(λI - A) R(λ) x = x`.
 
 This is the right-inverse half of eq. 0.16 in [Linares]: `(λI - A) R(λ) x = x`
-for every `x`. The left inverse / injectivity (hence `R λ = (λI - A)⁻¹` and
-`(0, ∞) ⊆ ρ(A)`) is not proved here; it belongs to the deferred generation
-theorem. -/
+for every `x`. The left inverse / injectivity (hence `R λ = (λI - A)⁻¹` and the
+resolvent half-line `{λ : ω < λ} ⊆ ρ(A)`) is not proved here; it belongs to the
+deferred generation theorem. -/
 theorem StronglyContinuousSemigroup.resolventRightInv
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) (x : X) :
