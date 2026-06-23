@@ -9,6 +9,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.MeasureTheory.Integral.Bochner.Basic
 import Mathlib.MeasureTheory.Integral.ExpDecay
+import Mathlib.LinearAlgebra.LinearPMap
 import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 
@@ -18,7 +19,9 @@ import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 
 Strongly continuous one-parameter semigroups (C₀-semigroups) on a real Banach space `X`,
 their infinitesimal generators with domain, the resolvent as the Laplace transform of
-the semigroup, and the resolvent identities of the Hille–Yosida theory.
+the semigroup with its norm bound, and the right-inverse resolvent identity
+`(λI - A) R(λ) x = x`. (The left inverse / full resolvent identity is deferred to the
+generation theorem.)
 
 ## Main definitions
 
@@ -39,7 +42,9 @@ the semigroup, and the resolvent identities of the Hille–Yosida theory.
 * `StronglyContinuousSemigroup.resolvent_norm_le`: `‖R λ‖ ≤ M/(λ-ω)` for `λ > ω`; the
   contraction corollary is `‖R λ‖ ≤ 1/λ`.
 * `StronglyContinuousSemigroup.resolvent_mem_domain`: `R λ x ∈ D(A)`.
-* `StronglyContinuousSemigroup.resolventRightInv`: `(λ - A) R λ = I` on the domain.
+* `StronglyContinuousSemigroup.resolventRightInv`: for every `x : X`,
+  `(λI - A) (R λ x) = x` (with `R λ x ∈ D(A)`).
+* `StronglyContinuousSemigroup.dense_domain`: the generator domain `D(A)` is dense.
 
 ## Implementation notes
 
@@ -651,7 +656,8 @@ private theorem StronglyContinuousSemigroup.tendsto_average_resolvent_integrand
     · exact (tendsto_const_nhds (x := x)).congr' (by
         filter_upwards [self_mem_nhdsWithin] with t (ht : t < 0)
         simp only [g, if_neg (not_le.mpr ht)])
-    · exact (show Filter.Tendsto f (nhdsWithin 0 (Set.Ici 0)) (nhds x) from by
+    · -- right of `0`: `g = f`, and `f t = e^{-λt}•S(t)x → 1•x = x` by strong continuity
+      have hf_cont : Filter.Tendsto f (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
         have h1 : Filter.Tendsto (fun t => Real.exp (-(lambda * t)))
             (nhdsWithin 0 (Set.Ici 0)) (nhds 1) := by
           have hca : ContinuousAt (fun t => Real.exp (-(lambda * t))) 0 :=
@@ -661,7 +667,8 @@ private theorem StronglyContinuousSemigroup.tendsto_average_resolvent_integrand
           simp [mul_zero, Real.exp_zero] at this
           exact this.mono_left nhdsWithin_le_nhds
         have h2 := S.strong_cont x
-        simpa [one_smul] using h1.smul h2).congr' (by
+        simpa [one_smul] using h1.smul h2
+      exact hf_cont.congr' (by
         filter_upwards [self_mem_nhdsWithin] with t (ht : 0 ≤ t)
         simp only [g, if_pos ht])
   -- `g` agrees with `f` on `(0, ∞)`, so the set integrals match
