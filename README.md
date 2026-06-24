@@ -61,16 +61,29 @@ It runs the identical engine and rubrics CI uses, in a clean room that ignores y
 
 The rubrics are **adversarial**, including instructions to find mis-formalizations, vacuous statements, and "pushing around the lump in the carpet". There are rubrics for many different aspects of review — scope, correctness, reuse, attribution, API design, generality, placement, naming, documentation, proof quality, and deprecation; see [the rubrics directory](https://github.com/FormalFrontier/TauCetiReview/tree/main/rubrics). We'll update these as we see what is most useful!
 
-Eventually, these review agents' token costs will be covered by some combination of philanthropic donations (in money or in kind), and perhaps eventually a "billable hours" basis for significant contributors. That is, industrial or academic groups making significant pull requests should expect to donate tokens sufficient to power the review bots in proportion to their contributions. Likely small scale contributions can be reviewed "for free" out of this pool.
 
 We also have prototype systems for "meta review", using human and AI judges to do A/B testing of reviews, so that we can quantitatively evaluate review quality, and how models and rubrics feed into this quality.
 
 ## Mathlib dependency
 
+Although Tau Ceti and [Mathlib](https://leanprover-community.github.io/) differ both in the review mechanisms and in design standards, and while they target different mathematical goals, we envision a strong synergy between the two libraries. We hope to build overlapping communities around both libraries.
+
 Tau Ceti depends on Mathlib's `master` branch, and always defers to design decisions made in Mathlib.
 AIs are encouraged to make PRs to Tau Ceti that bump the pin to new commits on Mathlib's `master` branch, and fix any resulting problems in Tau Ceti.
 
-We won't push material upstream from Tau Ceti to Mathlib. Mathlib contributors are welcome to adopt, curate, and modify material from Tau Ceti, while preparing PRs to Mathlib. Everything here is Apache licensed.
+We won't push material upstream from Tau Ceti to Mathlib. Mathlib contributors are welcome to adopt, curate, and modify material from Tau Ceti, while preparing PRs to Mathlib. Everything here is [Apache licensed](http://www.apache.org/licenses/).
+
+
+## Financial model
+We're aware that training and running powerful AIs come at a significant financial and environmental cost. We're also aware that at present the most capable agents are commercial offerings, and consider the question of bridging industrial and academic practices very seriously.
+
+For the time being, we will run initial CI and reviews for individual contributors and experiments (we don't really have a budget even for this, but will scrape something together), and expect that contributors will cover the costs of generating the code included in their PRs. 
+
+It is essential that Tau Ceti remains an open source project, and however inference for generation or review is paid for, the outputs will always be free (as in both speech and beer), protected by the Apache licence.
+
+We intend to move to a system where review agents' inference costs are covered by the large scale contributors to the library. This may be in the form of donations (in money or tokens) to the umbrella organizations (the Lean FRO and/or the Mathlib Initiative), or by in-kind inference using sufficiently capable in-house models. We anticipate that individual contributions can be reviewed "for free" out of this pool.
+
+Finally, we understand that participating in AI-assisted mathematics research requires the ability to pay for inference costs, potentially adding a further barrier to entry on top of the existing societal/financial privilege implicit in holding a research position. We're not sure how to respond to this. Possibilities include advocacy for public and private funding, advocacy for capability limitations, and technical capability work on open weight models and cheaper models. Each of these are difficult, have potential adverse effects, and unknown consequences. We hope that everyone involved in Tau Ceti will think hard about these questions, and contribute to meaningful and beneficial solutions.
 
 ## Building
 
