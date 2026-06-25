@@ -241,7 +241,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
           (ae_restrict_mem measurableSet_Ioi).mono fun t ht => cm_density_nonneg hcm k t ht
         refine ⟨hmeas_density, ?_⟩
         rw [hasFiniteIntegral_iff_ofReal hnonneg_density]
-        obtain ⟨_, hmass⟩ := cm_measure_finite_mass f hcm k hk2 L hL
+        obtain ⟨_, hmass⟩ := cm_measure_finite_mass f hcm k (by omega) L hL
         have hmass' := hmass
         unfold cm_measure at hmass'
         rw [withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ] at hmass'
@@ -372,7 +372,7 @@ private lemma ibp_kernel_integrableOn (f : ℝ → ℝ) (hcm : IsCompletelyMonot
           ← hcm.integral_neg_deriv_Ici T hT, hcm.integral_mass T hT]
       · calc ∫ t in (0 : ℝ)..T, cm_density f (p + 1) t
             ≤ ∫ t in (0 : ℝ)..T, cm_density f p t := by
-              simpa using cm_density_ibp_step f hcm (p + 1) (by omega) T hT
+              simpa using integral_cm_density_le_pred f hcm (p + 1) (by omega) T hT
           _ ≤ f 0 - f T := ih (Nat.one_le_iff_ne_zero.mpr hp) T hT
   have hint_density : IntegrableOn (cm_density f k) (Ioi 0) := by
     apply integrableOn_Ioi_of_intervalIntegral_norm_bounded (f 0 - L) 0 (l := atTop) (b := id)

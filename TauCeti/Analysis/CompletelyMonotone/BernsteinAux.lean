@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Mathlib.Analysis.Calculus.Taylor
-public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 public import Mathlib.MeasureTheory.Integral.IntervalIntegral.FundThmCalculus
 public import TauCeti.Analysis.CompletelyMonotone.Basic
 
@@ -28,8 +27,8 @@ The basic sign and monotonicity lemmas live in `Basic.lean`; only the analytic e
 * `TauCeti.IsCompletelyMonotone.tendsto_atTop`: `f` has a limit `L ≥ 0` at infinity.
 * `TauCeti.IsCompletelyMonotone.iteratedDerivWithin_Icc_eq_Ici`: iterated derivatives within
   `Icc x T` and within `Ici 0` agree at interior points.
-* `TauCeti.IsCompletelyMonotone.taylor_nonneg_remainder`: the Taylor integral remainder has
-  sign `(-1)ⁿ`.
+* `TauCeti.IsCompletelyMonotone.neg_one_pow_mul_taylor_remainder_nonneg`: the Taylor integral
+  remainder has sign `(-1)ⁿ`.
 * `TauCeti.IsCompletelyMonotone.integral_neg_deriv`, `TauCeti.IsCompletelyMonotone.integral_mass`:
   `f(x) - f(T) = ∫ₓᵀ (-f')`, and the total-mass identity on `[0, T]`.
 
@@ -83,10 +82,8 @@ lemma iteratedDerivWithin_Icc_eq_Ici {n : ℕ} (hf : IsCompletelyMonotone f)
         (mem_Ici.mpr ht_pos.le)]
 
 /-- **CM sign of the Taylor remainder.** For a completely monotone function the Taylor integral
-remainder `∫ₓᵀ (T-t)ⁿ⁻¹/(n-1)! · f⁽ⁿ⁾(t) dt` has sign `(-1)ⁿ`. Uses
-`iteratedDerivWithin_Icc_eq_Ici` (set transfer at interior points) and `Ioo_ae_eq_Icc`
-(the boundary is Lebesgue-null). -/
-lemma taylor_nonneg_remainder (hf : IsCompletelyMonotone f) {x T : ℝ} {n : ℕ}
+remainder `∫ₓᵀ (T-t)ⁿ⁻¹/(n-1)! · f⁽ⁿ⁾(t) dt` has sign `(-1)ⁿ`: `0 ≤ (-1)ⁿ` times it. -/
+lemma neg_one_pow_mul_taylor_remainder_nonneg (hf : IsCompletelyMonotone f) {x T : ℝ} {n : ℕ}
     (hx : 0 ≤ x) (hxT : x < T) :
     0 ≤ (-1 : ℝ) ^ n * ∫ t in x..T,
       (↑(n - 1).factorial)⁻¹ * (T - t) ^ (n - 1) *

@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 module
 
-public import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
+public import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 public import TauCeti.Analysis.CompletelyMonotone.BernsteinAux
 
 /-!
@@ -25,7 +26,8 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
 * `TauCeti.IsCompletelyMonotone.neg_deriv_integrableOn`,
   `TauCeti.IsCompletelyMonotone.integral_Ioi_neg_deriv`: `-f'` is integrable on `(0, ∞)` with
   improper integral `f(0) - L`.
-* `TauCeti.bernstein_packaging`: absorb the mass at infinity into a Dirac at `0`.
+* `TauCeti.exists_integral_exp_neg_mul_of_const_add`: absorb the mass at infinity into a
+  Dirac at `0`.
 * `TauCeti.bernstein_kernel`, `TauCeti.bernstein_kernel_tendsto`: the rescaled Laplace kernel and
   its pointwise limit `e^{-xp}`.
 * `TauCeti.cm_rescaled`, `TauCeti.cm_rescaled_Iio_zero`, `TauCeti.cm_rescaled_mass_eq`: the
@@ -162,7 +164,7 @@ lemma IsCompletelyMonotone.integral_Ioi_neg_deriv
 
 /-- **Packaging step**: if `f(x) = L + ∫ e^{-xp} dμ₀` with `μ₀` supported on `[0,∞)`, then
 `μ = μ₀ + L·δ₀` gives `f(x) = ∫ e^{-xp} dμ` with `μ` finite and supported on `[0,∞)`. -/
-lemma bernstein_packaging {f : ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
+lemma exists_integral_exp_neg_mul_of_const_add {f : ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
     {μ₀ : Measure ℝ} [IsFiniteMeasure μ₀] (hsupp₀ : μ₀ (Iio 0) = 0)
     (hrep : ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀) :
     ∃ μ : Measure ℝ, IsFiniteMeasure μ ∧ μ (Iio 0) = 0 ∧
@@ -215,7 +217,7 @@ converges pointwise to `e^{-xp}` as `n → ∞` (the classical `(1-x/n)ⁿ → e
 
 /-- **Pointwise convergence of the Bernstein kernel** to the Laplace kernel:
 `φ_n(x,p) → e^{-xp}` as `n → ∞`, for `x, p ≥ 0`. -/
-lemma bernstein_kernel_tendsto (x p : ℝ) (_hx : 0 ≤ x) (_hp : 0 ≤ p) :
+lemma bernstein_kernel_tendsto (x p : ℝ) :
     Tendsto (fun n : ℕ => bernstein_kernel n x p) atTop (nhds (Real.exp (-(x * p)))) := by
   set g := fun n : ℕ => (1 + (-(x * p)) / (↑n : ℝ)) ^ n with hg_def
   have hg_tendsto : Tendsto g atTop (nhds (Real.exp (-(x * p)))) :=
@@ -351,7 +353,7 @@ private lemma cm_density_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonot
   simp only [F, c]; ring
 
 /-- **IBP step**: integrating from density `k` to density `k-1`. -/
-lemma cm_density_ibp_step (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
+lemma integral_cm_density_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (k : ℕ) (hk : 2 ≤ k) (T : ℝ) (hT : 0 < T) :
     ∫ t in (0 : ℝ)..T, cm_density f k t ≤ ∫ t in (0 : ℝ)..T, cm_density f (k - 1) t := by
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by omega⟩
@@ -373,7 +375,7 @@ lemma cm_density_ibp_step (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
 
 /-- **Total mass bound**: `cm_measure f n` is finite with total mass `≤ f(0) - L`. -/
 lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
-    (n : ℕ) (hn : 2 ≤ n) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
+    (n : ℕ) (hn : 1 ≤ n) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
     IsFiniteMeasure (cm_measure f n) ∧
     (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
   have hn0 : n ≠ 0 := by omega
@@ -401,7 +403,7 @@ lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
         · subst hp; exact le_of_eq (base T hT)
         · calc ∫ t in (0 : ℝ)..T, cm_density f (p + 1) t
               ≤ ∫ t in (0 : ℝ)..T, cm_density f p t := by
-                simpa using cm_density_ibp_step f hcm (p + 1) (by omega) T hT
+                simpa using integral_cm_density_le_pred f hcm (p + 1) (by omega) T hT
             _ ≤ f 0 - f T := ih (Nat.one_le_iff_ne_zero.mpr hp) T hT
     intro T hT
     have hfT : L ≤ f T := by

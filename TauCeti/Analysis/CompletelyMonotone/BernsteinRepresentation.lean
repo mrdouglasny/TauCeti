@@ -89,7 +89,7 @@ private lemma cm_laplace_representation (hcm : IsCompletelyMonotone f)
       ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀ := by
   have hmass : ∀ n, 2 ≤ n → IsFiniteMeasure (cm_measure f n) ∧
       (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L) :=
-    fun n hn => cm_measure_finite_mass f hcm n hn L hL
+    fun n hn => cm_measure_finite_mass f hcm n (by omega) L hL
   have hsupp : ∀ n, 2 ≤ n → (cm_rescaled f n) (Iio 0) = 0 :=
     fun n hn => cm_rescaled_Iio_zero f n hn
   exact cm_prokhorov_and_verify hcm L hL hL_nn hmass hsupp
@@ -101,7 +101,7 @@ private lemma bernstein_theorem_real (hcm : IsCompletelyMonotone f) :
       ∀ t : ℝ, 0 ≤ t → f t = ∫ p, Real.exp (-(t * p)) ∂μ := by
   obtain ⟨L, hL_tendsto, hL_nonneg⟩ := hcm.tendsto_atTop
   obtain ⟨μ₀, hfin₀, hsupp₀, hrep⟩ := cm_laplace_representation hcm L hL_tendsto hL_nonneg
-  exact bernstein_packaging hL_nonneg hsupp₀ hrep
+  exact exists_integral_exp_neg_mul_of_const_add hL_nonneg hsupp₀ hrep
 
 /-- **Bernstein's theorem, forward direction.** Every completely monotone function on the
 closed half-line `[0, ∞)` is the Laplace transform of a finite measure on `ℝ≥0`.

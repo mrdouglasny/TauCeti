@@ -85,7 +85,6 @@ converging weakly to a finite limit `μ₀` that is finite, supported on `[0,∞
 `≤ C`. -/
 lemma finite_measure_subseq_limit
     (σ : ℕ → Measure ℝ) (C : ℝ)
-    (hfin : ∀ n, IsFiniteMeasure (σ n))
     (hmass : ∀ n, (σ n) univ ≤ ENNReal.ofReal C)
     (hsupp : ∀ n, (σ n) (Iio 0) = 0)
     (htight : ∀ ε, 0 < ε → ∃ K : ℝ, ∀ n, (σ n) (Ioi K) ≤ ENNReal.ofReal ε) :
@@ -93,6 +92,8 @@ lemma finite_measure_subseq_limit
       μ₀ (Iio 0) = 0 ∧ μ₀ univ ≤ ENNReal.ofReal C ∧
       ∀ (g : BoundedContinuousFunction ℝ ℝ), Tendsto (fun k => ∫ p, g p ∂(σ (φ k))) atTop
         (nhds (∫ p, g p ∂μ₀)) := by
+  haveI hfin : ∀ n, IsFiniteMeasure (σ n) :=
+    fun n => ⟨lt_of_le_of_lt (hmass n) ENNReal.ofReal_lt_top⟩
   let ν : ℕ → FiniteMeasure ℝ := fun n =>
     ⟨σ n + Measure.dirac (-1), MeasureTheory.isFiniteMeasureAdd⟩
   let π : ℕ → ProbabilityMeasure ℝ := fun n => (ν n).normalize

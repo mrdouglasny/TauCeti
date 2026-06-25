@@ -498,7 +498,7 @@ lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
     rwa [← ENNReal.ofReal_toReal (ne_of_lt (measure_lt_top (σ n) _)),
       ENNReal.ofReal_le_ofReal_iff hε.le]
   obtain ⟨μ₀, φ, hfin_μ, hφ_mono, hsupp_μ, hmass_μ, hweak⟩ :=
-    finite_measure_subseq_limit σ (f 0 - L) hfin_σ hmass_σ hsupp_σ htight_σ
+    finite_measure_subseq_limit σ (f 0 - L) hmass_σ hsupp_σ htight_σ
   -- Step 2: Verify the Laplace identity via diagonal convergence
   refine ⟨μ₀, hfin_μ, hsupp_μ, fun t ht => ?_⟩
   -- We need: f t = L + ∫ e^{-tp} dμ₀, i.e., f t - L = ∫ e^{-tp} dμ₀
