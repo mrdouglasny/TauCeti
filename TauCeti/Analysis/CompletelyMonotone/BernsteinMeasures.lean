@@ -13,8 +13,8 @@ public import TauCeti.Analysis.CompletelyMonotone.BernsteinAux
 
 The Chafaï-style construction of the representing measure in Bernstein's theorem. For a
 completely monotone `f` the densities `ρ_n(t) = (-1)ⁿ/(n-1)! · tⁿ⁻¹ · f⁽ⁿ⁾(t)` are nonnegative,
-define finite measures `cm_measure f n` whose total mass is bounded by `f(0) - f(∞)`, and after
-the rescaling `t ↦ (n-1)/t` give measures `cm_rescaled f n` supported on `[0, ∞)` whose Laplace
+define finite measures `chafaiMeasure f n` whose total mass is bounded by `f(0) - f(∞)`, and after
+the rescaling `t ↦ (n-1)/t` give measures `chafaiRescaled f n` supported on `[0, ∞)` whose Laplace
 kernels `(1 - xp/(n-1))₊ⁿ⁻¹` converge to `e^{-xp}`. These feed the Prokhorov tightness argument.
 
 These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean` and
@@ -22,17 +22,15 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
 
 ## Main declarations
 
-* `TauCeti.cm_density`, `TauCeti.cm_measure`: the approximating densities and measures.
+* `TauCeti.chafaiDensity`, `TauCeti.chafaiMeasure`: the approximating densities and measures.
 * `TauCeti.IsCompletelyMonotone.neg_deriv_integrableOn`,
   `TauCeti.IsCompletelyMonotone.integral_Ioi_neg_deriv`: `-f'` is integrable on `(0, ∞)` with
   improper integral `f(0) - L`.
-* `TauCeti.exists_integral_exp_neg_mul_of_const_add`: absorb the mass at infinity into a
-  Dirac at `0`.
 * `TauCeti.bernstein_kernel`, `TauCeti.bernstein_kernel_tendsto`: the rescaled Laplace kernel and
   its pointwise limit `e^{-xp}`.
-* `TauCeti.cm_rescaled`, `TauCeti.cm_rescaled_Iio_zero`, `TauCeti.cm_rescaled_mass_eq`: the
+* `TauCeti.chafaiRescaled`, `TauCeti.chafaiRescaled_Iio_zero`, `TauCeti.chafaiRescaled_mass_eq`: the
   pushed-forward measures, their support, and mass preservation.
-* `TauCeti.cm_measure_finite_mass`: finiteness and the total-mass bound `≤ f(0) - L`.
+* `TauCeti.chafaiMeasure_finite_mass`: finiteness and the total-mass bound `≤ f(0) - L`.
 
 ## References
 
@@ -66,66 +64,66 @@ private lemma IsCompletelyMonotone.iteratedDerivWithin_one_nonpos
 
 /-- The density `ρ_n(t) = (-1)ⁿ/(n-1)! · tⁿ⁻¹ · f⁽ⁿ⁾(t)` for the `n`-th approximating measure in
 the Bernstein proof (Chafaï 2013). -/
-noncomputable def cm_density (f : ℝ → ℝ) (n : ℕ) (t : ℝ) : ℝ :=
+noncomputable def chafaiDensity (f : ℝ → ℝ) (n : ℕ) (t : ℝ) : ℝ :=
   if n = 0 then 0
   else (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
     t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t
 
-/-- `cm_density f 0 = 0`. -/
-@[simp] lemma cm_density_zero (f : ℝ → ℝ) (t : ℝ) : cm_density f 0 t = 0 := by
-  rw [cm_density, if_pos rfl]
+/-- `chafaiDensity f 0 = 0`. -/
+@[simp] lemma chafaiDensity_zero (f : ℝ → ℝ) (t : ℝ) : chafaiDensity f 0 t = 0 := by
+  rw [chafaiDensity, if_pos rfl]
 
-/-- The defining formula for `cm_density` at a nonzero order. -/
-lemma cm_density_of_ne_zero {n : ℕ} (hn : n ≠ 0) (f : ℝ → ℝ) (t : ℝ) :
-    cm_density f n t = (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
+/-- The defining formula for `chafaiDensity` at a nonzero order. -/
+lemma chafaiDensity_of_ne_zero {n : ℕ} (hn : n ≠ 0) (f : ℝ → ℝ) (t : ℝ) :
+    chafaiDensity f n t = (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
       t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := by
-  rw [cm_density, if_neg hn]
+  rw [chafaiDensity, if_neg hn]
 
-/-- `cm_density f n` is continuous on `[0, ∞)` for a completely monotone `f` and `n ≠ 0`. -/
-lemma continuousOn_cm_density (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : n ≠ 0) :
-    ContinuousOn (cm_density f n) (Ici 0) := by
-  have heq : cm_density f n = fun t => (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
-      t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := funext (cm_density_of_ne_zero hn f)
+/-- `chafaiDensity f n` is continuous on `[0, ∞)` for a completely monotone `f` and `n ≠ 0`. -/
+lemma continuousOn_chafaiDensity (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : n ≠ 0) :
+    ContinuousOn (chafaiDensity f n) (Ici 0) := by
+  have heq : chafaiDensity f n = fun t => (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
+      t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := funext (chafaiDensity_of_ne_zero hn f)
   rw [heq]
   exact (continuousOn_const.mul ((continuousOn_pow _).mono fun _ _ => trivial)).mul
     (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0))
 
 /-- The `n`-th approximating measure `σ_n` for the Bernstein proof, with density `ρ_n` on
 `(0, ∞)`. -/
-noncomputable def cm_measure (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
-  (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (cm_density f n t))
+noncomputable def chafaiMeasure (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
+  (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (chafaiDensity f n t))
 
-/-- `cm_measure` as a `withDensity`, exposed as a lemma rather than an unfoldable body. -/
-lemma cm_measure_eq_withDensity (f : ℝ → ℝ) (n : ℕ) :
-    cm_measure f n =
-      (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (cm_density f n t)) := by
-  rw [cm_measure]
+/-- `chafaiMeasure` as a `withDensity`, exposed as a lemma rather than an unfoldable body. -/
+lemma chafaiMeasure_eq_withDensity (f : ℝ → ℝ) (n : ℕ) :
+    chafaiMeasure f n =
+      (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (chafaiDensity f n t)) := by
+  rw [chafaiMeasure]
 
-/-- The mass `cm_measure f n` assigns to a measurable set, as a set lintegral of the density. -/
-lemma cm_measure_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
-    cm_measure f n s =
-      ∫⁻ t in s, ENNReal.ofReal (cm_density f n t) ∂(volume.restrict (Ioi 0)) := by
-  rw [cm_measure, withDensity_apply _ hs]
+/-- The mass `chafaiMeasure f n` assigns to a measurable set, as a set lintegral of the density. -/
+lemma chafaiMeasure_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
+    chafaiMeasure f n s =
+      ∫⁻ t in s, ENNReal.ofReal (chafaiDensity f n t) ∂(volume.restrict (Ioi 0)) := by
+  rw [chafaiMeasure, withDensity_apply _ hs]
 
 /-- The density `ρ_n` is nonnegative for completely monotone functions. -/
-lemma cm_density_nonneg (hcm : IsCompletelyMonotone f) (n : ℕ)
-    (t : ℝ) (ht : 0 < t) : 0 ≤ cm_density f n t := by
-  simp only [cm_density]
+lemma chafaiDensity_nonneg (hcm : IsCompletelyMonotone f) (n : ℕ)
+    (t : ℝ) (ht : 0 ≤ t) : 0 ≤ chafaiDensity f n t := by
+  simp only [chafaiDensity]
   split_ifs with hn
   · exact le_refl 0
-  · have hcm_sign := hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n ht.le
+  · have hcm_sign := hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n ht
     have hfact_pos : (0 : ℝ) < ↑(Nat.factorial (n - 1)) :=
       Nat.cast_pos.mpr (Nat.factorial_pos _)
     calc (-1 : ℝ) ^ n / ↑(Nat.factorial (n - 1)) * t ^ (n - 1) *
           iteratedDerivWithin n f (Ici 0) t
         = t ^ (n - 1) / ↑(Nat.factorial (n - 1)) *
           ((-1 : ℝ) ^ n * iteratedDerivWithin n f (Ici 0) t) := by field_simp
-      _ ≥ 0 := mul_nonneg (div_nonneg (pow_nonneg ht.le _) hfact_pos.le) hcm_sign
+      _ ≥ 0 := mul_nonneg (div_nonneg (pow_nonneg ht _) hfact_pos.le) hcm_sign
 
 /-- For `n = 1`, the density simplifies to `-f'(t)`. -/
-@[simp] lemma cm_density_one (t : ℝ) :
-    cm_density f 1 t = -iteratedDerivWithin 1 f (Ici 0) t := by
-  simp [cm_density]
+@[simp] lemma chafaiDensity_one (t : ℝ) :
+    chafaiDensity f 1 t = -iteratedDerivWithin 1 f (Ici 0) t := by
+  simp [chafaiDensity]
 
 /-- The interval integral of `-f'` with the `T`-dependent set `Icc 0 T` equals the integral with
 the fixed set `Ici 0` (both agree a.e. by set transfer at interior points). -/
@@ -181,9 +179,9 @@ lemma IsCompletelyMonotone.neg_deriv_integrableOn
 
 /-- The improper integral `∫₀^∞ (-f') dt = f(0) - L` for completely monotone functions. -/
 lemma IsCompletelyMonotone.integral_Ioi_neg_deriv
-    (hcm : IsCompletelyMonotone f) {L : ℝ} (hL : Tendsto f atTop (nhds L))
-    (hint : IntegrableOn (fun t => -iteratedDerivWithin 1 f (Ici 0) t) (Ioi 0)) :
+    (hcm : IsCompletelyMonotone f) {L : ℝ} (hL : Tendsto f atTop (nhds L)) :
     ∫ t in Ioi 0, -iteratedDerivWithin 1 f (Ici 0) t = f 0 - L := by
+  have hint := hcm.neg_deriv_integrableOn hL
   have htend := intervalIntegral_tendsto_integral_Ioi 0 hint tendsto_id
   have htend2 : Tendsto (fun T => ∫ t in (0 : ℝ)..T,
       -iteratedDerivWithin 1 f (Ici 0) t) atTop (nhds (f 0 - L)) :=
@@ -192,51 +190,6 @@ lemma IsCompletelyMonotone.integral_Ioi_neg_deriv
         ((hcm.integral_neg_deriv_Ici T hT).symm.trans (hcm.integral_mass T hT)).symm)
       (Tendsto.sub tendsto_const_nhds hL)
   exact tendsto_nhds_unique htend htend2
-
-/-- **Packaging step**: if `f(x) = L + ∫ e^{-xp} dμ₀` with `μ₀` supported on `[0,∞)`, then
-`μ = μ₀ + L·δ₀` gives `f(x) = ∫ e^{-xp} dμ` with `μ` finite and supported on `[0,∞)`. -/
-lemma exists_integral_exp_neg_mul_of_const_add {f : ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
-    {μ₀ : Measure ℝ} [IsFiniteMeasure μ₀] (hsupp₀ : μ₀ (Iio 0) = 0)
-    (hrep : ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀) :
-    ∃ μ : Measure ℝ, IsFiniteMeasure μ ∧ μ (Iio 0) = 0 ∧
-      ∀ t, 0 ≤ t → f t = ∫ p, Real.exp (-(t * p)) ∂μ := by
-  set μ := μ₀ + (ENNReal.ofReal L) • Measure.dirac (0 : ℝ)
-  haveI : IsFiniteMeasure μ := by
-    constructor
-    simp only [μ, Measure.add_apply, Measure.smul_apply, smul_eq_mul,
-      Measure.dirac_apply, Set.indicator_univ, Pi.one_apply, mul_one]
-    exact ENNReal.add_lt_top.mpr ⟨measure_lt_top _ _, ENNReal.ofReal_lt_top⟩
-  refine ⟨μ, inferInstance, ?_, ?_⟩
-  · simp only [μ, Measure.add_apply, Measure.smul_apply, smul_eq_mul,
-      Measure.dirac_apply, Set.indicator, Set.mem_Iio, lt_irrefl,
-      ↓reduceIte, mul_zero, hsupp₀, add_zero]
-  · intro t ht
-    rw [hrep t ht]
-    set ν := (ENNReal.ofReal L) • Measure.dirac (0 : ℝ)
-    have exp_int : ∀ (μ' : Measure ℝ) [IsFiniteMeasure μ'],
-        μ' (Iio 0) = 0 → Integrable (fun p => Real.exp (-(t * p))) μ' := by
-      intro μ' _ hsupp'
-      apply Integrable.mono' (integrable_const (1 : ℝ))
-      · fun_prop
-      · rw [ae_iff]; refine measure_mono_null (fun p hp => ?_) hsupp'
-        simp only [Set.mem_setOf_eq, Real.norm_eq_abs, not_le] at hp
-        rw [Set.mem_Iio]; by_contra hge; rw [not_lt] at hge
-        linarith [abs_of_nonneg (Real.exp_pos (-(t * p))).le,
-          Real.exp_le_exp_of_le (neg_nonpos.mpr (mul_nonneg ht hge)), Real.exp_zero]
-    have h1 : Integrable (fun p => Real.exp (-(t * p))) μ₀ := exp_int μ₀ hsupp₀
-    have h2 : Integrable (fun p => Real.exp (-(t * p))) ν := by
-      haveI : IsFiniteMeasure ν := by
-        constructor; simp only [ν, Measure.smul_apply, smul_eq_mul,
-          Measure.dirac_apply, Set.indicator_univ, Pi.one_apply, mul_one]
-        exact ENNReal.ofReal_lt_top
-      apply exp_int; simp [ν, Measure.smul_apply, Set.indicator, Set.mem_Iio]
-    change L + ∫ p, Real.exp (-(t * p)) ∂μ₀ = ∫ p, Real.exp (-(t * p)) ∂(μ₀ + ν)
-    rw [integral_add_measure h1 h2]
-    suffices h : ∫ p, Real.exp (-(t * p)) ∂ν = L by linarith
-    rw [@integral_smul_measure ℝ ℝ _ _ _ (Measure.dirac 0)
-      (fun p => Real.exp (-(t * p))) (ENNReal.ofReal L),
-      integral_dirac, ENNReal.toReal_ofReal hL,
-      mul_zero, neg_zero, Real.exp_zero, smul_eq_mul, mul_one]
 
 /-! ## Rescaled measures and Prokhorov extraction -/
 
@@ -292,29 +245,29 @@ lemma bernstein_kernel_tendsto (x p : ℝ) :
   · ring
   · rw [sub_nonneg]; exact div_le_one_of_le₀ hn1_ge hn1_pos.le
 
-/-- The rescaled measure `σ̃_n`: pushforward of `cm_measure f n` under `t ↦ (n-1)/t`. -/
-noncomputable def cm_rescaled (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
-  Measure.map (fun t => ((n : ℝ) - 1) / t) (cm_measure f n)
+/-- The rescaled measure `σ̃_n`: pushforward of `chafaiMeasure f n` under `t ↦ (n-1)/t`. -/
+noncomputable def chafaiRescaled (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
+  Measure.map (fun t => ((n : ℝ) - 1) / t) (chafaiMeasure f n)
 
 /-- The rescaling map `t ↦ (n-1)/t` is measurable. -/
-lemma cm_rescaling_measurable (n : ℕ) :
+lemma chafaiRescaling_measurable (n : ℕ) :
     Measurable (fun t : ℝ => ((n : ℝ) - 1) / t) :=
   measurable_const.div measurable_id
 
-/-- `cm_rescaled` as a pushforward, exposed as a lemma rather than an unfoldable body. -/
-lemma cm_rescaled_eq_map (f : ℝ → ℝ) (n : ℕ) :
-    cm_rescaled f n = Measure.map (fun t => ((n : ℝ) - 1) / t) (cm_measure f n) := by
-  rw [cm_rescaled]
+/-- `chafaiRescaled` as a pushforward, exposed as a lemma rather than an unfoldable body. -/
+lemma chafaiRescaled_eq_map (f : ℝ → ℝ) (n : ℕ) :
+    chafaiRescaled f n = Measure.map (fun t => ((n : ℝ) - 1) / t) (chafaiMeasure f n) := by
+  rw [chafaiRescaled]
 
-/-- The mass `cm_rescaled f n` assigns to a measurable set, as the pushforward formula. -/
-lemma cm_rescaled_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
-    cm_rescaled f n s = cm_measure f n ((fun t => ((n : ℝ) - 1) / t) ⁻¹' s) := by
-  rw [cm_rescaled, Measure.map_apply (cm_rescaling_measurable n) hs]
+/-- The mass `chafaiRescaled f n` assigns to a measurable set, as the pushforward formula. -/
+lemma chafaiRescaled_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
+    chafaiRescaled f n s = chafaiMeasure f n ((fun t => ((n : ℝ) - 1) / t) ⁻¹' s) := by
+  rw [chafaiRescaled, Measure.map_apply (chafaiRescaling_measurable n) hs]
 
-/-- `cm_measure f n` lives on `(0, ∞)`: its complement has zero mass. -/
-lemma cm_measure_compl_Ioi (f : ℝ → ℝ) (n : ℕ) :
-    (cm_measure f n) (Ioi 0)ᶜ = 0 := by
-  unfold cm_measure
+/-- `chafaiMeasure f n` lives on `(0, ∞)`: its complement has zero mass. -/
+lemma chafaiMeasure_compl_Ioi (f : ℝ → ℝ) (n : ℕ) :
+    (chafaiMeasure f n) (Ioi 0)ᶜ = 0 := by
+  unfold chafaiMeasure
   rw [withDensity_apply _ (measurableSet_Ioi.compl)]
   apply setLIntegral_measure_zero
   rw [Measure.restrict_apply (measurableSet_Ioi.compl)]
@@ -322,10 +275,10 @@ lemma cm_measure_compl_Ioi (f : ℝ → ℝ) (n : ℕ) :
   rw [this, measure_empty]
 
 /-- The rescaled measure `σ̃_n` is supported on `[0, ∞)` for `n ≥ 2`. -/
-lemma cm_rescaled_Iio_zero (f : ℝ → ℝ) (n : ℕ) (hn : 2 ≤ n) :
-    (cm_rescaled f n) (Iio 0) = 0 := by
-  unfold cm_rescaled
-  rw [Measure.map_apply (cm_rescaling_measurable n) measurableSet_Iio]
+lemma chafaiRescaled_Iio_zero (f : ℝ → ℝ) (n : ℕ) (hn : 2 ≤ n) :
+    (chafaiRescaled f n) (Iio 0) = 0 := by
+  unfold chafaiRescaled
+  rw [Measure.map_apply (chafaiRescaling_measurable n) measurableSet_Iio]
   have h_sub : (fun t : ℝ => ((n : ℝ) - 1) / t) ⁻¹' Iio 0 ⊆ (Ioi 0)ᶜ := by
     intro t ht
     simp only [Set.mem_preimage, Set.mem_Iio] at ht
@@ -336,22 +289,22 @@ lemma cm_rescaled_Iio_zero (f : ℝ → ℝ) (n : ℕ) (hn : 2 ≤ n) :
       linarith
     linarith [div_pos this h]
   exact nonpos_iff_eq_zero.mp
-    (le_trans (measure_mono h_sub) (le_of_eq (cm_measure_compl_Ioi f n)))
+    (le_trans (measure_mono h_sub) (le_of_eq (chafaiMeasure_compl_Ioi f n)))
 
 /-- Pushforward preserves total mass. -/
-lemma cm_rescaled_mass_eq (f : ℝ → ℝ) (n : ℕ) :
-    (cm_rescaled f n) univ = (cm_measure f n) univ := by
-  unfold cm_rescaled
-  rw [Measure.map_apply (cm_rescaling_measurable n) MeasurableSet.univ, Set.preimage_univ]
+lemma chafaiRescaled_mass_eq (f : ℝ → ℝ) (n : ℕ) :
+    (chafaiRescaled f n) univ = (chafaiMeasure f n) univ := by
+  unfold chafaiRescaled
+  rw [Measure.map_apply (chafaiRescaling_measurable n) MeasurableSet.univ, Set.preimage_univ]
 
 /-- **IBP identity** for the CM density:
 `∫₀ᵀ ρ_{m+2}(t) dt = B_{m+2}(T) + ∫₀ᵀ ρ_{m+1}(t) dt`. -/
-private lemma cm_density_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
+private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (m : ℕ) (T : ℝ) (hT : 0 < T) :
-    ∫ t in (0 : ℝ)..T, cm_density f (m + 2) t =
+    ∫ t in (0 : ℝ)..T, chafaiDensity f (m + 2) t =
     (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial *
       iteratedDerivWithin (m + 1) f (Ici 0) T +
-    ∫ t in (0 : ℝ)..T, cm_density f (m + 1) t := by
+    ∫ t in (0 : ℝ)..T, chafaiDensity f (m + 1) t := by
   set g := iteratedDerivWithin (m + 1) f (Ici 0)
   set g' := iteratedDerivWithin (m + 2) f (Ici 0)
   set c : ℝ := (-1) ^ (m + 2) / ↑(m + 1).factorial
@@ -375,20 +328,20 @@ private lemma cm_density_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonot
   have hF_deriv : ∀ t ∈ Ioo 0 T, HasDerivAt F
       (↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t)) t :=
     fun t ht => (hasDerivAt_pow (m + 1) t).mul ((hg_deriv t ht.1).const_mul c)
-  have hcm_int : ∀ k, k ≠ 0 → IntervalIntegrable (fun t => cm_density f k t) volume 0 T := by
+  have hcm_int : ∀ k, k ≠ 0 → IntervalIntegrable (fun t => chafaiDensity f k t) volume 0 T := by
     intro k hk; apply ContinuousOn.intervalIntegrable; rw [huIcc]
     apply ContinuousOn.mono _ Icc_subset_Ici_self
-    change ContinuousOn (fun t => cm_density f k t) (Ici 0)
-    have : (fun t => cm_density f k t) = fun t =>
+    change ContinuousOn (fun t => chafaiDensity f k t) (Ici 0)
+    have : (fun t => chafaiDensity f k t) = fun t =>
         (-1 : ℝ) ^ k / ↑(k - 1).factorial * t ^ (k - 1) *
-          iteratedDerivWithin k f (Ici 0) t := funext fun t => by simp [cm_density, hk]
+          iteratedDerivWithin k f (Ici 0) t := funext fun t => by simp [chafaiDensity, hk]
     rw [this]
     exact (continuousOn_const.mul (continuous_pow _).continuousOn).mul
       (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0))
   have hF'_eq : ∀ t, ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t) =
-      cm_density f (m + 2) t - cm_density f (m + 1) t := by
+      chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t := by
     intro t
-    simp only [cm_density, show m + 2 ≠ 0 from by omega, show m + 1 ≠ 0 from by omega,
+    simp only [chafaiDensity, show m + 2 ≠ 0 from by omega, show m + 1 ≠ 0 from by omega,
       ite_false, show m + 2 - 1 = m + 1 from by omega,
       show m + 1 - 1 = m from by omega, g, g', c]
     have : ((m + 1).factorial : ℝ) = ((m + 1 : ℕ) : ℝ) * ↑m.factorial := by
@@ -403,7 +356,7 @@ private lemma cm_density_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonot
     ((hcm_int _ (by omega)).sub (hcm_int _ (by omega))).congr fun t _ => (hF'_eq t).symm
   have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hT.le hF_cont hF_deriv hF'_int
   have hstep1 : ∫ t in (0 : ℝ)..T,
-      (cm_density f (m + 2) t - cm_density f (m + 1) t) = F T - F 0 := by
+      (chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t) = F T - F 0 := by
     rw [← hftc]
     exact intervalIntegral.integral_congr_ae
       (Filter.Eventually.of_forall fun t _ => (hF'_eq t).symm)
@@ -414,12 +367,12 @@ private lemma cm_density_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonot
   simp only [F, c]; ring
 
 /-- **IBP step**: integrating from density `k` to density `k-1`. -/
-lemma integral_cm_density_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
+lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (k : ℕ) (hk : 2 ≤ k) (T : ℝ) (hT : 0 < T) :
-    ∫ t in (0 : ℝ)..T, cm_density f k t ≤ ∫ t in (0 : ℝ)..T, cm_density f (k - 1) t := by
+    ∫ t in (0 : ℝ)..T, chafaiDensity f k t ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f (k - 1) t := by
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by omega⟩
   simp only [show m + 2 - 1 = m + 1 from by omega]
-  have hibp := cm_density_ibp_identity f hcm m T hT
+  have hibp := chafaiDensity_ibp_identity f hcm m T hT
   set B := (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial *
     iteratedDerivWithin (m + 1) f (Ici 0) T
   have hB : B ≤ 0 := by
@@ -434,23 +387,23 @@ lemma integral_cm_density_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
     simp only [B]; ring
   linarith
 
-/-- **Total mass bound**: `cm_measure f n` is finite with total mass `≤ f(0) - L`. -/
-lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
+/-- **Total mass bound**: `chafaiMeasure f n` is finite with total mass `≤ f(0) - L`. -/
+lemma chafaiMeasure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (n : ℕ) (hn : 1 ≤ n) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
-    IsFiniteMeasure (cm_measure f n) ∧
-    (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
+    IsFiniteMeasure (chafaiMeasure f n) ∧
+    (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
   have hn0 : n ≠ 0 := by omega
-  have hcont : ContinuousOn (cm_density f n) (Ici 0) := continuousOn_cm_density hcm hn0
-  have hbound : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, cm_density f n t ≤ f 0 - L := by
-    have base : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, cm_density f 1 t = f 0 - f T := by
+  have hcont : ContinuousOn (chafaiDensity f n) (Ici 0) := continuousOn_chafaiDensity hcm hn0
+  have hbound : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, chafaiDensity f n t ≤ f 0 - L := by
+    have base : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, chafaiDensity f 1 t = f 0 - f T := by
       intro T hT
-      have h1 : ∫ t in (0 : ℝ)..T, cm_density f 1 t =
+      have h1 : ∫ t in (0 : ℝ)..T, chafaiDensity f 1 t =
           ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Ici 0) t :=
         intervalIntegral.integral_congr_ae
-          (Filter.Eventually.of_forall fun t _ => cm_density_one t)
+          (Filter.Eventually.of_forall fun t _ => chafaiDensity_one t)
       rw [h1, ← hcm.integral_neg_deriv_Ici T hT, hcm.integral_mass T hT]
     have density_le : ∀ j, 1 ≤ j → ∀ T, 0 < T →
-        ∫ t in (0 : ℝ)..T, cm_density f j t ≤ f 0 - f T := by
+        ∫ t in (0 : ℝ)..T, chafaiDensity f j t ≤ f 0 - f T := by
       intro j hj
       induction j with
       | zero => omega
@@ -458,9 +411,9 @@ lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
         intro T hT
         by_cases hp : p = 0
         · subst hp; exact le_of_eq (base T hT)
-        · calc ∫ t in (0 : ℝ)..T, cm_density f (p + 1) t
-              ≤ ∫ t in (0 : ℝ)..T, cm_density f p t := by
-                simpa using integral_cm_density_le_pred f hcm (p + 1) (by omega) T hT
+        · calc ∫ t in (0 : ℝ)..T, chafaiDensity f (p + 1) t
+              ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f p t := by
+                simpa using integral_chafaiDensity_le_pred f hcm (p + 1) (by omega) T hT
             _ ≤ f 0 - f T := ih (Nat.one_le_iff_ne_zero.mpr hp) T hT
     intro T hT
     have hfT : L ≤ f T := by
@@ -472,7 +425,7 @@ lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
         (hL.congr' (eventually_atTop.mpr ⟨0, fun t ht => by simp [hg₀, max_eq_left ht]⟩)) T
       simpa [hg₀, max_eq_left hT.le] using this
     linarith [density_le n (by omega : 1 ≤ n) T hT]
-  have hint : IntegrableOn (cm_density f n) (Ioi 0) := by
+  have hint : IntegrableOn (chafaiDensity f n) (Ioi 0) := by
     apply integrableOn_Ioi_of_intervalIntegral_norm_bounded (f 0 - L) 0
       (l := atTop) (b := id)
     · intro T
@@ -480,22 +433,22 @@ lemma cm_measure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
         |>.mono_set Ioc_subset_Icc_self
     · exact tendsto_id
     · filter_upwards [eventually_gt_atTop 0] with T hT; simp only [id]
-      calc ∫ t in (0 : ℝ)..T, ‖cm_density f n t‖
-          = ∫ t in (0 : ℝ)..T, cm_density f n t := by
+      calc ∫ t in (0 : ℝ)..T, ‖chafaiDensity f n t‖
+          = ∫ t in (0 : ℝ)..T, chafaiDensity f n t := by
             apply intervalIntegral.integral_congr_ae; apply ae_of_all
             intro t ht; rw [uIoc_of_le hT.le] at ht
-            rw [Real.norm_eq_abs, abs_of_nonneg (cm_density_nonneg hcm n t ht.1)]
+            rw [Real.norm_eq_abs, abs_of_nonneg (chafaiDensity_nonneg hcm n t ht.1.le)]
         _ ≤ f 0 - L := hbound T hT
-  have hfin : IsFiniteMeasure (cm_measure f n) := by
-    unfold cm_measure
+  have hfin : IsFiniteMeasure (chafaiMeasure f n) := by
+    unfold chafaiMeasure
     exact isFiniteMeasure_withDensity_ofReal hint.hasFiniteIntegral
-  have hmass : (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
+  have hmass : (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
     change (volume.restrict (Ioi 0)).withDensity
-      (fun t => ENNReal.ofReal (cm_density f n t)) univ ≤ _
+      (fun t => ENNReal.ofReal (chafaiDensity f n t)) univ ≤ _
     rw [withDensity_apply _ MeasurableSet.univ]; simp only [Measure.restrict_univ]
     rw [← ofReal_integral_eq_lintegral_ofReal hint
       ((ae_restrict_mem measurableSet_Ioi).mono fun t (ht : 0 < t) =>
-        cm_density_nonneg hcm n t ht)]
+        chafaiDensity_nonneg hcm n t ht.le)]
     exact ENNReal.ofReal_le_ofReal
       (le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hint tendsto_id)
         (eventually_atTop.mpr ⟨1, fun T hT => hbound T (by linarith)⟩))

@@ -12,7 +12,7 @@ public import TauCeti.Analysis.CompletelyMonotone.BernsteinMeasures
 
 For a completely monotone `f` with `f(t) → L`, the Chafaï identity expresses the finite-`n`
 approximation exactly:
-`f(x) - L = ∫ φ_n(x, p) d(cm_rescaled f n)(p)`,
+`f(x) - L = ∫ φ_n(x, p) d(chafaiRescaled f n)(p)`,
 where `φ_n` is `bernstein_kernel`. It comes from the repeated integration by parts of the Taylor
 kernel (`chafai_repeated_ibp`), whose boundary terms `Tᵏ f⁽ᵏ⁾(T)` decay to `0`
 (`boundary_term_decay`), combined with the change of variables `p = (n-1)/t`
@@ -20,7 +20,7 @@ kernel (`chafai_repeated_ibp`), whose boundary terms `Tᵏ f⁽ᵏ⁾(T)` decay 
 
 ## Main declarations
 
-* `TauCeti.chafai_identity`: `f(x) - L = ∫ φ_n(x, ·) d(cm_rescaled f n)`.
+* `TauCeti.chafai_identity`: `f(x) - L = ∫ φ_n(x, ·) d(chafaiRescaled f n)`.
 * `TauCeti.chafai_repeated_ibp`: `∫_{(x,∞)} (Taylor kernel) = f(x) - L`.
 * `TauCeti.boundary_term_decay`, `TauCeti.ibp_kernel_integrableOn`, supporting analytic facts.
 
@@ -55,19 +55,19 @@ private lemma IsCompletelyMonotone.le_of_tendsto_atTop (hcm : IsCompletelyMonoto
 
 /-! ### Chafaï identity -/
 
-/-- The rescaled measure `cm_rescaled f n` is finite when `cm_measure f n` is. -/
-lemma cm_rescaled_isFiniteMeasure (f : ℝ → ℝ) (n : ℕ)
-    [IsFiniteMeasure (cm_measure f n)] : IsFiniteMeasure (cm_rescaled f n) where
+/-- The rescaled measure `chafaiRescaled f n` is finite when `chafaiMeasure f n` is. -/
+lemma chafaiRescaled_isFiniteMeasure (f : ℝ → ℝ) (n : ℕ)
+    [IsFiniteMeasure (chafaiMeasure f n)] : IsFiniteMeasure (chafaiRescaled f n) where
   measure_univ_lt_top := by
-    rw [cm_rescaled_eq_map]
-    rw [Measure.map_apply (cm_rescaling_measurable n) MeasurableSet.univ, Set.preimage_univ]
+    rw [chafaiRescaled_eq_map]
+    rw [Measure.map_apply (chafaiRescaling_measurable n) MeasurableSet.univ, Set.preimage_univ]
     exact IsFiniteMeasure.measure_univ_lt_top
 
 /-- The change of variables `p = (n-1)/t` turning the rescaled Bernstein kernel against the
 density into the shifted Taylor kernel on `(x, ∞)`. -/
 private lemma chafai_kernel_density_eq (f : ℝ → ℝ) (_hcm : IsCompletelyMonotone f)
     (n : ℕ) (hn : 2 ≤ n) (x : ℝ) (hx : 0 ≤ x) :
-    ∫ t in Ioi 0, bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t =
+    ∫ t in Ioi 0, bernstein_kernel n x (((n : ℝ) - 1) / t) * chafaiDensity f n t =
     ∫ t in Ioi x, (-1 : ℝ) ^ n / ↑(n - 1).factorial *
       (t - x) ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := by
   have hn0 : n ≠ 0 := by omega
@@ -77,7 +77,7 @@ private lemma chafai_kernel_density_eq (f : ℝ → ℝ) (_hcm : IsCompletelyMon
     linarith
   have hsubset : Ioi x ⊆ Ioi 0 := Ioi_subset_Ioi hx
   have hvanish : ∀ t ∈ Ioi 0 \ Ioi x,
-      bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t = 0 := by
+      bernstein_kernel n x (((n : ℝ) - 1) / t) * chafaiDensity f n t = 0 := by
     intro t ht
     simp only [Set.mem_sdiff, Set.mem_Ioi, not_lt] at ht
     rw [bernstein_kernel_of_two_le hn]
@@ -91,14 +91,14 @@ private lemma chafai_kernel_density_eq (f : ℝ → ℝ) (_hcm : IsCompletelyMon
   intro t ht; simp only [Set.mem_Ioi] at ht
   have ht_pos : 0 < t := lt_of_le_of_lt hx ht
   have hcast : (↑(n - 1) : ℝ) = ↑n - 1 := by rw [Nat.cast_sub (by omega : 1 ≤ n)]; simp
-  change bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t =
+  change bernstein_kernel n x (((n : ℝ) - 1) / t) * chafaiDensity f n t =
     (-1 : ℝ) ^ n / ↑(n - 1).factorial * (t - x) ^ (n - 1) *
       iteratedDerivWithin n f (Ici 0) t
   rw [bernstein_kernel_of_two_le hn]
   have hrw : x * (((n : ℝ) - 1) / t) / ↑(n - 1) = x / t := by
     rw [hcast]; field_simp [hne, ne_of_gt ht_pos]
   rw [hrw, max_eq_left (by rw [sub_nonneg, div_le_one₀ ht_pos]; linarith)]
-  rw [cm_density_of_ne_zero hn0]
+  rw [chafaiDensity_of_ne_zero hn0]
   have key : (1 - x / t) ^ (n - 1) * t ^ (n - 1) = (t - x) ^ (n - 1) := by
     rw [← mul_pow]; congr 1; field_simp [ne_of_gt ht_pos]
   calc (1 - x / t) ^ (n - 1) * ((-1 : ℝ) ^ n / ↑(n - 1).factorial *
@@ -227,35 +227,35 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         have : 0 ≤ -(((-1 : ℝ) ^ k) * iteratedDerivWithin (k + 1) f (Ici 0) T) := by
           simpa [pow_succ, mul_assoc] using hsign
         linarith
-    have hcont_density : ContinuousOn (cm_density f k) (Ici 0) :=
-      continuousOn_cm_density hcm hk
-    have hint_density : IntegrableOn (cm_density f k) (Ioi 0) := by
+    have hcont_density : ContinuousOn (chafaiDensity f k) (Ici 0) :=
+      continuousOn_chafaiDensity hcm hk
+    have hint_density : IntegrableOn (chafaiDensity f k) (Ioi 0) := by
       by_cases hk_eq : k = 1
       · subst hk_eq
         convert hcm.neg_deriv_integrableOn hL using 1
-        ext t; rw [cm_density_one]
+        ext t; rw [chafaiDensity_one]
       · have hk2 : 2 ≤ k := by omega
-        have hmeas_density : AEStronglyMeasurable (cm_density f k)
+        have hmeas_density : AEStronglyMeasurable (chafaiDensity f k)
             (volume.restrict (Ioi 0)) :=
           (hcont_density.mono Ioi_subset_Ici_self).aestronglyMeasurable measurableSet_Ioi
-        have hnonneg_density : 0 ≤ᵐ[volume.restrict (Ioi 0)] cm_density f k :=
-          (ae_restrict_mem measurableSet_Ioi).mono fun t ht => cm_density_nonneg hcm k t ht
+        have hnonneg_density : 0 ≤ᵐ[volume.restrict (Ioi 0)] chafaiDensity f k :=
+          (ae_restrict_mem measurableSet_Ioi).mono fun t ht => chafaiDensity_nonneg hcm k t ht.le
         refine ⟨hmeas_density, ?_⟩
         rw [hasFiniteIntegral_iff_ofReal hnonneg_density]
-        obtain ⟨_, hmass⟩ := cm_measure_finite_mass f hcm k (by omega) L hL
+        obtain ⟨_, hmass⟩ := chafaiMeasure_finite_mass f hcm k (by omega) L hL
         have hmass' := hmass
-        rw [cm_measure_eq_withDensity] at hmass'
+        rw [chafaiMeasure_eq_withDensity] at hmass'
         rw [withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ] at hmass'
         exact lt_of_le_of_lt hmass' ENNReal.ofReal_lt_top
-    have htail : Tendsto (fun S : ℝ => ∫ t in Ioi S, cm_density f k t) atTop (nhds 0) :=
+    have htail : Tendsto (fun S : ℝ => ∫ t in Ioi S, chafaiDensity f k t) atTop (nhds 0) :=
       tail_setIntegral_tendsto_zero hint_density
     have htail_half :
-        Tendsto (fun T : ℝ => ∫ t in Ioi (T / 2), cm_density f k t) atTop (nhds 0) := by
+        Tendsto (fun T : ℝ => ∫ t in Ioi (T / 2), chafaiDensity f k t) atTop (nhds 0) := by
       have hhalf_map : Tendsto (fun T : ℝ => (1 / 2 : ℝ) * T) atTop atTop :=
         (Filter.tendsto_const_mul_atTop_of_pos (show (0 : ℝ) < 1 / 2 by positivity)).2 tendsto_id
       simpa [Function.comp_def, div_eq_mul_inv, mul_comm] using htail.comp hhalf_map
     have hupper : ∀ᶠ T in atTop, (T - x) ^ k * h T ≤
-        ((2 : ℝ) ^ k * ↑((k - 1).factorial)) * ∫ t in Ioi (T / 2), cm_density f k t := by
+        ((2 : ℝ) ^ k * ↑((k - 1).factorial)) * ∫ t in Ioi (T / 2), chafaiDensity f k t := by
       filter_upwards [eventually_gt_atTop (max (2 * x) 2)] with T hT
       have hT2 : (2 : ℝ) < T := lt_of_le_of_lt (le_max_right (2 * x) 2) hT
       have hTpos : 0 < T := by linarith
@@ -267,19 +267,19 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
       have hhalf_nonneg : 0 ≤ T / 2 := by positivity
       have hhT_nonneg : 0 ≤ h T := h_nonneg T hT_nonneg
       have h_interval_le :
-          ∫ t in T / 2..T, cm_density f k t ≤ ∫ t in Ioi (T / 2), cm_density f k t := by
+          ∫ t in T / 2..T, chafaiDensity f k t ≤ ∫ t in Ioi (T / 2), chafaiDensity f k t := by
         rw [intervalIntegral.integral_of_le (by linarith)]
         apply setIntegral_mono_set (hint_density.mono_set (Ioi_subset_Ioi hhalf_nonneg))
         · exact (ae_restrict_mem measurableSet_Ioi).mono fun t ht =>
-            cm_density_nonneg hcm k t (lt_of_le_of_lt hhalf_nonneg ht)
+            chafaiDensity_nonneg hcm k t (lt_of_le_of_lt hhalf_nonneg ht).le
         · exact ae_of_all _ fun t ht => Ioc_subset_Ioi_self ht
-      have h_density_eq : ∀ t, cm_density f k t =
+      have h_density_eq : ∀ t, chafaiDensity f k t =
           (1 / ↑((k - 1).factorial)) * t ^ (k - 1) * h t := by
-        intro t; rw [cm_density_of_ne_zero hk]; simp only [h]; field_simp
+        intro t; rw [chafaiDensity_of_ne_zero hk]; simp only [h]; field_simp
       have h_const_le : (1 / ↑((k - 1).factorial)) * (T / 2) ^ k * h T ≤
-          ∫ t in T / 2..T, cm_density f k t := by
+          ∫ t in T / 2..T, chafaiDensity f k t := by
         have hmono : ∀ᵐ t ∂(volume.restrict (Icc (T / 2) T)),
-            (1 / ↑((k - 1).factorial)) * (T / 2) ^ (k - 1) * h T ≤ cm_density f k t := by
+            (1 / ↑((k - 1).factorial)) * (T / 2) ^ (k - 1) * h T ≤ chafaiDensity f k t := by
           filter_upwards [ae_restrict_mem measurableSet_Icc] with t ht
           have ht_nonneg : 0 ≤ t := le_trans hhalf_nonneg ht.1
           have hpow : (T / 2) ^ (k - 1) ≤ t ^ (k - 1) := pow_le_pow_left₀ hhalf_nonneg ht.1 _
@@ -300,7 +300,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
             (1 / ↑((k - 1).factorial)) * (T / 2) ^ (k - 1) * h T) volume (T / 2) T :=
           intervalIntegrable_const
         have hIcc_subset : Icc (T / 2) T ⊆ Ici 0 := fun t ht => le_trans hhalf_nonneg ht.1
-        have hdens_int : IntervalIntegrable (cm_density f k) volume (T / 2) T :=
+        have hdens_int : IntervalIntegrable (chafaiDensity f k) volume (T / 2) T :=
           (hcont_density.mono hIcc_subset).intervalIntegrable_of_Icc (by linarith)
         have hmono_int := intervalIntegral.integral_mono_ae_restrict (μ := volume)
           (a := T / 2) (b := T) (hab := by linarith) hconst_int hdens_int hmono
@@ -316,7 +316,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         rw [hconst_eq] at hmono_int
         exact hmono_int
       have hhalf_le : (T / 2) ^ k * h T ≤
-          ↑((k - 1).factorial) * ∫ t in Ioi (T / 2), cm_density f k t := by
+          ↑((k - 1).factorial) * ∫ t in Ioi (T / 2), chafaiDensity f k t := by
         have hfact_pos : (0 : ℝ) < ↑((k - 1).factorial) := Nat.cast_pos.mpr (Nat.factorial_pos _)
         have haux := le_trans h_const_le h_interval_le
         have hmul := mul_le_mul_of_nonneg_left haux hfact_pos.le
@@ -329,10 +329,10 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
           _ = (2 : ℝ) ^ k * ((T / 2) ^ k * h T) := by rw [mul_pow]; ring
       calc (T - x) ^ k * h T ≤ T ^ k * h T := by gcongr; linarith
         _ = (2 : ℝ) ^ k * ((T / 2) ^ k * h T) := hTk_eq
-        _ ≤ (2 : ℝ) ^ k * (↑((k - 1).factorial) * ∫ t in Ioi (T / 2), cm_density f k t) := by
+        _ ≤ (2 : ℝ) ^ k * (↑((k - 1).factorial) * ∫ t in Ioi (T / 2), chafaiDensity f k t) := by
             gcongr
         _ = ((2 : ℝ) ^ k * ↑((k - 1).factorial)) *
-              ∫ t in Ioi (T / 2), cm_density f k t := by ring
+              ∫ t in Ioi (T / 2), chafaiDensity f k t := by ring
     have hnonneg_event : ∀ᶠ T in atTop, 0 ≤ (T - x) ^ k * h T := by
       filter_upwards [eventually_gt_atTop (max x 0)] with T hT
       have hT0 : 0 < T := lt_of_le_of_lt (le_max_right x 0) hT
@@ -340,7 +340,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
       exact mul_nonneg (pow_nonneg (sub_nonneg.mpr hxT.le) _) (h_nonneg T hT0.le)
     have hupper_tendsto : Tendsto (fun T : ℝ =>
         ((2 : ℝ) ^ k * ↑((k - 1).factorial)) *
-          ∫ t in Ioi (T / 2), cm_density f k t) atTop (nhds 0) := by
+          ∫ t in Ioi (T / 2), chafaiDensity f k t) atTop (nhds 0) := by
       simpa [mul_zero] using htail_half.const_mul (((2 : ℝ) ^ k) * ↑((k - 1).factorial))
     exact squeeze_zero' hnonneg_event hupper hupper_tendsto
   have heq : ∀ T, (-1 : ℝ) ^ (k + 1) / ↑k.factorial * (T - x) ^ k *
@@ -350,41 +350,41 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
   rw [show (0 : ℝ) = -(1 / ↑k.factorial) * 0 from by ring]
   exact hkey.const_mul _
 
-/-- Integrability of the `k`-th Taylor kernel on `(x, ∞)`, by domination by `cm_density f k`. -/
+/-- Integrability of the `k`-th Taylor kernel on `(x, ∞)`, by domination by `chafaiDensity f k`. -/
 private lemma ibp_kernel_integrableOn (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (k : ℕ) (hk : 1 ≤ k) (x : ℝ) (hx : 0 ≤ x)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
     IntegrableOn (fun t => (-1 : ℝ) ^ k / ↑(k - 1).factorial * (t - x) ^ (k - 1) *
       iteratedDerivWithin k f (Ici 0) t) (Ioi x) := by
   have hk0 : k ≠ 0 := by omega
-  have hcont_density : ContinuousOn (cm_density f k) (Ici 0) :=
-    continuousOn_cm_density hcm hk0
+  have hcont_density : ContinuousOn (chafaiDensity f k) (Ici 0) :=
+    continuousOn_chafaiDensity hcm hk0
   have density_le : ∀ j, 1 ≤ j → ∀ T, 0 < T →
-      ∫ t in (0 : ℝ)..T, cm_density f j t ≤ f 0 - f T := by
+      ∫ t in (0 : ℝ)..T, chafaiDensity f j t ≤ f 0 - f T := by
     intro j hj; induction j with
     | zero => omega
     | succ p ih =>
       intro T hT; by_cases hp : p = 0
       · subst hp
         rw [intervalIntegral.integral_congr_ae
-          (Filter.Eventually.of_forall fun t _ => cm_density_one t),
+          (Filter.Eventually.of_forall fun t _ => chafaiDensity_one t),
           ← hcm.integral_neg_deriv_Ici T hT, hcm.integral_mass T hT]
-      · calc ∫ t in (0 : ℝ)..T, cm_density f (p + 1) t
-            ≤ ∫ t in (0 : ℝ)..T, cm_density f p t := by
-              simpa using integral_cm_density_le_pred f hcm (p + 1) (by omega) T hT
+      · calc ∫ t in (0 : ℝ)..T, chafaiDensity f (p + 1) t
+            ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f p t := by
+              simpa using integral_chafaiDensity_le_pred f hcm (p + 1) (by omega) T hT
           _ ≤ f 0 - f T := ih (Nat.one_le_iff_ne_zero.mpr hp) T hT
-  have hint_density : IntegrableOn (cm_density f k) (Ioi 0) := by
+  have hint_density : IntegrableOn (chafaiDensity f k) (Ioi 0) := by
     apply integrableOn_Ioi_of_intervalIntegral_norm_bounded (f 0 - L) 0 (l := atTop) (b := id)
     · intro T
       exact (hcont_density.mono Icc_subset_Ici_self).integrableOn_compact isCompact_Icc
         |>.mono_set Ioc_subset_Icc_self
     · exact tendsto_id
     · filter_upwards [eventually_gt_atTop 0] with T hT; simp only [id]
-      calc ∫ t in (0 : ℝ)..T, ‖cm_density f k t‖
-          = ∫ t in (0 : ℝ)..T, cm_density f k t := by
+      calc ∫ t in (0 : ℝ)..T, ‖chafaiDensity f k t‖
+          = ∫ t in (0 : ℝ)..T, chafaiDensity f k t := by
             apply intervalIntegral.integral_congr_ae; apply ae_of_all
             intro t ht; rw [uIoc_of_le hT.le] at ht
-            rw [Real.norm_eq_abs, abs_of_nonneg (cm_density_nonneg hcm k t ht.1)]
+            rw [Real.norm_eq_abs, abs_of_nonneg (chafaiDensity_nonneg hcm k t ht.1.le)]
         _ ≤ f 0 - L := by linarith [density_le k hk T hT, hcm.le_of_tendsto_atTop hL hT]
   apply Integrable.mono' (hint_density.mono_set (Ioi_subset_Ioi hx))
   · apply (ContinuousOn.aestronglyMeasurable _ measurableSet_Ioi)
@@ -396,7 +396,7 @@ private lemma ibp_kernel_integrableOn (f : ℝ → ℝ) (hcm : IsCompletelyMonot
     have ht0 : 0 < t := lt_of_le_of_lt hx ht
     have htx : 0 ≤ t - x := by linarith
     have htx_le : t - x ≤ t := by linarith
-    rw [cm_density_of_ne_zero hk0]
+    rw [chafaiDensity_of_ne_zero hk0]
     have hcm_sign : 0 ≤ (-1 : ℝ) ^ k * iteratedDerivWithin k f (Ici 0) t :=
       hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg k ht0.le
     have hfact : (0 : ℝ) < ↑(k - 1).factorial := Nat.cast_pos.mpr (Nat.factorial_pos _)
@@ -492,22 +492,22 @@ private lemma chafai_repeated_ibp (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         ((intervalIntegral_tendsto_integral_Ioi x hintkp1 tendsto_id).congr
           (fun T => by simp [id])) htend_via_ibp
 
-/-- **Chafaï identity**: `f(x) - L = ∫ φ_n(x, ·) d(cm_rescaled f n)` for `n ≥ 2`, `x ≥ 0`. -/
+/-- **Chafaï identity**: `f(x) - L = ∫ φ_n(x, ·) d(chafaiRescaled f n)` for `n ≥ 2`, `x ≥ 0`. -/
 lemma chafai_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (n : ℕ) (hn : 2 ≤ n) (x : ℝ) (hx : 0 ≤ x)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
-    f x - L = ∫ p, bernstein_kernel n x p ∂(cm_rescaled f n) := by
+    f x - L = ∫ p, bernstein_kernel n x p ∂(chafaiRescaled f n) := by
   have hn0 : n ≠ 0 := by omega
-  have step1 : ∫ p, bernstein_kernel n x p ∂(cm_rescaled f n) =
-      ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(cm_measure f n) := by
-    rw [cm_rescaled_eq_map]
-    exact integral_map_of_stronglyMeasurable (cm_rescaling_measurable n)
+  have step1 : ∫ p, bernstein_kernel n x p ∂(chafaiRescaled f n) =
+      ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(chafaiMeasure f n) := by
+    rw [chafaiRescaled_eq_map]
+    exact integral_map_of_stronglyMeasurable (chafaiRescaling_measurable n)
       (measurable_bernstein_kernel n x).stronglyMeasurable
-  have step2 : ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(cm_measure f n) =
-      ∫ t in Ioi 0, bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t := by
-    rw [cm_measure_eq_withDensity]
-    have hcont_density : ContinuousOn (cm_density f n) (Ici 0) :=
-      continuousOn_cm_density hcm hn0
+  have step2 : ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(chafaiMeasure f n) =
+      ∫ t in Ioi 0, bernstein_kernel n x (((n : ℝ) - 1) / t) * chafaiDensity f n t := by
+    rw [chafaiMeasure_eq_withDensity]
+    have hcont_density : ContinuousOn (chafaiDensity f n) (Ici 0) :=
+      continuousOn_chafaiDensity hcm hn0
     rw [integral_withDensity_eq_integral_toReal_smul₀
       (AEMeasurable.ennreal_ofReal
         ((hcont_density.mono Ioi_subset_Ici_self).aestronglyMeasurable
@@ -516,7 +516,7 @@ lemma chafai_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     exact setIntegral_congr_ae measurableSet_Ioi
       (ae_of_all _ fun t ht => by
         simp only [smul_eq_mul, Set.mem_Ioi] at ht ⊢
-        rw [ENNReal.toReal_ofReal (cm_density_nonneg hcm n t ht)]; ring)
+        rw [ENNReal.toReal_ofReal (chafaiDensity_nonneg hcm n t ht.le)]; ring)
   have step3 := chafai_kernel_density_eq f hcm n hn x hx
   have step4 := chafai_repeated_ibp f hcm n (by omega) x hx L hL
   linarith

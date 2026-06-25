@@ -293,15 +293,15 @@ private lemma diagonal_convergence
 lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (L : ℝ) (_hL : Tendsto f Filter.atTop (nhds L)) (_hL_nn : 0 ≤ L)
     (hmass_bound : ∀ n, 2 ≤ n →
-      (cm_rescaled f n) Set.univ ≤ ENNReal.ofReal (f 0 - L))
-    (hsupp : ∀ n, 2 ≤ n → (cm_rescaled f n) (Set.Iio 0) = 0)
-    (hfin : ∀ n, 2 ≤ n → IsFiniteMeasure (cm_rescaled f n))
+      (chafaiRescaled f n) Set.univ ≤ ENNReal.ofReal (f 0 - L))
+    (hsupp : ∀ n, 2 ≤ n → (chafaiRescaled f n) (Set.Iio 0) = 0)
+    (hfin : ∀ n, 2 ≤ n → IsFiniteMeasure (chafaiRescaled f n))
     (hidentity : ∀ n, 2 ≤ n → ∀ x, 0 ≤ x →
-      f x - L = ∫ p, bernstein_kernel n x p ∂(cm_rescaled f n)) :
+      f x - L = ∫ p, bernstein_kernel n x p ∂(chafaiRescaled f n)) :
     ∃ (μ₀ : Measure ℝ), IsFiniteMeasure μ₀ ∧ μ₀ (Set.Iio 0) = 0 ∧
       ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀ := by
-  -- Shift indices: work with σ(n) = cm_rescaled f (n+2) to avoid the n ≥ 2 condition
-  set σ := fun n => cm_rescaled f (n + 2) with hσ_def
+  -- Shift indices: work with σ(n) = chafaiRescaled f (n+2) to avoid the n ≥ 2 condition
+  set σ := fun n => chafaiRescaled f (n + 2) with hσ_def
   have hfin_σ : ∀ n, IsFiniteMeasure (σ n) := fun n => hfin (n + 2) (by omega)
   have hmass_σ : ∀ n, (σ n) Set.univ ≤ ENNReal.ofReal (f 0 - L) :=
     fun n => hmass_bound (n + 2) (by omega)

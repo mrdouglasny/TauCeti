@@ -491,8 +491,8 @@ lemma finite_measure_subseq_limit
     rw [hν₀_eq] at hlim
     exact hlim
 
-/-- Weak convergence of `∫ e^{-xp}` along the subsequence, via the bounded-continuous surrogate
-`exp_bcf`, for measures supported on `[0,∞)`. -/
+/-- For measures supported on `[0, ∞)`, weak convergence along a subsequence implies
+convergence of the Laplace-kernel integrals `∫ e^{-xp}` (for `x ≥ 0`). -/
 lemma tendsto_exp_integral
     (σ : ℕ → Measure ℝ) (φ : ℕ → ℕ) (μ₀ : Measure ℝ)
     (hweak : ∀ (g : BoundedContinuousFunction ℝ ℝ),

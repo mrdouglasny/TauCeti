@@ -66,18 +66,18 @@ noncomputable def laplaceTransformMeasure (μ : Measure ℝ≥0) (t : ℝ) : ℝ
 with the Prokhorov limit identification to represent `f t - L` as `∫ e^{-tp} dμ₀`. -/
 private lemma cm_prokhorov_and_verify (hcm : IsCompletelyMonotone f)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) (hL_nn : 0 ≤ L)
-    (hmass : ∀ n, 2 ≤ n → IsFiniteMeasure (cm_measure f n) ∧
-      (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L))
-    (hsupp : ∀ n, 2 ≤ n → (cm_rescaled f n) (Iio 0) = 0) :
+    (hmass : ∀ n, 2 ≤ n → IsFiniteMeasure (chafaiMeasure f n) ∧
+      (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L))
+    (hsupp : ∀ n, 2 ≤ n → (chafaiRescaled f n) (Iio 0) = 0) :
     ∃ μ₀ : Measure ℝ, IsFiniteMeasure μ₀ ∧ μ₀ (Iio 0) = 0 ∧
       ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀ := by
-  have hfin_rescaled : ∀ n, 2 ≤ n → IsFiniteMeasure (cm_rescaled f n) := by
-    intro n hn; haveI := (hmass n hn).1; exact cm_rescaled_isFiniteMeasure f n
+  have hfin_rescaled : ∀ n, 2 ≤ n → IsFiniteMeasure (chafaiRescaled f n) := by
+    intro n hn; haveI := (hmass n hn).1; exact chafaiRescaled_isFiniteMeasure f n
   have hmass_rescaled : ∀ n, 2 ≤ n →
-      (cm_rescaled f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
-    intro n hn; rw [cm_rescaled_mass_eq]; exact (hmass n hn).2
+      (chafaiRescaled f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
+    intro n hn; rw [chafaiRescaled_mass_eq]; exact (hmass n hn).2
   have hchafai : ∀ n, 2 ≤ n → ∀ x, 0 ≤ x →
-      f x - L = ∫ p, bernstein_kernel n x p ∂(cm_rescaled f n) :=
+      f x - L = ∫ p, bernstein_kernel n x p ∂(chafaiRescaled f n) :=
     fun n hn x hx => chafai_identity f hcm n hn x hx L hL
   exact prokhorov_limit_identification f hcm L hL hL_nn hmass_rescaled hsupp
     hfin_rescaled hchafai
@@ -88,12 +88,57 @@ private lemma cm_laplace_representation (hcm : IsCompletelyMonotone f)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) (hL_nn : 0 ≤ L) :
     ∃ μ₀ : Measure ℝ, IsFiniteMeasure μ₀ ∧ μ₀ (Iio 0) = 0 ∧
       ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀ := by
-  have hmass : ∀ n, 2 ≤ n → IsFiniteMeasure (cm_measure f n) ∧
-      (cm_measure f n) univ ≤ ENNReal.ofReal (f 0 - L) :=
-    fun n hn => cm_measure_finite_mass f hcm n (by omega) L hL
-  have hsupp : ∀ n, 2 ≤ n → (cm_rescaled f n) (Iio 0) = 0 :=
-    fun n hn => cm_rescaled_Iio_zero f n hn
+  have hmass : ∀ n, 2 ≤ n → IsFiniteMeasure (chafaiMeasure f n) ∧
+      (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) :=
+    fun n hn => chafaiMeasure_finite_mass f hcm n (by omega) L hL
+  have hsupp : ∀ n, 2 ≤ n → (chafaiRescaled f n) (Iio 0) = 0 :=
+    fun n hn => chafaiRescaled_Iio_zero f n hn
   exact cm_prokhorov_and_verify hcm L hL hL_nn hmass hsupp
+
+/-- **Packaging step**: if `f(x) = L + ∫ e^{-xp} dμ₀` with `μ₀` supported on `[0,∞)`, then
+`μ = μ₀ + L·δ₀` gives `f(x) = ∫ e^{-xp} dμ` with `μ` finite and supported on `[0,∞)`. -/
+private lemma exists_integral_exp_neg_mul_of_const_add {f : ℝ → ℝ} {L : ℝ} (hL : 0 ≤ L)
+    {μ₀ : Measure ℝ} [IsFiniteMeasure μ₀] (hsupp₀ : μ₀ (Iio 0) = 0)
+    (hrep : ∀ t, 0 ≤ t → f t = L + ∫ p, Real.exp (-(t * p)) ∂μ₀) :
+    ∃ μ : Measure ℝ, IsFiniteMeasure μ ∧ μ (Iio 0) = 0 ∧
+      ∀ t, 0 ≤ t → f t = ∫ p, Real.exp (-(t * p)) ∂μ := by
+  set μ := μ₀ + (ENNReal.ofReal L) • Measure.dirac (0 : ℝ)
+  haveI : IsFiniteMeasure μ := by
+    constructor
+    simp only [μ, Measure.add_apply, Measure.smul_apply, smul_eq_mul,
+      Measure.dirac_apply, Set.indicator_univ, Pi.one_apply, mul_one]
+    exact ENNReal.add_lt_top.mpr ⟨measure_lt_top _ _, ENNReal.ofReal_lt_top⟩
+  refine ⟨μ, inferInstance, ?_, ?_⟩
+  · simp only [μ, Measure.add_apply, Measure.smul_apply, smul_eq_mul,
+      Measure.dirac_apply, Set.indicator, Set.mem_Iio, lt_irrefl,
+      ↓reduceIte, mul_zero, hsupp₀, add_zero]
+  · intro t ht
+    rw [hrep t ht]
+    set ν := (ENNReal.ofReal L) • Measure.dirac (0 : ℝ)
+    have exp_int : ∀ (μ' : Measure ℝ) [IsFiniteMeasure μ'],
+        μ' (Iio 0) = 0 → Integrable (fun p => Real.exp (-(t * p))) μ' := by
+      intro μ' _ hsupp'
+      apply Integrable.mono' (integrable_const (1 : ℝ))
+      · fun_prop
+      · rw [ae_iff]; refine measure_mono_null (fun p hp => ?_) hsupp'
+        simp only [Set.mem_setOf_eq, Real.norm_eq_abs, not_le] at hp
+        rw [Set.mem_Iio]; by_contra hge; rw [not_lt] at hge
+        linarith [abs_of_nonneg (Real.exp_pos (-(t * p))).le,
+          Real.exp_le_exp_of_le (neg_nonpos.mpr (mul_nonneg ht hge)), Real.exp_zero]
+    have h1 : Integrable (fun p => Real.exp (-(t * p))) μ₀ := exp_int μ₀ hsupp₀
+    have h2 : Integrable (fun p => Real.exp (-(t * p))) ν := by
+      haveI : IsFiniteMeasure ν := by
+        constructor; simp only [ν, Measure.smul_apply, smul_eq_mul,
+          Measure.dirac_apply, Set.indicator_univ, Pi.one_apply, mul_one]
+        exact ENNReal.ofReal_lt_top
+      apply exp_int; simp [ν, Measure.smul_apply, Set.indicator, Set.mem_Iio]
+    change L + ∫ p, Real.exp (-(t * p)) ∂μ₀ = ∫ p, Real.exp (-(t * p)) ∂(μ₀ + ν)
+    rw [integral_add_measure h1 h2]
+    suffices h : ∫ p, Real.exp (-(t * p)) ∂ν = L by linarith
+    rw [@integral_smul_measure ℝ ℝ _ _ _ (Measure.dirac 0)
+      (fun p => Real.exp (-(t * p))) (ENNReal.ofReal L),
+      integral_dirac, ENNReal.toReal_ofReal hL,
+      mul_zero, neg_zero, Real.exp_zero, smul_eq_mul, mul_one]
 
 /-- **Bernstein's theorem** on `Measure ℝ`: every completely monotone `f` on `[0, ∞)` is the
 Laplace transform of a finite measure supported on `[0, ∞)`. -/
