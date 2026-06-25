@@ -35,7 +35,7 @@ open scoped NNReal Topology
 namespace TauCeti
 
 variable {α : Type*} [MeasurableSpace α] [TopologicalSpace α]
-  [T2Space α] [BorelSpace α] [OpensMeasurableSpace α]
+  [T2Space α] [BorelSpace α]
 
 /-- A tight, uniformly mass-bounded sequence of finite measures has a weak cluster limit.
 
