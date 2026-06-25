@@ -59,7 +59,7 @@ private lemma IsCompletelyMonotone.le_of_tendsto_atTop (hcm : IsCompletelyMonoto
 lemma cm_rescaled_isFiniteMeasure (f : ℝ → ℝ) (n : ℕ)
     [IsFiniteMeasure (cm_measure f n)] : IsFiniteMeasure (cm_rescaled f n) where
   measure_univ_lt_top := by
-    unfold cm_rescaled
+    rw [cm_rescaled_eq_map]
     rw [Measure.map_apply (cm_rescaling_measurable n) MeasurableSet.univ, Set.preimage_univ]
     exact IsFiniteMeasure.measure_univ_lt_top
 
@@ -80,7 +80,7 @@ private lemma chafai_kernel_density_eq (f : ℝ → ℝ) (_hcm : IsCompletelyMon
       bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t = 0 := by
     intro t ht
     simp only [Set.mem_sdiff, Set.mem_Ioi, not_lt] at ht
-    simp only [bernstein_kernel, hn1, ite_false]
+    rw [bernstein_kernel_of_two_le hn]
     have hcast : (↑(n - 1) : ℝ) = ↑n - 1 := by rw [Nat.cast_sub (by omega : 1 ≤ n)]; simp
     have : x * (((n : ℝ) - 1) / t) / ↑(n - 1) = x / t := by
       rw [hcast]; field_simp [hne, ne_of_gt ht.1]
@@ -91,11 +91,14 @@ private lemma chafai_kernel_density_eq (f : ℝ → ℝ) (_hcm : IsCompletelyMon
   intro t ht; simp only [Set.mem_Ioi] at ht
   have ht_pos : 0 < t := lt_of_le_of_lt hx ht
   have hcast : (↑(n - 1) : ℝ) = ↑n - 1 := by rw [Nat.cast_sub (by omega : 1 ≤ n)]; simp
-  simp only [bernstein_kernel, hn1, ite_false]
+  change bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t =
+    (-1 : ℝ) ^ n / ↑(n - 1).factorial * (t - x) ^ (n - 1) *
+      iteratedDerivWithin n f (Ici 0) t
+  rw [bernstein_kernel_of_two_le hn]
   have hrw : x * (((n : ℝ) - 1) / t) / ↑(n - 1) = x / t := by
     rw [hcast]; field_simp [hne, ne_of_gt ht_pos]
   rw [hrw, max_eq_left (by rw [sub_nonneg, div_le_one₀ ht_pos]; linarith)]
-  simp only [cm_density, hn0, ite_false]
+  rw [cm_density_of_ne_zero hn0]
   have key : (1 - x / t) ^ (n - 1) * t ^ (n - 1) = (t - x) ^ (n - 1) := by
     rw [← mul_pow]; congr 1; field_simp [ne_of_gt ht_pos]
   calc (1 - x / t) ^ (n - 1) * ((-1 : ℝ) ^ n / ↑(n - 1).factorial *
@@ -224,15 +227,13 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         have : 0 ≤ -(((-1 : ℝ) ^ k) * iteratedDerivWithin (k + 1) f (Ici 0) T) := by
           simpa [pow_succ, mul_assoc] using hsign
         linarith
-    have hcont_density : ContinuousOn (cm_density f k) (Ici 0) := by
-      unfold cm_density; simp only [hk, ↓reduceIte]
-      exact ((continuousOn_const.mul ((continuousOn_pow _).mono fun _ _ => trivial)).mul
-        (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0)))
+    have hcont_density : ContinuousOn (cm_density f k) (Ici 0) :=
+      continuousOn_cm_density hcm hk
     have hint_density : IntegrableOn (cm_density f k) (Ioi 0) := by
       by_cases hk_eq : k = 1
       · subst hk_eq
         convert hcm.neg_deriv_integrableOn hL using 1
-        ext t; simp [cm_density, iteratedDerivWithin_one]
+        ext t; rw [cm_density_one]
       · have hk2 : 2 ≤ k := by omega
         have hmeas_density : AEStronglyMeasurable (cm_density f k)
             (volume.restrict (Ioi 0)) :=
@@ -243,7 +244,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         rw [hasFiniteIntegral_iff_ofReal hnonneg_density]
         obtain ⟨_, hmass⟩ := cm_measure_finite_mass f hcm k (by omega) L hL
         have hmass' := hmass
-        unfold cm_measure at hmass'
+        rw [cm_measure_eq_withDensity] at hmass'
         rw [withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ] at hmass'
         exact lt_of_le_of_lt hmass' ENNReal.ofReal_lt_top
     have htail : Tendsto (fun S : ℝ => ∫ t in Ioi S, cm_density f k t) atTop (nhds 0) :=
@@ -274,7 +275,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
         · exact ae_of_all _ fun t ht => Ioc_subset_Ioi_self ht
       have h_density_eq : ∀ t, cm_density f k t =
           (1 / ↑((k - 1).factorial)) * t ^ (k - 1) * h t := by
-        intro t; simp only [cm_density, hk, ↓reduceIte, h]; field_simp
+        intro t; rw [cm_density_of_ne_zero hk]; simp only [h]; field_simp
       have h_const_le : (1 / ↑((k - 1).factorial)) * (T / 2) ^ k * h T ≤
           ∫ t in T / 2..T, cm_density f k t := by
         have hmono : ∀ᵐ t ∂(volume.restrict (Icc (T / 2) T)),
@@ -356,10 +357,8 @@ private lemma ibp_kernel_integrableOn (f : ℝ → ℝ) (hcm : IsCompletelyMonot
     IntegrableOn (fun t => (-1 : ℝ) ^ k / ↑(k - 1).factorial * (t - x) ^ (k - 1) *
       iteratedDerivWithin k f (Ici 0) t) (Ioi x) := by
   have hk0 : k ≠ 0 := by omega
-  have hcont_density : ContinuousOn (cm_density f k) (Ici 0) := by
-    unfold cm_density; simp only [hk0, ↓reduceIte]
-    exact ((continuousOn_const.mul ((continuousOn_pow _).mono fun _ _ => trivial)).mul
-      (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0)))
+  have hcont_density : ContinuousOn (cm_density f k) (Ici 0) :=
+    continuousOn_cm_density hcm hk0
   have density_le : ∀ j, 1 ≤ j → ∀ T, 0 < T →
       ∫ t in (0 : ℝ)..T, cm_density f j t ≤ f 0 - f T := by
     intro j hj; induction j with
@@ -397,7 +396,7 @@ private lemma ibp_kernel_integrableOn (f : ℝ → ℝ) (hcm : IsCompletelyMonot
     have ht0 : 0 < t := lt_of_le_of_lt hx ht
     have htx : 0 ≤ t - x := by linarith
     have htx_le : t - x ≤ t := by linarith
-    simp only [cm_density, hk0, ↓reduceIte]
+    rw [cm_density_of_ne_zero hk0]
     have hcm_sign : 0 ≤ (-1 : ℝ) ^ k * iteratedDerivWithin k f (Ici 0) t :=
       hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg k ht0.le
     have hfact : (0 : ℝ) < ↑(k - 1).factorial := Nat.cast_pos.mpr (Nat.factorial_pos _)
@@ -501,20 +500,14 @@ lemma chafai_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
   have hn0 : n ≠ 0 := by omega
   have step1 : ∫ p, bernstein_kernel n x p ∂(cm_rescaled f n) =
       ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(cm_measure f n) := by
-    unfold cm_rescaled
+    rw [cm_rescaled_eq_map]
     exact integral_map_of_stronglyMeasurable (cm_rescaling_measurable n)
-      (show Measurable (bernstein_kernel n x) by
-        unfold bernstein_kernel; split_ifs
-        · exact measurable_const
-        · show Measurable fun p : ℝ => (max (1 - x * p / (↑(n - 1) : ℝ)) 0) ^ (n - 1)
-          fun_prop).stronglyMeasurable
+      (measurable_bernstein_kernel n x).stronglyMeasurable
   have step2 : ∫ t, bernstein_kernel n x (((n : ℝ) - 1) / t) ∂(cm_measure f n) =
       ∫ t in Ioi 0, bernstein_kernel n x (((n : ℝ) - 1) / t) * cm_density f n t := by
-    unfold cm_measure
-    have hcont_density : ContinuousOn (cm_density f n) (Ici 0) := by
-      unfold cm_density; simp only [hn0, ↓reduceIte]
-      exact ((continuousOn_const.mul ((continuousOn_pow _).mono fun _ _ => trivial)).mul
-        (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0)))
+    rw [cm_measure_eq_withDensity]
+    have hcont_density : ContinuousOn (cm_density f n) (Ici 0) :=
+      continuousOn_cm_density hcm hn0
     rw [integral_withDensity_eq_integral_toReal_smul₀
       (AEMeasurable.ennreal_ofReal
         ((hcont_density.mono Ioi_subset_Ici_self).aestronglyMeasurable

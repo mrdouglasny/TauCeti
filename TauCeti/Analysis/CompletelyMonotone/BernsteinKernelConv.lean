@@ -48,7 +48,7 @@ private lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < �
   have hkernel_le : ∀ n, 2 ≤ n → ∀ p, 0 ≤ p →
       bernstein_kernel n x p ≤ Real.exp (-(x * p)) := by
     intro n hn p hp
-    simp only [bernstein_kernel, show ¬(n ≤ 1) from by omega, ite_false]
+    rw [bernstein_kernel_of_two_le hn]
     by_cases h : 1 - x * p / ↑(n - 1) ≤ 0
     · simp only [max_eq_right h]
       rw [zero_pow (by omega : n - 1 ≠ 0)]
@@ -66,7 +66,7 @@ private lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < �
             have : (↑(n - 1) : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
             field_simp
   have hkernel_nn : ∀ n p, 0 ≤ bernstein_kernel n x p := by
-    intro n p; simp only [bernstein_kernel]; split_ifs <;> positivity
+    intro n p; exact bernstein_kernel_nonneg n x p
   have htail : Tendsto (fun R => Real.exp (-(x * R))) atTop (nhds 0) := by
     apply Tendsto.comp Real.tendsto_exp_neg_atTop_nhds_zero
     exact Filter.tendsto_id.const_mul_atTop hx
@@ -102,7 +102,7 @@ private lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < �
     have hu_lt_1 : u < 1 := by rw [div_lt_one hm_pos]; linarith
     have h1u : 0 < 1 - u := by linarith
     have hkernel_eq : bernstein_kernel n x p = (1 - u) ^ m := by
-      simp only [bernstein_kernel, show ¬(n ≤ 1) from by omega, ite_false]
+      rw [bernstein_kernel_of_two_le hn_ge2]
       congr 1; exact max_eq_left (by linarith)
     rw [hkernel_eq]
     set b := ↑m * u ^ 2 / (1 - u) with hb_def
@@ -178,8 +178,9 @@ private lemma kernel_approx_error_tendsto
         Real.exp (-(0 * p))) ∂(σ (φ k)) = 0 by
       simp only [h]; exact tendsto_const_nhds
     intro k; apply integral_eq_zero_of_ae; apply ae_of_all; intro p
-    simp only [bernstein_kernel, show ¬(φ k + 2 ≤ 1) from by omega, zero_mul,
-      zero_div, sub_zero, neg_zero, Real.exp_zero, ite_false]; simp [one_pow]
+    change bernstein_kernel (φ k + 2) 0 p - Real.exp (-(0 * p)) = 0
+    rw [bernstein_kernel_of_two_le (by omega : 2 ≤ φ k + 2)]
+    simp
   · -- x > 0: uniform convergence on [0,∞) + mass bound
     have hx_pos : 0 < x := lt_of_le_of_ne hx (Ne.symm hx0)
     rw [Metric.tendsto_atTop]; intro ε hε
@@ -242,17 +243,12 @@ private lemma integral_bernstein_kernel_tendsto
   -- Bernstein kernel is bounded on [0,∞) ⊆ support, hence integrable on finite σ
   have hbk_int : Integrable (fun p => bernstein_kernel (φ k + 2) x p) (σ (φ k)) := by
     apply Integrable.mono' (integrable_const (1 : ℝ))
-    · apply Measurable.aestronglyMeasurable
-      simp only [bernstein_kernel]
-      exact Measurable.ite (measurableSet_le measurable_const measurable_const)
-        measurable_const
-        ((measurable_const.sub (measurable_id.const_mul x |>.div_const _) |>.max
-          measurable_const).pow measurable_const)
+    · exact (measurable_bernstein_kernel (φ k + 2) x).aestronglyMeasurable
     · rw [ae_iff]; apply measure_mono_null (fun p hp => ?_) (hsupp_σ (φ k))
       simp only [Set.mem_setOf_eq, Real.norm_eq_abs, not_le, Set.mem_Iio] at *
       by_contra hge; push Not at hge
-      simp only [bernstein_kernel, show ¬(φ k + 2 ≤ 1) from by omega, ite_false,
-        show φ k + 2 - 1 = φ k + 1 from by omega] at hp
+      rw [bernstein_kernel_of_two_le (by omega : 2 ≤ φ k + 2)] at hp
+      simp only [show φ k + 2 - 1 = φ k + 1 from by omega] at hp
       have hmax : max (1 - x * p / ↑(φ k + 1)) 0 ≤ 1 := by
         apply max_le _ (by norm_num)
         have : 0 ≤ x * p / ↑(φ k + 1) := div_nonneg (mul_nonneg hx hge) (by positivity)
@@ -339,9 +335,12 @@ lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
     have hmass_real : ∀ n, (σ n Set.univ).toReal = f 0 - L := by
       intro n; haveI := hfin_σ n
       have h1 := hident_σ n (by omega) 0 le_rfl
-      simp only [bernstein_kernel, show ¬(n + 2 ≤ 1) from by omega,
-        ite_false, zero_mul, zero_div, sub_zero, zero_le_one, max_eq_left,
-        one_pow, MeasureTheory.integral_const, smul_eq_mul, mul_one] at h1
+      have hkernel_zero : (fun p => bernstein_kernel (n + 2) 0 p) = fun _ => (1 : ℝ) := by
+        ext p
+        rw [bernstein_kernel_of_two_le (by omega : 2 ≤ n + 2)]
+        simp only [zero_mul, zero_div, sub_zero, zero_le_one, max_eq_left, one_pow]
+      rw [hkernel_zero] at h1
+      simp only [MeasureTheory.integral_const, smul_eq_mul, mul_one] at h1
       -- h1 : f 0 - L = ∫ 1 dσ_n = (σ_n).real univ
       rw [show (σ n).real Set.univ = (σ n Set.univ).toReal from by
         simp [Measure.real]] at h1
@@ -375,19 +374,14 @@ lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
           Measure.real, Measure.real, smul_eq_mul, smul_eq_mul, mul_one, mul_comm]
       have hkernel_int : Integrable (bernstein_kernel (n + 2) x₀) (σ n) := by
         apply Integrable.mono' (integrable_const (1 : ℝ))
-        · apply Measurable.aestronglyMeasurable
-          unfold bernstein_kernel
-          exact Measurable.ite (measurableSet_le measurable_const measurable_const)
-            measurable_const
-            ((measurable_const.sub (measurable_id.const_mul x₀ |>.div_const _) |>.max
-              measurable_const).pow measurable_const)
+        · exact (measurable_bernstein_kernel (n + 2) x₀).aestronglyMeasurable
         · rw [ae_iff]
           apply measure_mono_null (fun p hp => ?_) (hsupp_σ n)
           simp only [Set.mem_setOf_eq, Real.norm_eq_abs, not_le, Set.mem_Iio] at *
           by_contra hp_nonneg
           push Not at hp_nonneg
-          simp only [bernstein_kernel, show ¬(n + 2 ≤ 1) from by omega, ite_false,
-            show n + 2 - 1 = n + 1 from by omega] at hp
+          rw [bernstein_kernel_of_two_le (by omega : 2 ≤ n + 2)] at hp
+          simp only [show n + 2 - 1 = n + 1 from by omega] at hp
           have hmax : max (1 - x₀ * p / ↑(n + 1)) 0 ≤ 1 := by
             apply max_le _ (by norm_num)
             have : 0 ≤ x₀ * p / ↑(n + 1) :=
@@ -408,8 +402,8 @@ lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
         filter_upwards [hnonneg_ae] with p hp_nonneg
         by_cases hpK : p ≤ K
         · have hkernel_le_one : bernstein_kernel (n + 2) x₀ p ≤ 1 := by
-            simp only [bernstein_kernel, show ¬(n + 2 ≤ 1) from by omega, ite_false,
-              show n + 2 - 1 = n + 1 from by omega]
+            rw [bernstein_kernel_of_two_le (by omega : 2 ≤ n + 2)]
+            simp only [show n + 2 - 1 = n + 1 from by omega]
             have hmax : max (1 - x₀ * p / ↑(n + 1)) 0 ≤ 1 := by
               apply max_le _ (by norm_num)
               have : 0 ≤ x₀ * p / ↑(n + 1) :=
@@ -425,8 +419,8 @@ lemma prokhorov_limit_identification (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
         · have hpK' : K < p := lt_of_not_ge hpK
           have hkernel_le_exp : bernstein_kernel (n + 2) x₀ p ≤ Real.exp (-(x₀ * p)) := by
             have hxp_nonneg : 0 ≤ x₀ * p := mul_nonneg hx₀.le hp_nonneg
-            simp only [bernstein_kernel, show ¬(n + 2 ≤ 1) from by omega, ite_false,
-              show n + 2 - 1 = n + 1 from by omega]
+            rw [bernstein_kernel_of_two_le (by omega : 2 ≤ n + 2)]
+            simp only [show n + 2 - 1 = n + 1 from by omega]
             by_cases hxp : x₀ * p ≤ ↑(n + 1)
             · have hmax_eq : max (1 - x₀ * p / ↑(n + 1)) 0 = 1 - x₀ * p / ↑(n + 1) := by
                 apply max_eq_left

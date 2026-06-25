@@ -66,18 +66,20 @@ private lemma IsCompletelyMonotone.iteratedDerivWithin_one_nonpos
 
 /-- The density `ρ_n(t) = (-1)ⁿ/(n-1)! · tⁿ⁻¹ · f⁽ⁿ⁾(t)` for the `n`-th approximating measure in
 the Bernstein proof (Chafaï 2013). -/
-@[expose] noncomputable def cm_density (f : ℝ → ℝ) (n : ℕ) (t : ℝ) : ℝ :=
+noncomputable def cm_density (f : ℝ → ℝ) (n : ℕ) (t : ℝ) : ℝ :=
   if n = 0 then 0
   else (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
     t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t
 
 /-- `cm_density f 0 = 0`. -/
-@[simp] lemma cm_density_zero (f : ℝ → ℝ) (t : ℝ) : cm_density f 0 t = 0 := rfl
+@[simp] lemma cm_density_zero (f : ℝ → ℝ) (t : ℝ) : cm_density f 0 t = 0 := by
+  rw [cm_density, if_pos rfl]
 
 /-- The defining formula for `cm_density` at a nonzero order. -/
 lemma cm_density_of_ne_zero {n : ℕ} (hn : n ≠ 0) (f : ℝ → ℝ) (t : ℝ) :
     cm_density f n t = (-1 : ℝ) ^ n / (Nat.factorial (n - 1) : ℝ) *
-      t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := if_neg hn
+      t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := by
+  rw [cm_density, if_neg hn]
 
 /-- `cm_density f n` is continuous on `[0, ∞)` for a completely monotone `f` and `n ≠ 0`. -/
 lemma continuousOn_cm_density (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : n ≠ 0) :
@@ -90,19 +92,20 @@ lemma continuousOn_cm_density (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : n �
 
 /-- The `n`-th approximating measure `σ_n` for the Bernstein proof, with density `ρ_n` on
 `(0, ∞)`. -/
-@[expose] noncomputable def cm_measure (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
+noncomputable def cm_measure (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
   (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (cm_density f n t))
 
 /-- `cm_measure` as a `withDensity`, exposed as a lemma rather than an unfoldable body. -/
 lemma cm_measure_eq_withDensity (f : ℝ → ℝ) (n : ℕ) :
     cm_measure f n =
-      (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (cm_density f n t)) := rfl
+      (volume.restrict (Ioi 0)).withDensity (fun t => ENNReal.ofReal (cm_density f n t)) := by
+  rw [cm_measure]
 
 /-- The mass `cm_measure f n` assigns to a measurable set, as a set lintegral of the density. -/
 lemma cm_measure_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
     cm_measure f n s =
-      ∫⁻ t in s, ENNReal.ofReal (cm_density f n t) ∂(volume.restrict (Ioi 0)) :=
-  withDensity_apply _ hs
+      ∫⁻ t in s, ENNReal.ofReal (cm_density f n t) ∂(volume.restrict (Ioi 0)) := by
+  rw [cm_measure, withDensity_apply _ hs]
 
 /-- The density `ρ_n` is nonnegative for completely monotone functions. -/
 lemma cm_density_nonneg (hcm : IsCompletelyMonotone f) (n : ℕ)
@@ -240,21 +243,28 @@ lemma exists_integral_exp_neg_mul_of_const_add {f : ℝ → ℝ} {L : ℝ} (hL :
 /-- The Bernstein kernel `φ_n(x,p) = max(1 - xp/(n-1), 0)ⁿ⁻¹` for `n ≥ 2`. After the change of
 variable `p = (n-1)/t`, the Taylor integral kernel on `[0, T]` becomes `φ_n(x, p)`, which
 converges pointwise to `e^{-xp}` as `n → ∞` (the classical `(1-x/n)ⁿ → e^{-x}` limit). -/
-@[expose] noncomputable def bernstein_kernel (n : ℕ) (x p : ℝ) : ℝ :=
+noncomputable def bernstein_kernel (n : ℕ) (x p : ℝ) : ℝ :=
   if n ≤ 1 then 0 else (max (1 - x * p / (↑(n - 1) : ℝ)) 0) ^ (n - 1)
 
 /-- The Bernstein kernel vanishes for `n ≤ 1`. -/
 @[simp] lemma bernstein_kernel_of_le_one {n : ℕ} (hn : n ≤ 1) (x p : ℝ) :
-    bernstein_kernel n x p = 0 := if_pos hn
+    bernstein_kernel n x p = 0 := by
+  rw [bernstein_kernel, if_pos hn]
 
 /-- The defining formula for the Bernstein kernel at `2 ≤ n`. -/
 lemma bernstein_kernel_of_two_le {n : ℕ} (hn : 2 ≤ n) (x p : ℝ) :
-    bernstein_kernel n x p = (max (1 - x * p / (↑(n - 1) : ℝ)) 0) ^ (n - 1) :=
-  if_neg (by omega)
+    bernstein_kernel n x p = (max (1 - x * p / (↑(n - 1) : ℝ)) 0) ^ (n - 1) := by
+  rw [bernstein_kernel, if_neg (show ¬ n ≤ 1 by omega)]
 
 /-- The Bernstein kernel is nonnegative. -/
 @[simp] lemma bernstein_kernel_nonneg (n : ℕ) (x p : ℝ) : 0 ≤ bernstein_kernel n x p := by
   rw [bernstein_kernel]; split_ifs <;> positivity
+
+/-- The Bernstein kernel is measurable in `p` for fixed `n` and `x`. -/
+lemma measurable_bernstein_kernel (n : ℕ) (x : ℝ) : Measurable (bernstein_kernel n x) := by
+  unfold bernstein_kernel; split_ifs
+  · exact measurable_const
+  · fun_prop
 
 /-- **Pointwise convergence of the Bernstein kernel** to the Laplace kernel:
 `φ_n(x,p) → e^{-xp}` as `n → ∞`, for `x, p ≥ 0`. -/
@@ -283,7 +293,7 @@ lemma bernstein_kernel_tendsto (x p : ℝ) :
   · rw [sub_nonneg]; exact div_le_one_of_le₀ hn1_ge hn1_pos.le
 
 /-- The rescaled measure `σ̃_n`: pushforward of `cm_measure f n` under `t ↦ (n-1)/t`. -/
-@[expose] noncomputable def cm_rescaled (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
+noncomputable def cm_rescaled (f : ℝ → ℝ) (n : ℕ) : Measure ℝ :=
   Measure.map (fun t => ((n : ℝ) - 1) / t) (cm_measure f n)
 
 /-- The rescaling map `t ↦ (n-1)/t` is measurable. -/
@@ -293,12 +303,13 @@ lemma cm_rescaling_measurable (n : ℕ) :
 
 /-- `cm_rescaled` as a pushforward, exposed as a lemma rather than an unfoldable body. -/
 lemma cm_rescaled_eq_map (f : ℝ → ℝ) (n : ℕ) :
-    cm_rescaled f n = Measure.map (fun t => ((n : ℝ) - 1) / t) (cm_measure f n) := rfl
+    cm_rescaled f n = Measure.map (fun t => ((n : ℝ) - 1) / t) (cm_measure f n) := by
+  rw [cm_rescaled]
 
 /-- The mass `cm_rescaled f n` assigns to a measurable set, as the pushforward formula. -/
 lemma cm_rescaled_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : MeasurableSet s) :
-    cm_rescaled f n s = cm_measure f n ((fun t => ((n : ℝ) - 1) / t) ⁻¹' s) :=
-  Measure.map_apply (cm_rescaling_measurable n) hs
+    cm_rescaled f n s = cm_measure f n ((fun t => ((n : ℝ) - 1) / t) ⁻¹' s) := by
+  rw [cm_rescaled, Measure.map_apply (cm_rescaling_measurable n) hs]
 
 /-- `cm_measure f n` lives on `(0, ∞)`: its complement has zero mass. -/
 lemma cm_measure_compl_Ioi (f : ℝ → ℝ) (n : ℕ) :
