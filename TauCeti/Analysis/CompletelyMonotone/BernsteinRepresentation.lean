@@ -72,13 +72,13 @@ private lemma cm_laplace_representation (hcm : IsCompletelyMonotone f) :
   obtain ⟨L, hL, hL_nn, hmass⟩ := chafaiMeasure_finite_mass f hcm
   have hfin_rescaled : ∀ n, 2 ≤ n → IsFiniteMeasure (chafaiRescaled f n) := by
     intro n hn
-    haveI := (hmass n (by omega : 1 ≤ n)).1
+    haveI := (hmass n).1
     exact chafaiRescaled_isFiniteMeasure f n
   have hmass_rescaled : ∀ n, 2 ≤ n →
       (chafaiRescaled f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
     intro n hn
     rw [chafaiRescaled_mass_eq]
-    exact (hmass n (by omega : 1 ≤ n)).2
+    exact (hmass n).2
   have hchafai : ∀ n, 2 ≤ n → ∀ x, 0 ≤ x →
       f x - L = ∫ p : ℝ≥0, bernstein_kernel n x (p : ℝ) ∂(chafaiRescaled f n) :=
     fun n hn x hx => chafai_identity f hcm n hn x hx L hL

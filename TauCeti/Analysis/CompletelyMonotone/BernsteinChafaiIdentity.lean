@@ -242,7 +242,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
           (ae_restrict_mem measurableSet_Ioi).mono fun t ht => chafaiDensity_nonneg hcm k t ht.le
         refine ⟨hmeas_density, ?_⟩
         rw [hasFiniteIntegral_iff_ofReal hnonneg_density]
-        obtain ⟨_, hmass⟩ := chafaiMeasure_finite_mass_of_tendsto f hcm k (by omega) L hL
+        obtain ⟨_, hmass⟩ := chafaiMeasure_finite_mass_of_tendsto f hcm k L hL
         have hmass' := hmass
         rw [chafaiMeasure_eq_withDensity] at hmass'
         rw [withDensity_apply _ MeasurableSet.univ, Measure.restrict_univ] at hmass'

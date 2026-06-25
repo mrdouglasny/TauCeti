@@ -253,7 +253,8 @@ noncomputable def bernstein_kernel (n : ℕ) (x p : ℝ) : ℝ :=
 /-- The defining formula for the Bernstein kernel at `2 ≤ n`. -/
 lemma bernstein_kernel_of_two_le {n : ℕ} (hn : 2 ≤ n) (x p : ℝ) :
     bernstein_kernel n x p = (max (1 - x * p / (↑(n - 1) : ℝ)) 0) ^ (n - 1) := by
-  rw [bernstein_kernel, if_neg (show ¬ n ≤ 1 by omega)]
+  have hnle : ¬ n ≤ 1 := by omega
+  rw [bernstein_kernel, if_neg hnle]
 
 /-- The Bernstein kernel is nonnegative. -/
 @[simp] lemma bernstein_kernel_nonneg (n : ℕ) (x p : ℝ) : 0 ≤ bernstein_kernel n x p := by
@@ -392,7 +393,8 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
     rw [← hftc]
     exact intervalIntegral.integral_congr_ae
       (Filter.Eventually.of_forall fun t _ => (hF'_eq t).symm)
-  have hF0 : F 0 = 0 := by simp [F, zero_pow (show m + 1 ≠ 0 from by omega)]
+  have hm1 : m + 1 ≠ 0 := by omega
+  have hF0 : F 0 = 0 := by simp [F, zero_pow hm1]
   rw [hF0, sub_zero] at hstep1
   rw [intervalIntegral.integral_sub (hcm_int _ (by omega)) (hcm_int _ (by omega))] at hstep1
   suffices hgoal : (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial * g T = F T by linarith
@@ -403,7 +405,8 @@ lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
     (k : ℕ) (hk : 2 ≤ k) (T : ℝ) (hT : 0 < T) :
     ∫ t in (0 : ℝ)..T, chafaiDensity f k t ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f (k - 1) t := by
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by omega⟩
-  simp only [show m + 2 - 1 = m + 1 from by omega]
+  have hsub : m + 2 - 1 = m + 1 := by omega
+  simp only [hsub]
   have hibp := chafaiDensity_ibp_identity f hcm m T hT
   set B := (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial *
     iteratedDerivWithin (m + 1) f (Ici 0) T
@@ -422,10 +425,19 @@ lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonoto
 /-- **Total mass bound with a chosen limit**: `chafaiMeasure f n` is finite with total mass
 `≤ f(0) - L` whenever `f(t) → L` at infinity. -/
 lemma chafaiMeasure_finite_mass_of_tendsto (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
-    (n : ℕ) (hn : 1 ≤ n) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
+    (n : ℕ) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
     IsFiniteMeasure (chafaiMeasure f n) ∧
     (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
-  have hn0 : n ≠ 0 := by omega
+  by_cases hn0 : n = 0
+  · subst n
+    have hzero : chafaiMeasure f 0 = 0 := by
+      rw [chafaiMeasure_eq_withDensity]
+      ext s hs
+      rw [withDensity_apply _ hs]
+      simp
+    rw [hzero]
+    exact ⟨inferInstance, by simp⟩
+  have hn : 1 ≤ n := Nat.one_le_iff_ne_zero.mpr hn0
   have hcont : ContinuousOn (chafaiDensity f n) (Ici 0) := continuousOn_chafaiDensity hcm n
   have hbound : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, chafaiDensity f n t ≤ f 0 - L := by
     have base : ∀ T, 0 < T → ∫ t in (0 : ℝ)..T, chafaiDensity f 1 t = f 0 - f T := by
@@ -457,7 +469,7 @@ lemma chafaiMeasure_finite_mass_of_tendsto (f : ℝ → ℝ) (hcm : IsCompletely
       have := hg_anti.le_of_tendsto
         (hL.congr' (eventually_atTop.mpr ⟨0, fun t ht => by simp [hg₀, max_eq_left ht]⟩)) T
       simpa [hg₀, max_eq_left hT.le] using this
-    linarith [density_le n (by omega : 1 ≤ n) T hT]
+    linarith [density_le n hn T hT]
   have hint : IntegrableOn (chafaiDensity f n) (Ioi 0) := by
     apply integrableOn_Ioi_of_intervalIntegral_norm_bounded (f 0 - L) 0
       (l := atTop) (b := id)
@@ -491,10 +503,10 @@ and uniformly bounded by `f(0) - L`, where `L` is the automatically obtained lim
 infinity. -/
 lemma chafaiMeasure_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f) :
     ∃ L : ℝ, Tendsto f atTop (nhds L) ∧ 0 ≤ L ∧
-      ∀ n, 1 ≤ n →
+      ∀ n,
         IsFiniteMeasure (chafaiMeasure f n) ∧
         (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
   obtain ⟨L, hL, hL_nn⟩ := hcm.tendsto_atTop
-  exact ⟨L, hL, hL_nn, fun n hn => chafaiMeasure_finite_mass_of_tendsto f hcm n hn L hL⟩
+  exact ⟨L, hL, hL_nn, fun n => chafaiMeasure_finite_mass_of_tendsto f hcm n L hL⟩
 
 end TauCeti
