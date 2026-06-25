@@ -128,6 +128,32 @@ lemma chafaiDensity_nonneg (hcm : IsCompletelyMonotone f) (n : ℕ)
     chafaiDensity f 1 t = -iteratedDerivWithin 1 f (Ici 0) t := by
   simp [chafaiDensity]
 
+/-- Difference of two successive Chafaï densities, in the algebraic form used by integration by
+parts. -/
+lemma chafaiDensity_succ_succ_sub_succ (f : ℝ → ℝ) (m : ℕ) (t : ℝ) :
+    chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t =
+      ↑(m + 1) * t ^ m *
+          (((-1 : ℝ) ^ (m + 2) / ↑(m + 1).factorial) *
+            iteratedDerivWithin (m + 1) f (Ici 0) t) +
+        t ^ (m + 1) *
+          (((-1 : ℝ) ^ (m + 2) / ↑(m + 1).factorial) *
+            iteratedDerivWithin (m + 2) f (Ici 0) t) := by
+  rw [chafaiDensity_of_ne_zero (show m + 2 ≠ 0 by omega),
+    chafaiDensity_of_ne_zero (show m + 1 ≠ 0 by omega)]
+  simp only [show m + 2 - 1 = m + 1 from by omega,
+    show m + 1 - 1 = m from by omega]
+  have hfact : ((m + 1).factorial : ℝ) = ((m + 1 : ℕ) : ℝ) * ↑m.factorial := by
+    rw [Nat.factorial_succ]
+    push_cast
+    ring
+  rw [hfact]
+  have hfact_ne : (m.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero _)
+  have hsucc_ne : ((m : ℝ) + 1) ≠ 0 := by positivity
+  have hneg : (-1 : ℝ) ^ (m + 2) = (-1) ^ (m + 1) * (-1) := pow_succ (-1) (m + 1)
+  rw [hneg]
+  field_simp
+  ring
+
 /-- The interval integral of `-f'` with the `T`-dependent set `Icc 0 T` equals the integral with
 the fixed set `Ici 0` (both agree a.e. by set transfer at interior points). -/
 lemma IsCompletelyMonotone.integral_neg_deriv_Ici
@@ -339,16 +365,8 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
   have hF'_eq : ∀ t, ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t) =
       chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t := by
     intro t
-    simp only [chafaiDensity, show m + 2 ≠ 0 from by omega, show m + 1 ≠ 0 from by omega,
-      ite_false, show m + 2 - 1 = m + 1 from by omega,
-      show m + 1 - 1 = m from by omega, g, g', c]
-    have : ((m + 1).factorial : ℝ) = ((m + 1 : ℕ) : ℝ) * ↑m.factorial := by
-      rw [Nat.factorial_succ]; push_cast; ring
-    rw [this]
-    have : (m.factorial : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.factorial_ne_zero _)
-    have : ((m : ℝ) + 1) ≠ 0 := by positivity
-    have : (-1 : ℝ) ^ (m + 2) = (-1) ^ (m + 1) * (-1) := pow_succ (-1) (m + 1)
-    rw [this]; field_simp; ring
+    simp only [g, g', c]
+    exact (chafaiDensity_succ_succ_sub_succ f m t).symm
   have hF'_int : IntervalIntegrable
       (fun t => ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t)) volume 0 T :=
     ((hcm_int _ (by omega)).sub (hcm_int _ (by omega))).congr fun t _ => (hF'_eq t).symm
@@ -442,8 +460,7 @@ lemma chafaiMeasure_finite_mass_of_tendsto (f : ℝ → ℝ) (hcm : IsCompletely
     unfold chafaiMeasure
     exact isFiniteMeasure_withDensity_ofReal hint.hasFiniteIntegral
   have hmass : (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
-    change (volume.restrict (Ioi 0)).withDensity
-      (fun t => ENNReal.ofReal (chafaiDensity f n t)) univ ≤ _
+    rw [chafaiMeasure_eq_withDensity]
     rw [withDensity_apply _ MeasurableSet.univ]; simp only [Measure.restrict_univ]
     rw [← ofReal_integral_eq_lintegral_ofReal hint
       ((ae_restrict_mem measurableSet_Ioi).mono fun t (ht : 0 < t) =>

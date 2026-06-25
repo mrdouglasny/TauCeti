@@ -35,7 +35,7 @@ open scoped NNReal Topology
 namespace TauCeti
 
 variable {α : Type*} [MeasurableSpace α] [TopologicalSpace α]
-  [T2Space α] [BorelSpace α] [OpensMeasurableSpace α] [NormalSpace α]
+  [T2Space α] [BorelSpace α] [OpensMeasurableSpace α]
 
 /-- A tight, uniformly mass-bounded sequence of finite measures has a weak cluster limit.
 
@@ -66,19 +66,27 @@ lemma finite_measure_cluster_limit
     refine ⟨K, hK, fun n => ?_⟩
     simpa using htail n
   choose K hK_comp hK_tail using hchoose
+  let Kacc : ℕ → Set α := Set.accumulate K
   let S : Set (FiniteMeasure α) :=
-    {μ | μ.mass ≤ Cnn ∧ ∀ j, μ (K j)ᶜ ≤ u j}
+    {μ | μ.mass ≤ Cnn ∧ ∀ j, μ (Kacc j)ᶜ ≤ u j}
+  have hKacc_comp : ∀ j, IsCompact (Kacc j) := by
+    intro j
+    exact isCompact_accumulate hK_comp j
   have hcompact : IsCompact S := by
     simpa [S] using
       isCompact_setOf_finiteMeasure_mass_le_compl_isCompact_le
-        (E := α) (C := Cnn) (u := u) (K := K) hu_lim hK_comp (Or.inl inferInstance)
+        (E := α) (C := Cnn) (u := u) (K := Kacc) hu_lim hKacc_comp
+        (Or.inr Set.monotone_accumulate)
   have hσ_mem : ∀ n, σf n ∈ S := by
     intro n
     constructor
     · dsimp [σf, S, Cnn, FiniteMeasure.mass]
       exact ENNReal.toNNReal_mono ENNReal.ofReal_ne_top (hmass n)
     · intro j
-      have htail : (σ n) (K j)ᶜ ≤ (u j : ENNReal) := hK_tail j n
+      have hsubset : (Kacc j)ᶜ ⊆ (K j)ᶜ :=
+        compl_subset_compl.mpr (Set.subset_accumulate (s := K) (x := j))
+      have htail : (σ n) (Kacc j)ᶜ ≤ (u j : ENNReal) :=
+        (measure_mono hsubset).trans (hK_tail j n)
       exact ENNReal.coe_le_coe.mp (by simpa [σf] using htail)
   have hmap_le : map σf atTop ≤ 𝓟 S :=
     tendsto_principal.mpr (Eventually.of_forall hσ_mem)
