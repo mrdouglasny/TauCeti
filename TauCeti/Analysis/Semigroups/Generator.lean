@@ -21,7 +21,7 @@ Ported and adapted (Apache 2.0) from `mrdouglasny/hille-yosida`; references incl
 Engel--Nagel, Linares, Pazy, Hille, and Yosida.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -151,17 +151,10 @@ noncomputable def StronglyContinuousSemigroup.generator
         exact tendsto_nhds_unique (Classical.choose_spec (c • x).property) hx }
 
 omit [CompleteSpace X] in
-/-- Domain membership unfolds to the explicit difference-quotient convergence criterion. -/
-theorem StronglyContinuousSemigroup.mem_domain_iff
-    (S : StronglyContinuousSemigroup X) (x : X) :
-    x ∈ S.domain ↔ ∃ y, Filter.Tendsto (fun t => (1 / t) • (S.realOperator t x - x))
-      (nhdsWithin 0 (Set.Ioi 0)) (nhds y) :=
-  Iff.rfl
-
-omit [CompleteSpace X] in
 /-- `S.generator.domain` is the generator domain submodule. -/
 @[simp] theorem StronglyContinuousSemigroup.generator_domain
-    (S : StronglyContinuousSemigroup X) : S.generator.domain = S.domain := rfl
+    (S : StronglyContinuousSemigroup X) : S.generator.domain = S.domain := by
+  rfl
 
 omit [CompleteSpace X] in
 /-- A vector lies in the generator domain iff its difference quotient `(S t x - x)/t`
@@ -170,7 +163,7 @@ theorem StronglyContinuousSemigroup.mem_domain_iff_tendsto
     (S : StronglyContinuousSemigroup X) (x : X) :
     x ∈ S.domain ↔ ∃ y, Filter.Tendsto (fun t => (1 / t) • (S.realOperator t x - x))
       (nhdsWithin 0 (Set.Ioi 0)) (nhds y) :=
-  Iff.rfl
+  by rfl
 
 omit [CompleteSpace X] in
 /-- Characteristic property of the generator: for `x` in the domain, the difference
@@ -178,8 +171,12 @@ quotient `(S t x - x)/t` converges to `S.generator x` as `t → 0⁺` ([EN] Def.
 theorem StronglyContinuousSemigroup.generator_tendsto
     (S : StronglyContinuousSemigroup X) (x : S.domain) :
     Filter.Tendsto (fun t => (1 / t) • (S.realOperator t (x : X) - (x : X)))
-      (nhdsWithin 0 (Set.Ioi 0)) (nhds (S.generator x)) :=
-  Classical.choose_spec x.property
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (S.generator ⟨(x : X), by
+        rw [S.generator_domain]
+        exact x.property⟩)) := by
+  simp only [StronglyContinuousSemigroup.generator]
+  exact Classical.choose_spec x.property
 
 omit [CompleteSpace X] in
 /-- Eliminator for the generator: if the difference quotient `(S t x - x)/t` of an
@@ -188,7 +185,9 @@ theorem StronglyContinuousSemigroup.generator_eq_of_tendsto
     (S : StronglyContinuousSemigroup X) {x : X} (hx : x ∈ S.domain) {y : X}
     (h : Filter.Tendsto (fun t => (1 / t) • (S.realOperator t x - x))
       (nhdsWithin 0 (Set.Ioi 0)) (nhds y)) :
-    S.generator ⟨x, hx⟩ = y :=
+    S.generator ⟨x, by
+      rw [S.generator_domain]
+      exact hx⟩ = y :=
   tendsto_nhds_unique (S.generator_tendsto ⟨x, hx⟩) h
 
 
@@ -342,9 +341,12 @@ theorem StronglyContinuousSemigroup.integral_orbit_mem_domain
 ([EN] Lemma II.1.3). -/
 theorem StronglyContinuousSemigroup.generator_integral_orbit
     (S : StronglyContinuousSemigroup X) (x : X) {t : ℝ} (ht : 0 < t) :
-    S.generator ⟨∫ u in Set.Ioc 0 t, S.realOperator u x, S.integral_orbit_mem_domain x ht⟩
+    S.generator ⟨∫ u in Set.Ioc 0 t, S.realOperator u x, by
+      rw [S.generator_domain]
+      exact S.integral_orbit_mem_domain x ht⟩
       = S.realOperator t x - x :=
-  S.generator_eq_of_tendsto _ (S.tendsto_quot_integral_orbit x ht)
+  S.generator_eq_of_tendsto (S.integral_orbit_mem_domain x ht)
+    (S.tendsto_quot_integral_orbit x ht)
 
 /-- The generator domain of a strongly continuous semigroup is dense
 ([EN] Lemma II.1.3 and its density corollary). -/

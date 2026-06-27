@@ -20,7 +20,7 @@ Ported and adapted (Apache 2.0) from `mrdouglasny/hille-yosida`; references incl
 Engel--Nagel, Linares, Pazy, Hille, and Yosida.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -80,23 +80,23 @@ lemma realOperator_coe (S : StronglyContinuousSemigroup X) (t : ℝ≥0) :
   rw [realOperator, Real.toNNReal_coe]
 
 omit [CompleteSpace X] in
+/-- The real-time operator at zero is the identity: `S.realOperator 0 = id`. -/
 theorem at_zero (S : StronglyContinuousSemigroup X) :
     S.realOperator 0 = ContinuousLinearMap.id ℝ X := by
-  change S.toFun ((0 : ℝ).toNNReal) = ContinuousLinearMap.id ℝ X
-  rw [Real.toNNReal_zero, S.map_zero']
+  rw [realOperator, Real.toNNReal_zero]
+  exact S.map_zero'
 
 omit [CompleteSpace X] in
+/-- The real-time shim satisfies the semigroup law at nonnegative real times. -/
 theorem semigroup (S : StronglyContinuousSemigroup X) (s t : ℝ) (hs : 0 ≤ s) (ht : 0 ≤ t) :
     S.realOperator (s + t) = (S.realOperator s).comp (S.realOperator t) := by
-  change S.toFun ((s + t).toNNReal) =
-    (S.toFun s.toNNReal).comp (S.toFun t.toNNReal)
-  rw [Real.toNNReal_add hs ht, S.map_add']
+  rw [realOperator, realOperator, realOperator, Real.toNNReal_add hs ht]
+  exact S.map_add' s.toNNReal t.toNNReal
 
 omit [CompleteSpace X] in
+/-- Strong continuity at zero of `t ↦ S.realOperator t x` along `0 ≤ t`. -/
 theorem strong_cont (S : StronglyContinuousSemigroup X) (x : X) :
     Filter.Tendsto (fun t => S.realOperator t x) (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
-  change Filter.Tendsto (fun t : ℝ => S.toFun t.toNNReal x)
-    (nhdsWithin 0 (Set.Ici 0)) (nhds x)
   have h_toNNReal : Filter.Tendsto Real.toNNReal (nhdsWithin 0 (Set.Ici (0 : ℝ))) (nhds 0) := by
     simpa [Real.toNNReal_zero] using
       (continuous_real_toNNReal.continuousAt.tendsto.mono_left nhdsWithin_le_nhds :
@@ -105,7 +105,10 @@ theorem strong_cont (S : StronglyContinuousSemigroup X) (x : X) :
     have h := (S.continuousAt_zero' x).tendsto
     rw [S.map_zero'] at h
     simpa using h
-  exact h_orbit.comp h_toNNReal
+  exact (h_orbit.comp h_toNNReal).congr' (by
+    filter_upwards with t
+    simp only [realOperator, Function.comp_apply]
+    rfl)
 
 end StronglyContinuousSemigroup
 
@@ -125,8 +128,8 @@ omit [CompleteSpace X] in
 /-- A contraction semigroup is contractive at nonnegative real times. -/
 theorem ContractionSemigroup.contracting_real (S : ContractionSemigroup X)
     (t : ℝ) (ht : 0 ≤ t) : ‖S.realOperator t‖ ≤ 1 := by
-  have _ : ((t.toNNReal : ℝ) = t) := Real.coe_toNNReal t ht
-  change ‖S.toFun t.toNNReal‖ ≤ 1
+  have ht_coe : ((t.toNNReal : ℝ) = t) := Real.coe_toNNReal t ht
+  rw [← ht_coe, StronglyContinuousSemigroup.realOperator_coe]
   exact S.contracting t.toNNReal
 
 omit [CompleteSpace X] in

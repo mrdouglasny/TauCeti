@@ -22,7 +22,7 @@ Ported and adapted (Apache 2.0) from `mrdouglasny/hille-yosida`; references incl
 Engel--Nagel, Linares, Pazy, Hille, and Yosida.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -51,7 +51,7 @@ private lemma StronglyContinuousSemigroup.norm_resolvent_integrand_le
       ≤ Real.exp (-(lambda * t)) * (M * Real.exp (ω * t) * ‖x‖) := by
         gcongr
         exact le_trans (ContinuousLinearMap.le_opNorm _ _)
-          (by gcongr; exact hb.2 t ht.le)
+          (by gcongr; exact hb.bound t ht.le)
     _ = M * ‖x‖ * Real.exp (-(lambda - ω) * t) := by
         rw [show -(lambda - ω) * t = -(lambda * t) + ω * t from by ring, Real.exp_add]
         ring
@@ -126,7 +126,8 @@ theorem StronglyContinuousSemigroup.resolvent_apply
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) (x : X) :
     S.resolvent hb lambda hlam x
-      = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.realOperator t x := rfl
+      = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.realOperator t x := by
+  rfl
 
 /-! ## Resolvent-Generator Interface
 
@@ -315,7 +316,7 @@ theorem StronglyContinuousSemigroup.resolvent_mem_domain
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) (x : X) :
     (S.resolvent hb lambda hlam x) ∈ S.domain :=
-  ⟨_, S.resolvent_generator_tendsto hb lambda hlam x⟩
+  (S.mem_domain_iff_tendsto _).mpr ⟨_, S.resolvent_generator_tendsto hb lambda hlam x⟩
 
 /-- The fundamental resolvent identity: `(λI - A) R(λ) x = x`.
 
@@ -327,7 +328,9 @@ theorem StronglyContinuousSemigroup.resolventRightInv
     (lambda : ℝ) (hlam : ω < lambda) (x : X) :
     lambda • S.resolvent hb lambda hlam x
       - S.generator
-          ⟨S.resolvent hb lambda hlam x, S.resolvent_mem_domain hb lambda hlam x⟩ = x := by
+          ⟨S.resolvent hb lambda hlam x, by
+            rw [S.generator_domain]
+            exact S.resolvent_mem_domain hb lambda hlam x⟩ = x := by
   -- `A (R λ x) = λ • R λ x - x` reads off the generator value from the known limit.
   rw [S.generator_eq_of_tendsto (S.resolvent_mem_domain hb lambda hlam x)
     (S.resolvent_generator_tendsto hb lambda hlam x)]
@@ -342,7 +345,7 @@ theorem StronglyContinuousSemigroup.resolvent_norm_le
     (lambda : ℝ) (hlam : ω < lambda) :
     ‖S.resolvent hb lambda hlam‖ ≤ M / (lambda - ω) :=
   LinearMap.mkContinuous_norm_le _
-    (div_nonneg (by linarith [hb.1]) (by linarith)) _
+    (div_nonneg (by linarith [hb.one_le]) (by linarith)) _
 
 /-! ## Contraction-semigroup specializations (`M = 1`, `ω = 0`) -/
 
@@ -356,7 +359,8 @@ noncomputable def ContractionSemigroup.resolvent (S : ContractionSemigroup X)
 theorem ContractionSemigroup.resolvent_apply (S : ContractionSemigroup X)
     (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
     S.resolvent lambda hlam x
-      = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.realOperator t x := rfl
+      = ∫ t in Set.Ioi 0, Real.exp (-(lambda * t)) • S.realOperator t x := by
+  rfl
 
 /-- The contraction resolvent maps into the generator domain. -/
 theorem ContractionSemigroup.resolvent_mem_domain (S : ContractionSemigroup X)
@@ -371,7 +375,9 @@ theorem ContractionSemigroup.resolventRightInv (S : ContractionSemigroup X)
     (lambda : ℝ) (hlam : 0 < lambda) (x : X) :
     lambda • S.resolvent lambda hlam x
       - S.toStronglyContinuousSemigroup.generator
-          ⟨S.resolvent lambda hlam x, S.resolvent_mem_domain lambda hlam x⟩ = x :=
+          ⟨S.resolvent lambda hlam x, by
+            rw [StronglyContinuousSemigroup.generator_domain]
+            exact S.resolvent_mem_domain lambda hlam x⟩ = x :=
   S.toStronglyContinuousSemigroup.resolventRightInv S.hasGrowthBound lambda
     (by simpa using hlam) x
 

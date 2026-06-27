@@ -18,7 +18,7 @@ Ported and adapted (Apache 2.0) from `mrdouglasny/hille-yosida`; references incl
 Engel--Nagel, Linares, Pazy, Hille, and Yosida.
 -/
 
-@[expose] public section
+public section
 
 noncomputable section
 
@@ -34,6 +34,22 @@ variable {X : Type*} [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X
 def StronglyContinuousSemigroup.HasGrowthBound
     (S : StronglyContinuousSemigroup X) (ω : ℝ) (M : ℝ) : Prop :=
   1 ≤ M ∧ ∀ (t : ℝ), 0 ≤ t → ‖S.realOperator t‖ ≤ M * Real.exp (ω * t)
+
+omit [CompleteSpace X] in
+/-- The multiplicative constant in a growth bound is at least one. -/
+theorem StronglyContinuousSemigroup.HasGrowthBound.one_le
+    {S : StronglyContinuousSemigroup X} {ω M : ℝ} (hb : S.HasGrowthBound ω M) :
+    1 ≤ M := by
+  unfold StronglyContinuousSemigroup.HasGrowthBound at hb
+  exact hb.1
+
+omit [CompleteSpace X] in
+/-- The operator-norm estimate supplied by a growth bound. -/
+theorem StronglyContinuousSemigroup.HasGrowthBound.bound
+    {S : StronglyContinuousSemigroup X} {ω M : ℝ} (hb : S.HasGrowthBound ω M)
+    (t : ℝ) (ht : 0 ≤ t) : ‖S.realOperator t‖ ≤ M * Real.exp (ω * t) := by
+  unfold StronglyContinuousSemigroup.HasGrowthBound at hb
+  exact hb.2 t ht
 
 omit [CompleteSpace X] in
 /-- A contraction semigroup has growth bound `(0, 1)`. -/
