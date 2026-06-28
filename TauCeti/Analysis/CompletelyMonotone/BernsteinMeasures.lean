@@ -23,8 +23,10 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
 ## Main declarations
 
 * `TauCeti.chafaiDensity`, `TauCeti.chafaiMeasure`: the approximating densities and measures.
-* `TauCeti.bernstein_kernel`, `TauCeti.bernstein_kernel_tendsto`: the rescaled Laplace kernel and
-  its pointwise limit `e^{-xp}`.
+* `TauCeti.bernstein_kernel`, `TauCeti.continuous_bernstein_kernel`,
+  `TauCeti.bernstein_kernel_nonneg`, `TauCeti.bernstein_kernel_le_one`,
+  `TauCeti.bernstein_kernel_tendsto`: the rescaled Laplace kernel, its bounded-continuous
+  `p`-dependence on the nonnegative half-line, and its pointwise limit `e^{-xp}`.
 * `TauCeti.chafaiRescaled`, `TauCeti.chafaiRescaled_mass_eq`: the `ℝ≥0`-valued pushed-forward
   measures and mass preservation.
 * `TauCeti.chafaiMeasure_finite_mass`, `TauCeti.chafaiRescaled_finite_mass`: finiteness and the
@@ -163,6 +165,19 @@ private lemma chafaiDensity_succ_succ_sub_succ (f : ℝ → ℝ) (m : ℕ) (t : 
   field_simp
   ring
 
+private lemma ContDiffOn.hasDerivAt_iteratedDerivWithin_of_nat {s : Set ℝ} {k : ℕ}
+    (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) f s) (hs : UniqueDiffOn ℝ s)
+    {x : ℝ} (hx : s ∈ nhds x) :
+    HasDerivAt (iteratedDerivWithin k f s) (iteratedDerivWithin (k + 1) f s x) x := by
+  have hklt : (k : WithTop ℕ∞) < ((k + 1 : ℕ) : WithTop ℕ∞) := by
+    exact_mod_cast (Nat.lt_succ_self k)
+  have hda := (hf.differentiableOn_iteratedDerivWithin hklt hs).hasDerivAt hx
+  have hval : iteratedDerivWithin (k + 1) f s x =
+      deriv (iteratedDerivWithin k f s) x := by
+    rw [iteratedDerivWithin_succ, derivWithin_of_mem_nhds hx]
+  rw [hval]
+  exact hda
+
 /-! ## Rescaled measures and Prokhorov extraction -/
 
 /-- The Bernstein kernel `φ_n(x,p) = max(1 - xp/(n-1), 0)ⁿ⁻¹` for `n ≥ 2`. After the change of
@@ -182,9 +197,28 @@ lemma bernstein_kernel_of_two_le {n : ℕ} (hn : 2 ≤ n) (x p : ℝ) :
   have hnle : ¬ n ≤ 1 := by omega
   rw [bernstein_kernel, if_neg hnle]
 
+/-- The Bernstein kernel is continuous in `p` for fixed `n` and `x`. -/
+lemma continuous_bernstein_kernel (n : ℕ) (x : ℝ) : Continuous (bernstein_kernel n x) := by
+  unfold bernstein_kernel
+  split_ifs <;> fun_prop
+
 /-- The Bernstein kernel is nonnegative. -/
 @[simp] lemma bernstein_kernel_nonneg (n : ℕ) (x p : ℝ) : 0 ≤ bernstein_kernel n x p := by
   rw [bernstein_kernel]; split_ifs <;> positivity
+
+/-- On the nonnegative half-plane, the Bernstein kernel is bounded above by `1`. -/
+lemma bernstein_kernel_le_one {n : ℕ} {x p : ℝ} (hx : 0 ≤ x) (hp : 0 ≤ p) :
+    bernstein_kernel n x p ≤ 1 := by
+  rw [bernstein_kernel]
+  split_ifs with hn
+  · norm_num
+  · have hn_pos : (0 : ℝ) < (↑(n - 1) : ℝ) := Nat.cast_pos.mpr (by omega)
+    have hratio_nonneg : 0 ≤ x * p / (↑(n - 1) : ℝ) :=
+      div_nonneg (mul_nonneg hx hp) hn_pos.le
+    have hbase_nonneg : 0 ≤ max (1 - x * p / (↑(n - 1) : ℝ)) 0 := le_max_right _ _
+    have hbase_le_one : max (1 - x * p / (↑(n - 1) : ℝ)) 0 ≤ 1 := by
+      exact max_le (by linarith) zero_le_one
+    exact pow_le_one₀ hbase_nonneg hbase_le_one
 
 /-- The Bernstein kernel is measurable in `p` for fixed `n` and `x`. -/
 lemma measurable_bernstein_kernel (n : ℕ) (x : ℝ) : Measurable (bernstein_kernel n x) := by
@@ -276,8 +310,8 @@ lemma chafaiRescaled_mass_eq (f : ℝ → ℝ) (n : ℕ) :
 
 /-- **IBP identity** for the CM density:
 `∫₀ᵀ ρ_{m+2}(t) dt = B_{m+2}(T) + ∫₀ᵀ ρ_{m+1}(t) dt`. -/
-private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
-    (m : ℕ) (T : ℝ) (hT : 0 < T) :
+private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) {m : ℕ}
+    (hf : ContDiffOn ℝ ((m + 2 : ℕ) : WithTop ℕ∞) f (Ici 0)) (T : ℝ) (hT : 0 < T) :
     ∫ t in (0 : ℝ)..T, chafaiDensity f (m + 2) t =
     (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial *
       iteratedDerivWithin (m + 1) f (Ici 0) T +
@@ -287,9 +321,11 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
   set c : ℝ := (-1) ^ (m + 2) / ↑(m + 1).factorial
   set F := fun t : ℝ => t ^ (m + 1) * (c * g t)
   have hg_cont : ContinuousOn g (Ici 0) :=
-    hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0)
+    (hf.of_le (by exact_mod_cast (by omega : m + 1 ≤ m + 2))).continuousOn_iteratedDerivWithin
+      le_rfl (uniqueDiffOn_Ici 0)
   have hg_deriv : ∀ t, 0 < t → HasDerivAt g (g' t) t :=
-    fun t ht => hcm.hasDerivAt_iteratedDerivWithin_succ (m + 1) ht
+    fun t ht =>
+      ContDiffOn.hasDerivAt_iteratedDerivWithin_of_nat hf (uniqueDiffOn_Ici 0) (Ici_mem_nhds ht)
   have huIcc : uIcc (0 : ℝ) T = Icc 0 T := uIcc_of_le hT.le
   have hF_cont : ContinuousOn F (Icc 0 T) :=
     ((continuous_pow _).continuousOn).mul
@@ -297,10 +333,13 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
   have hF_deriv : ∀ t ∈ Ioo 0 T, HasDerivAt F
       (↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t)) t :=
     fun t ht => (hasDerivAt_pow (m + 1) t).mul ((hg_deriv t ht.1).const_mul c)
-  have hcm_int : ∀ k, k ≠ 0 → IntervalIntegrable (fun t => chafaiDensity f k t) volume 0 T := by
-    intro k hk; apply ContinuousOn.intervalIntegrable; rw [huIcc]
-    exact (continuousOn_chafaiDensity (n := k)
-      ((hcm.contDiffOn).of_le (nat_le_top k))).mono Icc_subset_Ici_self
+  have h_int_m2 : IntervalIntegrable (fun t => chafaiDensity f (m + 2) t) volume 0 T := by
+    apply ContinuousOn.intervalIntegrable; rw [huIcc]
+    exact (continuousOn_chafaiDensity (n := m + 2) hf).mono Icc_subset_Ici_self
+  have h_int_m1 : IntervalIntegrable (fun t => chafaiDensity f (m + 1) t) volume 0 T := by
+    apply ContinuousOn.intervalIntegrable; rw [huIcc]
+    exact (continuousOn_chafaiDensity (n := m + 1)
+      (hf.of_le (by exact_mod_cast (by omega : m + 1 ≤ m + 2)))).mono Icc_subset_Ici_self
   have hF'_eq : ∀ t, ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t) =
       chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t := by
     intro t
@@ -308,7 +347,7 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
     exact (chafaiDensity_succ_succ_sub_succ f m t).symm
   have hF'_int : IntervalIntegrable
       (fun t => ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t)) volume 0 T :=
-    ((hcm_int _ (by omega)).sub (hcm_int _ (by omega))).congr fun t _ => (hF'_eq t).symm
+    (h_int_m2.sub h_int_m1).congr fun t _ => (hF'_eq t).symm
   have hftc := intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le hT.le hF_cont hF_deriv hF'_int
   have hstep1 : ∫ t in (0 : ℝ)..T,
       (chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t) = F T - F 0 := by
@@ -318,7 +357,7 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
   have hm1 : m + 1 ≠ 0 := by omega
   have hF0 : F 0 = 0 := by simp [F, zero_pow hm1]
   rw [hF0, sub_zero] at hstep1
-  rw [intervalIntegral.integral_sub (hcm_int _ (by omega)) (hcm_int _ (by omega))] at hstep1
+  rw [intervalIntegral.integral_sub h_int_m2 h_int_m1] at hstep1
   suffices hgoal : (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial * g T = F T by linarith
   simp only [F, c]; ring
 
@@ -327,21 +366,25 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
 integration-by-parts consequence
 (the raw IBP identity `chafaiDensity_ibp_identity` is private); it is the per-step density
 mass-monotonicity bound consumed by the Bernstein-identity assembly. -/
-lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
-    (k : ℕ) (hk : 2 ≤ k) (T : ℝ) (hT : 0 ≤ T) :
+lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) {k : ℕ} (hk : 2 ≤ k)
+    (hf : ContDiffOn ℝ (k : WithTop ℕ∞) f (Ici 0))
+    (T : ℝ) (hT : 0 ≤ T)
+    (hsign : 0 ≤ (-1 : ℝ) ^ (k - 1) * iteratedDerivWithin (k - 1) f (Ici 0) T) :
     ∫ t in (0 : ℝ)..T, chafaiDensity f k t ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f (k - 1) t := by
   rcases hT.eq_or_lt with rfl | hT_pos
   · simp
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 2 := ⟨k - 2, by omega⟩
   have hsub : m + 2 - 1 = m + 1 := by omega
   simp only [hsub]
-  have hibp := chafaiDensity_ibp_identity f hcm m T hT_pos
+  have hibp := chafaiDensity_ibp_identity (m := m) f hf T hT_pos
   set B := (-1 : ℝ) ^ (m + 2) * T ^ (m + 1) / ↑(m + 1).factorial *
     iteratedDerivWithin (m + 1) f (Ici 0) T
   have hB : B ≤ 0 := by
+    have hsign_m : 0 ≤ (-1 : ℝ) ^ (m + 1) * iteratedDerivWithin (m + 1) f (Ici 0) T := by
+      simpa [hsub] using hsign
     have h_neg : (-1 : ℝ) ^ (m + 2) * iteratedDerivWithin (m + 1) f (Ici 0) T ≤ 0 := by
       have : (-1 : ℝ) ^ (m + 2) = (-1) ^ (m + 1) * (-1) := pow_succ (-1) (m + 1)
-      rw [this]; nlinarith [hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg (m + 1) hT_pos.le]
+      rw [this]; nlinarith [hsign_m]
     suffices B = T ^ (m + 1) / ↑(m + 1).factorial *
         ((-1 : ℝ) ^ (m + 2) * iteratedDerivWithin (m + 1) f (Ici 0) T) by
       rw [this]
@@ -385,7 +428,10 @@ private lemma integral_chafaiDensity_le_sub (f : ℝ → ℝ) (hcm : IsCompletel
       exact le_of_eq (integral_chafaiDensity_one_eq f hcm T hT)
     · calc ∫ t in (0 : ℝ)..T, chafaiDensity f (p + 1) t
           ≤ ∫ t in (0 : ℝ)..T, chafaiDensity f p t := by
-            simpa using integral_chafaiDensity_le_pred f hcm (p + 1) (by omega) T hT.le
+            exact integral_chafaiDensity_le_pred f (k := p + 1) (by omega)
+              (hcm.contDiffOn.of_le (nat_le_top (p + 1)))
+              T hT.le (by
+                simpa using hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg p hT.le)
         _ ≤ f 0 - f T := ih (Nat.one_le_iff_ne_zero.mpr hp)
 
 private lemma integral_chafaiDensity_le_tendsto_sub (f : ℝ → ℝ)
