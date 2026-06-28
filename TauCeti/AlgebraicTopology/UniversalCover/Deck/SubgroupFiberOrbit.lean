@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import TauCeti.AlgebraicTopology.UniversalCover.Deck.FiberOrbit
+public import TauCeti.Algebra.GroupAction.OrbitRelQuotient
 
 /-!
 # Fibre orbits for subgroups of the deck group
@@ -27,6 +28,8 @@ will be reused by the classification bookkeeping.
 * `TauCeti.Deck.subgroupFiberOrbitMapOfLE`: the map induced by an inclusion `H ≤ K`.
 * `TauCeti.Deck.subgroupFiberOrbitQuotientEquiv`: transport of subgroup fibre-orbit quotients
   along an over-base homeomorphism.
+* `TauCeti.Deck.subgroupFiberOrbitQuotientBotEquiv`: the quotient for `⊥ ≤ Deck p` is the
+  original fibre.
 * `TauCeti.Deck.subgroupFiberOrbitQuotientTopEquiv`: the quotient for `⊤ ≤ Deck p` is the
   existing full deck-orbit quotient.
 
@@ -78,10 +81,8 @@ lemma subgroupFiberOrbitClass_eq_iff (H : Subgroup (Deck p)) (e e' : p ⁻¹' {b
 /-- If `H ≤ K`, the quotient of a fibre by `H` maps naturally to the quotient by `K`. -/
 @[expose] def subgroupFiberOrbitMapOfLE {H K : Subgroup (Deck p)} (hHK : H ≤ K) :
     SubgroupFiberOrbitQuotient H b → SubgroupFiberOrbitQuotient K b :=
-  Quotient.map' id fun e e' h => by
-    rw [MulAction.orbitRel_apply] at h ⊢
-    rcases h with ⟨φ, hφ⟩
-    exact ⟨⟨φ.1, hHK φ.2⟩, hφ⟩
+  Setoid.map_of_le
+    (TauCeti.MulAction.orbitRel_le_of_subgroup_le (G := Deck p) (X := p ⁻¹' {b}) hHK)
 
 /-- The map induced by `H ≤ K` sends the `H`-class of a point to its `K`-class. -/
 @[simp]
@@ -272,6 +273,69 @@ lemma subgroupFiberOrbitQuotientEquiv_mapOfLE (h : E ≃ₜ F) (hpq : ∀ e, q (
   refine Quotient.inductionOn' x ?_
   intro e
   rfl
+
+/-- Quotienting a fibre by the trivial deck subgroup gives the fibre itself. -/
+noncomputable def subgroupFiberOrbitQuotientBotEquiv :
+    SubgroupFiberOrbitQuotient (⊥ : Subgroup (Deck p)) b ≃ p ⁻¹' {b} :=
+  TauCeti.MulAction.orbitRelQuotientBotEquiv (G := Deck p) (X := p ⁻¹' {b})
+
+/-- The bottom-subgroup quotient equivalence sends a class to its representative fibre point. -/
+@[simp]
+lemma subgroupFiberOrbitQuotientBotEquiv_apply (e : p ⁻¹' {b}) :
+    subgroupFiberOrbitQuotientBotEquiv
+        (p := p) (b := b) (subgroupFiberOrbitClass (⊥ : Subgroup (Deck p)) e) = e :=
+  TauCeti.MulAction.orbitRelQuotientBotEquiv_mk (G := Deck p) (X := p ⁻¹' {b}) e
+
+/-- The inverse bottom-subgroup quotient equivalence sends a fibre point to its quotient
+class. -/
+@[simp]
+lemma subgroupFiberOrbitQuotientBotEquiv_symm_apply (e : p ⁻¹' {b}) :
+    (subgroupFiberOrbitQuotientBotEquiv (p := p) (b := b)).symm e =
+      subgroupFiberOrbitClass (⊥ : Subgroup (Deck p)) e :=
+  TauCeti.MulAction.orbitRelQuotientBotEquiv_symm_apply
+    (G := Deck p) (X := p ⁻¹' {b}) e
+
+/-- Equality of bottom-subgroup fibre-orbit classes is equality of fibre points. -/
+@[simp]
+lemma subgroupFiberOrbitClass_bot_eq_iff (e e' : p ⁻¹' {b}) :
+    subgroupFiberOrbitClass (⊥ : Subgroup (Deck p)) e =
+        subgroupFiberOrbitClass (⊥ : Subgroup (Deck p)) e' ↔
+      e = e' := by
+  exact TauCeti.MulAction.orbitRelQuotientBot_mk_eq_iff
+    (G := Deck p) (X := p ⁻¹' {b}) e e'
+
+/-- The quotient map induced by `⊥ ≤ H`, after identifying the bottom quotient with the
+fibre, is the `H`-orbit class map. -/
+@[simp]
+lemma subgroupFiberOrbitMapOfLE_bot_apply (H : Subgroup (Deck p)) (e : p ⁻¹' {b}) :
+    subgroupFiberOrbitMapOfLE (b := b) (bot_le : (⊥ : Subgroup (Deck p)) ≤ H)
+        ((subgroupFiberOrbitQuotientBotEquiv (p := p) (b := b)).symm e) =
+      subgroupFiberOrbitClass H e :=
+  by rw [subgroupFiberOrbitQuotientBotEquiv_symm_apply, subgroupFiberOrbitMapOfLE_apply]
+
+/-- The map from the bottom-subgroup quotient to the `H`-quotient is the `H`-orbit class map
+under the bottom quotient equivalence. -/
+@[simp]
+lemma subgroupFiberOrbitMapOfLE_bot_eq (H : Subgroup (Deck p)) :
+    subgroupFiberOrbitMapOfLE (p := p) (b := b)
+        (bot_le : (⊥ : Subgroup (Deck p)) ≤ H) =
+      (fun e => subgroupFiberOrbitClass H e) ∘
+        subgroupFiberOrbitQuotientBotEquiv (p := p) (b := b) := by
+  exact TauCeti.MulAction.orbitRelQuotientMapOfLE_bot_eq
+    (G := Deck p) (X := p ⁻¹' {b}) H
+
+/-- Equality in an `H`-fibre quotient can be checked after choosing representatives through
+the bottom quotient. -/
+lemma subgroupFiberOrbitMapOfLE_bot_eq_iff (H : Subgroup (Deck p))
+    (x y : SubgroupFiberOrbitQuotient (⊥ : Subgroup (Deck p)) b) :
+    subgroupFiberOrbitMapOfLE (p := p) (b := b)
+        (bot_le : (⊥ : Subgroup (Deck p)) ≤ H) x =
+        subgroupFiberOrbitMapOfLE (p := p) (b := b)
+          (bot_le : (⊥ : Subgroup (Deck p)) ≤ H) y ↔
+      subgroupFiberOrbitQuotientBotEquiv (p := p) (b := b) x ∈
+        _root_.MulAction.orbit H (subgroupFiberOrbitQuotientBotEquiv (p := p) (b := b) y) := by
+  exact TauCeti.MulAction.orbitRelQuotientMapOfLE_bot_eq_iff
+    (G := Deck p) (X := p ⁻¹' {b}) H x y
 
 /-- The quotient by the full deck group is the previously defined deck fibre-orbit quotient. -/
 @[expose] def subgroupFiberOrbitQuotientTopEquiv :

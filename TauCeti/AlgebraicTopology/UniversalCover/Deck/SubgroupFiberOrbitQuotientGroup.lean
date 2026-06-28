@@ -69,20 +69,13 @@ private lemma equivSubgroupOrbitsQuotientGroup_apply_smul
     (MulAction.equivSubgroupOrbitsQuotientGroup x H).apply_symm_apply
     (QuotientGroup.mk (s := H) g⁻¹)
 
-/-- The map on orbit quotients induced by an inclusion of acting subgroups. -/
-private def orbitRelQuotientMapOfLE {G X : Type*} [Group G] [MulAction G X]
-    {H K : Subgroup G} (hHK : H ≤ K) :
-    MulAction.orbitRel.Quotient H X → MulAction.orbitRel.Quotient K X :=
-  Quotient.map' id fun x y h => by
-    rw [MulAction.orbitRel_apply] at h ⊢
-    rcases h with ⟨g, hg⟩
-    exact ⟨⟨g.1, hHK g.2⟩, hg⟩
-
-/-- The map induced by `H ≤ K` sends an `H`-orbit representative to its `K`-orbit class. -/
-@[simp]
-private lemma orbitRelQuotientMapOfLE_mk {G X : Type*} [Group G] [MulAction G X]
-    {H K : Subgroup G} (hHK : H ≤ K) (x : X) :
-    orbitRelQuotientMapOfLE hHK (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
+/-- `Setoid.map_of_le` sends a representative of the smaller orbit relation to the same
+representative for the larger orbit relation. -/
+private lemma orbitRel_mapOfLE_mk
+    {G X : Type*} [Group G] [MulAction G X] {H K : Subgroup G} (hHK : H ≤ K) (x : X) :
+    Setoid.map_of_le
+        (_root_.TauCeti.MulAction.orbitRel_le_of_subgroup_le (G := G) (X := X) hHK)
+        (Quotient.mk'' x : MulAction.orbitRel.Quotient H X) =
       (Quotient.mk'' x : MulAction.orbitRel.Quotient K X) :=
   rfl
 
@@ -95,13 +88,15 @@ private lemma equivSubgroupOrbitsQuotientGroup_mapOfLE
     Subgroup.quotientMapOfLE hHK
         (MulAction.equivSubgroupOrbitsQuotientGroup x₀ H x) =
       MulAction.equivSubgroupOrbitsQuotientGroup x₀ K
-        (orbitRelQuotientMapOfLE hHK x) := by
+        (Setoid.map_of_le
+          (_root_.TauCeti.MulAction.orbitRel_le_of_subgroup_le (G := G) (X := X) hHK) x) := by
   refine Quotient.inductionOn' x ?_
   intro x'
   obtain ⟨g, hg⟩ := MulAction.exists_smul_eq G x₀ x'
   rw [← hg]
-  rw [orbitRelQuotientMapOfLE_mk, equivSubgroupOrbitsQuotientGroup_apply_smul,
-    equivSubgroupOrbitsQuotientGroup_apply_smul, Subgroup.quotientMapOfLE_apply_mk]
+  rw [equivSubgroupOrbitsQuotientGroup_apply_smul]
+  rw [orbitRel_mapOfLE_mk hHK]
+  rw [equivSubgroupOrbitsQuotientGroup_apply_smul, Subgroup.quotientMapOfLE_apply_mk]
 
 end MulAction
 
@@ -253,9 +248,8 @@ lemma subgroupFiberOrbitQuotientEquivQuotientGroup_mapOfLE
       subgroupFiberOrbitQuotientEquivQuotientGroup K e
         (subgroupFiberOrbitMapOfLE (b := b) hHK x) := by
   simp [subgroupFiberOrbitQuotientEquivQuotientGroup,
-    subgroupFiberOrbitMapOfLE, MulAction.orbitRelQuotientMapOfLE,
-    MulAction.equivSubgroupOrbitsQuotientGroup_mapOfLE (G := Deck p) (X := p ⁻¹' {b})
-      hHK e x]
+    subgroupFiberOrbitMapOfLE, MulAction.equivSubgroupOrbitsQuotientGroup_mapOfLE
+      (G := Deck p) (X := p ⁻¹' {b}) hHK e x]
 
 /-- For a regular cover, the subgroup-fibre quotient equivalence is natural in subgroup
 inclusions. -/
