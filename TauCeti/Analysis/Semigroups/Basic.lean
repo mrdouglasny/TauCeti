@@ -35,11 +35,8 @@ variable (X : Type*) [NormedAddCommGroup X] [NormedSpace ℝ X] [CompleteSpace X
 
 /-- A strongly continuous one-parameter semigroup (C₀-semigroup) on a Banach space.
 
-The stored semigroup is indexed by `ℝ≥0`, with no free negative-time data. This implements
-FormalFrontier/TauCeti#273 (kim-em's ruling): extensional equality is equality of the actual
-semigroup, so generator uniqueness is genuine equality. Real-time analysis uses the
-`realOperator` shim below. The axioms are `S 0 = Id`, `S (s + t) = S s ∘ S t`, and strong
-continuity at `0`. -/
+The semigroup is indexed by nonnegative real time. The axioms are `S 0 = Id`,
+`S (s + t) = S s ∘ S t`, and strong continuity at `0`. -/
 structure StronglyContinuousSemigroup where
   /-- The semigroup operator at time `t : ℝ≥0`. -/
   toFun : ℝ≥0 → X →L[ℝ] X

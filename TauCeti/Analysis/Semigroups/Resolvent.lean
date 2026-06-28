@@ -132,9 +132,8 @@ theorem StronglyContinuousSemigroup.resolvent_apply
 
 /-! ## Resolvent-Generator Interface
 
-The proofs of `resolvent_mem_domain` and `resolventRightInv` use the integral
-shift trick from [EN] Thm. II.1.10(i) / [Linares] eq. 0.15. We first establish
-helper lemmas for the key computation. -/
+The resolvent maps into the generator domain and satisfies the right-inverse identity
+from [EN] Thm. II.1.10(i) / [Linares] eq. 0.15. -/
 
 omit [CompleteSpace X] in
 /-- Translation of set integral: `∫_{Ioi 0} f(t + h) = ∫_{Ioi h} f(u)`. -/
@@ -163,7 +162,7 @@ private lemma integral_Ioi_eq_Ioc_add_Ioi (f : ℝ → X) {h : ℝ} (hh : 0 < h)
     (hf.mono_set Set.Ioc_subset_Ioi_self)
     (hf.mono_set (Set.Ioi_subset_Ioi (le_of_lt hh)))
 
-/-- The integral shift identity used in the resolvent-domain proof. -/
+/-- The resolvent shift identity for a positive time increment. -/
 private theorem StronglyContinuousSemigroup.resolvent_shift_identity
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) (x : X) {h : ℝ} (hh : 0 < h) :
@@ -208,65 +207,15 @@ private theorem StronglyContinuousSemigroup.tendsto_average_resolvent_integrand
     Filter.Tendsto
       (fun t => (1 / t) • ∫ u in Set.Ioc 0 t, Real.exp (-(lambda * u)) • S.realOperator u x)
       (nhdsWithin 0 (Set.Ioi 0)) (nhds x) := by
-  set f := fun t => Real.exp (-(lambda * t)) • S.realOperator t x
-  -- Modify `f` for `t < 0` so the FTC sees two-sided continuity at `0`
-  set g : ℝ → X := fun t => if 0 ≤ t then f t else x with hg_def
-  -- `g` is continuous at `0` (right: strong continuity; left: constant `x`)
-  have hg_cont : Filter.Tendsto g (nhds 0) (nhds x) := by
-    rw [← nhdsLT_sup_nhdsGE (0 : ℝ)]
-    apply Filter.Tendsto.sup
-    · exact (tendsto_const_nhds (x := x)).congr' (by
-        filter_upwards [self_mem_nhdsWithin] with t (ht : t < 0)
-        simp only [g, if_neg (not_le.mpr ht)])
-    · -- right of `0`: `g = f`, and `f t = e^{-λt}•S(t)x → 1•x = x` by strong continuity
-      have hf_cont : Filter.Tendsto f (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
-        have h1 : Filter.Tendsto (fun t => Real.exp (-(lambda * t)))
-            (nhdsWithin 0 (Set.Ici 0)) (nhds 1) := by
-          have hca : ContinuousAt (fun t => Real.exp (-(lambda * t))) 0 :=
-            Real.continuous_exp.continuousAt.comp
-              ((continuousAt_const.mul continuousAt_id).neg)
-          have := hca.tendsto
-          simp [mul_zero, Real.exp_zero] at this
-          exact this.mono_left nhdsWithin_le_nhds
-        have h2 := S.strong_cont x
-        simpa [one_smul] using h1.smul h2
-      exact hf_cont.congr' (by
-        filter_upwards [self_mem_nhdsWithin] with t (ht : 0 ≤ t)
-        simp only [g, if_pos ht])
-  -- `g` agrees with `f` on `(0, ∞)`, so the set integrals match
-  have hg_eq : ∀ t, 0 < t →
-      ∫ u in Set.Ioc 0 t, g u = ∫ u in Set.Ioc 0 t, f u := by
-    intro t ht
-    apply MeasureTheory.setIntegral_congr_fun measurableSet_Ioc
-    intro u hu; simp [hg_def, hu.1.le]
-  -- `g` is continuous (piecewise of continuous pieces matching at `0`)
-  have hg_continuous : Continuous g := by
-    -- the local `if 0 ≤ t` definition of `g` is exactly `Set.piecewise (Ici 0) …`
-    have hg_pw : g = Set.piecewise (Set.Ici 0) f (fun _ => x) := rfl
-    rw [hg_pw]
-    apply continuous_piecewise
-    · intro t ht
-      have := frontier_Ici_subset (a := (0:ℝ)) ht
-      simp only [Set.mem_singleton_iff] at this; subst this
-      simp [f, S.at_zero, Real.exp_zero]
-    · rw [closure_Ici]
-      exact ContinuousOn.smul
-        ((Real.continuous_exp.comp (continuous_neg.comp
-          (Continuous.mul continuous_const continuous_id))).continuousOn)
-        (fun t₀ ht₀ => S.strongContWithinAt x t₀ ht₀)
-    · exact continuousOn_const
-  -- FTC for `g`: `HasDerivAt (fun u => ∫₀ᵘ g) x 0`
-  have h_ftc : HasDerivAt (fun u => ∫ t in (0 : ℝ)..u, g t) x 0 :=
-    intervalIntegral.integral_hasDerivAt_of_tendsto_ae_right
-      IntervalIntegrable.refl
-      (hg_continuous.stronglyMeasurableAtFilter volume (nhds 0))
-      (hg_cont.mono_left inf_le_left)
-  have h_slope := h_ftc.tendsto_slope_zero_right
-  simp only [zero_add, intervalIntegral.integral_same, sub_zero] at h_slope
-  -- convert the interval integral to a set integral and `g` back to `f`
-  exact h_slope.congr' (by
-    filter_upwards [self_mem_nhdsWithin] with t (ht : 0 < t)
-    rw [one_div, intervalIntegral.integral_of_le (le_of_lt ht), hg_eq t ht])
+  have h_cont : ContinuousOn
+      (fun u => Real.exp (-(lambda * u)) • S.realOperator u x) (Set.Ici 0) :=
+    ContinuousOn.smul
+      ((Real.continuous_exp.comp
+        ((continuous_const.mul continuous_id).neg)).continuousOn)
+      (fun u hu => S.strongContWithinAt x u hu)
+  have h := tendsto_average_Ioc_zero_of_continuousOn_Ici
+    (g := fun u => Real.exp (-(lambda * u)) • S.realOperator u x) h_cont
+  simpa [S.at_zero, Real.exp_zero] using h
 
 
 /-- The generator difference quotient for `R(λ)x` converges to `λ R(λ)x - x`. -/
@@ -322,11 +271,7 @@ theorem StronglyContinuousSemigroup.resolvent_mem_domain
     (S.resolvent hb lambda hlam x) ∈ S.domain :=
   (S.mem_domain_iff_tendsto _).mpr ⟨_, S.resolvent_generator_tendsto hb lambda hlam x⟩
 
-/-- The fundamental resolvent identity: `(λI - A) R(λ) x = x`.
-
-This file proves the right-inverse half of eq. 0.16 in [Linares], namely
-`(λI - A) R(λ) x = x` for every `x`. The left inverse, the resolvent-set formulation,
-and the injectivity direction are simply not developed in this file. -/
+/-- The fundamental resolvent identity: `(λI - A) R(λ) x = x`. -/
 theorem StronglyContinuousSemigroup.resolventRightInv
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) (x : X) :
@@ -340,10 +285,8 @@ theorem StronglyContinuousSemigroup.resolventRightInv
     (S.resolvent_generator_tendsto hb lambda hlam x)]
   abel
 
-/-- **Hille–Yosida resolvent bound** (forward direction): `‖R λ‖ ≤ M/(λ-ω)` for a C₀
-semigroup with growth bound `(ω, M)` and `λ > ω` (Hille 1948, Yosida 1948; Engel–Nagel
-Ch. II). The full theorem (an operator generates such a semigroup iff the iterated bounds
-hold) needs the converse via the Yosida approximation. -/
+/-- **Hille–Yosida resolvent bound**: `‖R λ‖ ≤ M/(λ-ω)` for a C₀ semigroup with
+growth bound `(ω, M)` and `λ > ω` (Hille 1948, Yosida 1948; Engel–Nagel Ch. II). -/
 theorem StronglyContinuousSemigroup.resolvent_norm_le
     (S : StronglyContinuousSemigroup X) {ω M : ℝ} (hb : S.HasGrowthBound ω M)
     (lambda : ℝ) (hlam : ω < lambda) :
