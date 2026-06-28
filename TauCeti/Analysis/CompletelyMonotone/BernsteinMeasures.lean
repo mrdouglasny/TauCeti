@@ -70,8 +70,10 @@ lemma chafaiDensity_of_ne_zero {n : ℕ} (hn : n ≠ 0) (f : ℝ → ℝ) (t : �
       t ^ (n - 1) * iteratedDerivWithin n f (Ici 0) t := by
   rw [chafaiDensity, if_neg hn]
 
-/-- `chafaiDensity f n` is continuous on `[0, ∞)` for a completely monotone `f`. -/
-lemma continuousOn_chafaiDensity (hcm : IsCompletelyMonotone f) (n : ℕ) :
+/-- `chafaiDensity f n` is continuous on `[0, ∞)` when `f` has `n` continuous derivatives
+there. -/
+lemma continuousOn_chafaiDensity {n : ℕ}
+    (hf : ContDiffOn ℝ (n : WithTop ℕ∞) f (Ici 0)) :
     ContinuousOn (chafaiDensity f n) (Ici 0) := by
   by_cases hn : n = 0
   · subst n
@@ -83,7 +85,7 @@ lemma continuousOn_chafaiDensity (hcm : IsCompletelyMonotone f) (n : ℕ) :
     funext (chafaiDensity_of_ne_zero hn f)
   rw [heq]
   exact (continuousOn_const.mul ((continuousOn_pow _).mono fun _ _ => trivial)).mul
-    (hcm.contDiffOn.continuousOn_iteratedDerivWithin (nat_le_top _) (uniqueDiffOn_Ici 0))
+    (hf.continuousOn_iteratedDerivWithin le_rfl (uniqueDiffOn_Ici 0))
 
 /-- The `n`-th approximating measure `σ_n` for the Bernstein proof, with density `ρ_n` on
 `(0, ∞)`. -/
@@ -102,20 +104,21 @@ lemma chafaiMeasure_apply (f : ℝ → ℝ) (n : ℕ) {s : Set ℝ} (hs : Measur
       ∫⁻ t in s, ENNReal.ofReal (chafaiDensity f n t) ∂(volume.restrict (Ioi 0)) := by
   rw [chafaiMeasure, withDensity_apply _ hs]
 
-/-- The density `ρ_n` is nonnegative for completely monotone functions on `[0, ∞)`. -/
-lemma chafaiDensity_nonneg (hcm : IsCompletelyMonotone f) (n : ℕ)
-    (t : ℝ) (ht : 0 ≤ t) : 0 ≤ chafaiDensity f n t := by
+/-- The density `ρ_n(t)` is nonnegative when `t ≥ 0` and the `n`-th derivative has the
+alternating sign at `t`. -/
+lemma chafaiDensity_nonneg {n : ℕ} {t : ℝ} (ht : 0 ≤ t)
+    (hsign : 0 ≤ (-1 : ℝ) ^ n * iteratedDerivWithin n f (Ici 0) t) :
+    0 ≤ chafaiDensity f n t := by
   simp only [chafaiDensity]
   split_ifs with hn
   · exact le_refl 0
-  · have hcm_sign := hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n ht
-    have hfact_pos : (0 : ℝ) < ↑(Nat.factorial (n - 1)) :=
+  · have hfact_pos : (0 : ℝ) < ↑(Nat.factorial (n - 1)) :=
       Nat.cast_pos.mpr (Nat.factorial_pos _)
     calc (-1 : ℝ) ^ n / ↑(Nat.factorial (n - 1)) * t ^ (n - 1) *
           iteratedDerivWithin n f (Ici 0) t
         = t ^ (n - 1) / ↑(Nat.factorial (n - 1)) *
           ((-1 : ℝ) ^ n * iteratedDerivWithin n f (Ici 0) t) := by field_simp
-      _ ≥ 0 := mul_nonneg (div_nonneg (pow_nonneg ht _) hfact_pos.le) hcm_sign
+      _ ≥ 0 := mul_nonneg (div_nonneg (pow_nonneg ht _) hfact_pos.le) hsign
 
 /-- For `n = 1`, the density simplifies to `-f'(t)`. -/
 @[simp] lemma chafaiDensity_one (t : ℝ) :
@@ -295,7 +298,8 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) (hcm : IsCompletelyMo
     fun t ht => (hasDerivAt_pow (m + 1) t).mul ((hg_deriv t ht.1).const_mul c)
   have hcm_int : ∀ k, k ≠ 0 → IntervalIntegrable (fun t => chafaiDensity f k t) volume 0 T := by
     intro k hk; apply ContinuousOn.intervalIntegrable; rw [huIcc]
-    exact (continuousOn_chafaiDensity hcm k).mono Icc_subset_Ici_self
+    exact (continuousOn_chafaiDensity (n := k)
+      ((hcm.contDiffOn).of_le (nat_le_top k))).mono Icc_subset_Ici_self
   have hF'_eq : ∀ t, ↑(m + 1) * t ^ m * (c * g t) + t ^ (m + 1) * (c * g' t) =
       chafaiDensity f (m + 2) t - chafaiDensity f (m + 1) t := by
     intro t
@@ -351,6 +355,12 @@ lemma chafaiMeasure_zero (f : ℝ → ℝ) : chafaiMeasure f 0 = 0 := by
   rw [withDensity_apply _ hs]
   simp
 
+/-- The rescaled Chafaï measure on the target type `ℝ≥0` shares the `n = 0` zero convention:
+`chafaiRescaled f 0 = 0`, as the pushforward of the zero measure. -/
+@[simp]
+lemma chafaiRescaled_zero (f : ℝ → ℝ) : chafaiRescaled f 0 = 0 := by
+  rw [chafaiRescaled_eq_map, chafaiMeasure_zero, Measure.map_zero]
+
 private lemma integral_chafaiDensity_one_eq (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (T : ℝ) (hT : 0 < T) :
     ∫ t in (0 : ℝ)..T, chafaiDensity f 1 t = f 0 - f T := by
@@ -385,7 +395,8 @@ private lemma chafaiDensity_integrableOn_Ioi_of_tendsto (f : ℝ → ℝ)
     (hcm : IsCompletelyMonotone f) (n : ℕ) (hn : 1 ≤ n) (L : ℝ)
     (hL : Tendsto f atTop (nhds L)) :
     IntegrableOn (chafaiDensity f n) (Ioi 0) := by
-  have hcont : ContinuousOn (chafaiDensity f n) (Ici 0) := continuousOn_chafaiDensity hcm n
+  have hcont : ContinuousOn (chafaiDensity f n) (Ici 0) :=
+    continuousOn_chafaiDensity (n := n) ((hcm.contDiffOn).of_le (nat_le_top n))
   apply integrableOn_Ioi_of_intervalIntegral_norm_bounded (f 0 - L) 0
     (l := atTop) (b := id)
   · intro T
@@ -400,7 +411,9 @@ private lemma chafaiDensity_integrableOn_Ioi_of_tendsto (f : ℝ → ℝ)
           apply ae_of_all
           intro t ht
           rw [uIoc_of_le hT.le] at ht
-          rw [Real.norm_eq_abs, abs_of_nonneg (chafaiDensity_nonneg hcm n t ht.1.le)]
+          rw [Real.norm_eq_abs,
+            abs_of_nonneg (chafaiDensity_nonneg ht.1.le
+              (hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n ht.1.le))]
       _ ≤ f 0 - L := integral_chafaiDensity_le_tendsto_sub f hcm n hn L hL T hT
 
 private lemma chafaiMeasure_mass_le_of_tendsto (f : ℝ → ℝ)
@@ -413,7 +426,7 @@ private lemma chafaiMeasure_mass_le_of_tendsto (f : ℝ → ℝ)
   simp only [Measure.restrict_univ]
   rw [← ofReal_integral_eq_lintegral_ofReal hint
     ((ae_restrict_mem measurableSet_Ioi).mono fun t (ht : 0 < t) =>
-      chafaiDensity_nonneg hcm n t ht.le)]
+      chafaiDensity_nonneg ht.le (hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n ht.le))]
   exact ENNReal.ofReal_le_ofReal
     (le_of_tendsto (intervalIntegral_tendsto_integral_Ioi 0 hint tendsto_id)
       (eventually_atTop.mpr ⟨1, fun T hT =>
