@@ -6,6 +6,7 @@ module
 
 import TauCeti.Geometry.Symplectic.CompatibleMetric
 public import TauCeti.Geometry.Symplectic.JHolomorphicLine
+public import TauCeti.Geometry.Symplectic.Prod
 
 /-!
 # Pointwise energy density for maps from the standard complex line
@@ -38,6 +39,8 @@ or disks.
   under tameness, with `TauCeti.IsJHolomorphicAt.fderiv_stdComplexLineEnergyDensity_eq_zero_iff`
   and `TauCeti.IsJHolomorphicWithinAt.fderivWithin_stdComplexLineEnergyDensity_eq_zero_iff` the
   Frechet-derivative versions.
+* `TauCeti.SymplecticForm.prod_stdComplexLineEnergyDensity`: product-target energy density is
+  the sum of the factor energy densities.
 
 The convention follows McDuff--Salamon, *J-holomorphic Curves and Symplectic Topology*,
 Section 2.1: for a compatible pair, `g(·, ·) = ω(·, J ·)` and `du(∂t) = J du(∂s)`.
@@ -150,6 +153,25 @@ lemma stdComplexLineEnergyDensity_pos_iff (hω : ω.Tames J) {F : (ℝ × ℝ) �
   · intro hpos hzero
     exact hpos.ne' ((ω.stdComplexLineEnergyDensity_eq_zero_iff (J := J) hω).mpr hzero)
   · exact ω.stdComplexLineEnergyDensity_pos hω
+
+section Prod
+
+variable {W : Type*} [AddCommGroup W] [Module ℝ W]
+variable {ω₁ : SymplecticForm V} {ω₂ : SymplecticForm W}
+variable {J₁ : AlmostComplexStructure V} {J₂ : AlmostComplexStructure W}
+
+/-- The standard-line energy density of a real-linear map into a direct-sum target is the sum of
+the two factor energy densities of its coordinate projections. -/
+@[simp]
+lemma prod_stdComplexLineEnergyDensity (F : (ℝ × ℝ) →ₗ[ℝ] V × W) :
+    (ω₁.prod ω₂).stdComplexLineEnergyDensity (J₁.prod J₂) F =
+      ω₁.stdComplexLineEnergyDensity J₁ ((LinearMap.fst ℝ V W).comp F) +
+        ω₂.stdComplexLineEnergyDensity J₂ ((LinearMap.snd ℝ V W).comp F) := by
+  simp only [stdComplexLineEnergyDensity_def, prod_associatedBilinForm_apply,
+    LinearMap.comp_apply, LinearMap.fst_apply, LinearMap.snd_apply]
+  ring_nf
+
+end Prod
 
 end SymplecticForm
 
