@@ -159,6 +159,34 @@ structure ContractionSemigroup extends StronglyContinuousSemigroup X where
 
 variable {X}
 
+namespace ContractionSemigroup
+
+omit [CompleteSpace X] in
+instance instFunLike : FunLike (ContractionSemigroup X) ℝ≥0 (X →L[ℝ] X) where
+  coe S := S.toStronglyContinuousSemigroup
+  coe_injective := by
+    intro S T h
+    cases S with
+    | mk S hS =>
+      cases T with
+      | mk T hT =>
+        have hST : S = T := DFunLike.ext S T (fun t => congrFun h t)
+        cases hST
+        congr
+
+omit [CompleteSpace X] in
+@[ext]
+theorem ext {S T : ContractionSemigroup X} (h : ∀ t, S t = T t) : S = T :=
+  DFunLike.ext _ _ h
+
+omit [CompleteSpace X] in
+@[simp]
+theorem toStronglyContinuousSemigroup_apply (S : ContractionSemigroup X) (t : ℝ≥0) :
+    S.toStronglyContinuousSemigroup t = S t :=
+  rfl
+
+end ContractionSemigroup
+
 /-! ## Basic Properties -/
 
 omit [CompleteSpace X] in
