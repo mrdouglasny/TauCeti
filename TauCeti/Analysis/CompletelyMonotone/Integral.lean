@@ -81,20 +81,19 @@ lemma ContDiffOn.integral_neg_derivWithin_Icc_zero_left {T : ℝ}
   exact (ContDiffOn.integral_neg_derivWithin_Icc hf hT).symm
 
 /-- The interval integral of `-f'` with the `T`-dependent set `Icc 0 T` equals the integral with
-the fixed set `Ici 0`, under smoothness on the open half-line. -/
+the fixed set `Ici 0`, under local smoothness at the strict interior points. -/
 lemma ContDiffOn.integral_neg_derivWithin_Icc_eq_Ici
-    (hf : ContDiffOn ℝ 1 f (Ioi 0)) (T : ℝ) (hT : 0 ≤ T) :
+    {T : ℝ} (hf : ∀ t ∈ Ioo (0 : ℝ) T, ContDiffAt ℝ 1 f t) (hT : 0 ≤ T) :
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Icc 0 T) t =
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Ici 0) t := by
-  apply intervalIntegral.integral_congr_ae
-  apply ae_of_all volume
+  apply intervalIntegral.integral_congr_uIoo
   intro t ht
-  rw [uIoc_of_le hT] at ht
+  rw [uIoo_of_le hT] at ht
   have ht_pos : 0 < t := ht.1
-  have hT_pos : 0 < T := lt_of_lt_of_le ht_pos ht.2
-  have hcda : ContDiffAt ℝ 1 f t := hf.contDiffAt (isOpen_Ioi.mem_nhds ht_pos)
+  have hT_pos : 0 < T := lt_trans ht_pos ht.2
+  have hcda : ContDiffAt ℝ 1 f t := hf t ht
   simp only [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hT_pos) hcda
-      (Ioc_subset_Icc_self ht),
+      (Ioo_subset_Icc_self ht),
     iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Ici 0) hcda
       (mem_Ici.mpr ht_pos.le)]
 
@@ -184,7 +183,7 @@ lemma IsCompletelyMonotone.integral_neg_deriv_Ici
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Icc 0 T) t =
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Ici 0) t := by
   exact ContDiffOn.integral_neg_derivWithin_Icc_eq_Ici
-    ((hcm.contDiffOn.mono Ioi_subset_Ici_self).of_le (nat_le_top _)) T hT
+    (fun t ht => (hcm.contDiffOn.contDiffAt (Ici_mem_nhds ht.1)).of_le (nat_le_top _)) hT
 
 /-- The total mass `∫₀ᵀ (-f') dt → f(0) - L` as `T → ∞`, where `L = lim f(t)`. This is
 the key uniform bound for the tightness argument in Bernstein's theorem. -/
