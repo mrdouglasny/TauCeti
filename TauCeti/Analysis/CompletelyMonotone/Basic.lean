@@ -206,21 +206,20 @@ lemma le_of_tendsto_atTop (hcm : IsCompletelyMonotone f) {L : ℝ}
 
 end IsCompletelyMonotone
 
-variable {f : ℝ → ℝ}
-
 /-- At a point `x` in the interior of a unique-differentiability set `s` (`s ∈ 𝓝 x`),
 the derivative of the `k`-th iterated derivative-within-`s` of a `C^(k+1)` function is the
 `(k+1)`-th iterated derivative-within-`s`. -/
 theorem ContDiffOn.hasDerivAt_iteratedDerivWithin
-    {k : ℕ} (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) f s)
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {g : ℝ → E}
+    {k : ℕ} (hf : ContDiffOn ℝ ((k + 1 : ℕ) : WithTop ℕ∞) g s)
     (hs : UniqueDiffOn ℝ s) {x : ℝ} (hx : s ∈ nhds x) :
-    HasDerivAt (iteratedDerivWithin k f s) (iteratedDerivWithin (k + 1) f s x) x := by
+    HasDerivAt (iteratedDerivWithin k g s) (iteratedDerivWithin (k + 1) g s x) x := by
   have hklt : (k : WithTop ℕ∞) < ((k + 1 : ℕ) : WithTop ℕ∞) := by
     exact_mod_cast (Nat.lt_succ_self k)
   have hda := (hf.differentiableOn_iteratedDerivWithin
     hklt hs).hasDerivAt hx
-  have hval : iteratedDerivWithin (k + 1) f s x =
-      deriv (iteratedDerivWithin k f s) x := by
+  have hval : iteratedDerivWithin (k + 1) g s x =
+      deriv (iteratedDerivWithin k g s) x := by
     rw [iteratedDerivWithin_succ, derivWithin_of_mem_nhds hx]
   rw [hval]; exact hda
 
