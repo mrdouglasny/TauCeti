@@ -136,15 +136,17 @@ theorem semigroup (S : StronglyContinuousSemigroup X) (s t : ℝ) (hs : 0 ≤ s)
 
 omit [CompleteSpace X] in
 /-- Strong continuity at zero of `t ↦ S.realOperator t x` along `0 ≤ t`. -/
-theorem strong_cont (S : StronglyContinuousSemigroup X) (x : X) :
-    Filter.Tendsto (fun t => S.realOperator t x) (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
-  have h_toNNReal : Filter.Tendsto Real.toNNReal (nhdsWithin 0 (Set.Ici (0 : ℝ))) (nhds 0) := by
+theorem realOperator_continuousWithinAt_zero (S : StronglyContinuousSemigroup X) (x : X) :
+    ContinuousWithinAt (fun t => S.realOperator t x) (Set.Ici 0) 0 := by
+  have h_toNNReal : Filter.Tendsto Real.toNNReal
+      (nhdsWithin 0 (Set.Ici (0 : ℝ))) (nhds 0) := by
     simpa [Real.toNNReal_zero] using
       (continuous_real_toNNReal.continuousAt.tendsto.mono_left nhdsWithin_le_nhds :
-        Filter.Tendsto Real.toNNReal (nhdsWithin 0 (Set.Ici (0 : ℝ))) (nhds (Real.toNNReal 0)))
+        Filter.Tendsto Real.toNNReal
+          (nhdsWithin 0 (Set.Ici (0 : ℝ))) (nhds (Real.toNNReal 0)))
   have h_orbit : Filter.Tendsto (fun t : ℝ≥0 => S t x) (nhds 0) (nhds x) :=
     S.continuousAt_zero_tendsto x
-  exact (h_orbit.comp h_toNNReal).congr' (by
+  simpa [ContinuousWithinAt] using (h_orbit.comp h_toNNReal).congr' (by
     filter_upwards with t
     simp only [realOperator, Function.comp_apply])
 
@@ -213,10 +215,13 @@ private theorem StronglyContinuousSemigroup.pointwiseBoundedOnUnitInterval
     ∀ x : X, ∃ C, ∀ (i : Set.Icc (0 : ℝ) 1),
       ‖(fun j : Set.Icc (0 : ℝ) 1 => S.realOperator j.val) i x‖ ≤ C := by
   intro x
-  have hsc := S.strong_cont x
+  have hsc : Filter.Tendsto (fun t => S.realOperator t x)
+      (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
+    simpa using (S.realOperator_continuousWithinAt_zero x).tendsto
   rw [Metric.tendsto_nhdsWithin_nhds] at hsc
   obtain ⟨δ, hδ_pos, hδ⟩ := hsc 1 one_pos
-  have h_near : ∀ t : ℝ, 0 ≤ t → t < δ → ‖S.realOperator t x‖ ≤ ‖x‖ + 1 := by
+  have h_near : ∀ t : ℝ, 0 ≤ t → t < δ →
+      ‖S.realOperator t x‖ ≤ ‖x‖ + 1 := by
     intro t ht0 htδ
     have h1 := hδ ht0 (by rwa [dist_zero_right, Real.norm_eq_abs, abs_of_nonneg ht0])
     rw [dist_eq_norm] at h1
@@ -333,7 +338,9 @@ private theorem StronglyContinuousSemigroup.strongContWithinAt_left
   obtain ⟨C, hC_pos, hC_bound⟩ := h_norm_bound
   rw [Metric.tendsto_nhdsWithin_nhds]
   intro ε hε
-  have h_sc := S.strong_cont x
+  have h_sc : Filter.Tendsto (fun t => S.realOperator t x)
+      (nhdsWithin 0 (Set.Ici 0)) (nhds x) := by
+    simpa using (S.realOperator_continuousWithinAt_zero x).tendsto
   rw [Metric.tendsto_nhdsWithin_nhds] at h_sc
   obtain ⟨δ, hδ_pos, hδ_spec⟩ := h_sc (ε / C) (div_pos hε hC_pos)
   refine ⟨δ, hδ_pos, fun t ht_mem ht_dist => ?_⟩
@@ -380,7 +387,11 @@ private theorem StronglyContinuousSemigroup.strongContWithinAt_right
       simp only [Set.mem_Ici] at ht ⊢; linarith
   have h_inner : Filter.Tendsto (fun t => S.realOperator (t - t₀) x)
       (nhdsWithin t₀ (Set.Ici t₀)) (nhds x) :=
-    (S.strong_cont x).comp h_sub_tendsto
+    by
+      have h_zero : Filter.Tendsto ((fun t => S.realOperator t x) ∘ fun t => t - t₀)
+          (nhdsWithin t₀ (Set.Ici t₀)) (nhds x) := by
+        simpa using (S.realOperator_continuousWithinAt_zero x).tendsto.comp h_sub_tendsto
+      exact h_zero.congr fun _ => rfl
   have h_outer : Filter.Tendsto (fun t => S.realOperator t₀ (S.realOperator (t - t₀) x))
       (nhdsWithin t₀ (Set.Ici t₀)) (nhds (S.realOperator t₀ x)) :=
     ((S.realOperator t₀).cont.tendsto x).comp h_inner
@@ -397,13 +408,13 @@ private theorem StronglyContinuousSemigroup.strongContWithinAt_right
 ([EN] Prop. I.5.3, [Linares] Cor. 1).
 
 Strong continuity holds at every `t₀ ≥ 0`, not only at `0`. -/
-theorem StronglyContinuousSemigroup.strongContWithinAt
+theorem StronglyContinuousSemigroup.realOperator_continuousWithinAt
     (S : StronglyContinuousSemigroup X) (x : X) (t₀ : ℝ) (ht₀ : 0 ≤ t₀) :
-    Filter.Tendsto (fun t => S.realOperator t x)
-      (nhdsWithin t₀ (Set.Ici 0)) (nhds (S.realOperator t₀ x)) := by
+    ContinuousWithinAt (fun t => S.realOperator t x) (Set.Ici 0) t₀ := by
   have h_Ici_split : Set.Ici (0 : ℝ) =
       (Set.Ici 0 ∩ Set.Iic t₀) ∪ (Set.Ici 0 ∩ Set.Ici t₀) := by
     rw [← Set.inter_union_distrib_left, Set.Iic_union_Ici, Set.inter_univ]
+  rw [ContinuousWithinAt]
   rw [h_Ici_split]
   rw [nhdsWithin_union, Filter.tendsto_sup]
   have h_right_set : Set.Ici (0 : ℝ) ∩ Set.Ici t₀ = Set.Ici t₀ := by

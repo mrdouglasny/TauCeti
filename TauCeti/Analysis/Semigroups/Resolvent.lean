@@ -72,7 +72,7 @@ lemma StronglyContinuousSemigroup.integrable_resolvent_integrand
     · exact (Real.continuous_exp.comp
         ((continuous_const.mul continuous_id).neg)).continuousOn
     · have h_cont : ContinuousOn (fun t => S.realOperator t x) (Set.Ici 0) :=
-        fun t₀ ht₀ => S.strongContWithinAt x t₀ ht₀
+        fun t₀ ht₀ => S.realOperator_continuousWithinAt x t₀ ht₀
       exact h_cont.mono Set.Ioi_subset_Ici_self
   · apply (ae_restrict_mem measurableSet_Ioi).mono
     intro t (ht : 0 < t)

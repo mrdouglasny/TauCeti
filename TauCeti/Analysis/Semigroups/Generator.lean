@@ -210,14 +210,14 @@ theorem StronglyContinuousSemigroup.tendsto_average_orbit_zero
       (fun t => (1 / t) • ∫ u in Set.Ioc 0 t, S.realOperator u x)
       (nhdsWithin 0 (Set.Ioi 0)) (nhds x) := by
   have h := tendsto_average_Ioc_zero_of_continuousOn_Ici
-    (g := fun u => S.realOperator u x) (fun u hu => S.strongContWithinAt x u hu)
+    (g := fun u => S.realOperator u x) (fun u hu => S.realOperator_continuousWithinAt x u hu)
   simpa using h
 
 private theorem StronglyContinuousSemigroup.intervalIntegrable_orbit
     (S : StronglyContinuousSemigroup X) (x : X) {a b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) :
     IntervalIntegrable (fun u => S.realOperator u x) volume a b := by
   have h_cont : ContinuousOn (fun u => S.realOperator u x) (Set.Ici 0) :=
-    fun u hu => S.strongContWithinAt x u hu
+    fun u hu => S.realOperator_continuousWithinAt x u hu
   exact (h_cont.mono fun u hu => by
     exact (le_inf ha hb).trans hu.1).intervalIntegrable
 
@@ -259,16 +259,15 @@ private theorem StronglyContinuousSemigroup.tendsto_average_orbit_at
       (nhdsWithin 0 (Set.Ioi 0)) (nhds (S.realOperator t x)) := by
   set f := fun u => S.realOperator u x
   have h_cont_at : ContinuousAt f t := by
-    have h := S.strongContWithinAt x t ht.le
-    rwa [nhdsWithin_eq_nhds.2 (Ici_mem_nhds ht)] at h
+    exact (S.realOperator_continuousWithinAt x t ht.le).continuousAt (Ici_mem_nhds ht)
   have h_ftc : HasDerivAt (fun u => ∫ z in t..u, f z) (f t) t :=
     intervalIntegral.integral_hasDerivAt_right
       IntervalIntegrable.refl
       ((ContinuousAt.stronglyMeasurableAtFilter (μ := volume) isOpen_Ioi
         (s := Set.Ioi (0 : ℝ)) (f := f) (by
           intro u hu
-          have h := S.strongContWithinAt x u hu.le
-          rwa [nhdsWithin_eq_nhds.2 (Ici_mem_nhds hu)] at h)) t ht)
+          exact (S.realOperator_continuousWithinAt x u hu.le).continuousAt
+            (Ici_mem_nhds hu))) t ht)
       h_cont_at
   have h_slope := h_ftc.tendsto_slope_zero_right
   simpa [f, one_div, intervalIntegral.integral_same] using h_slope
