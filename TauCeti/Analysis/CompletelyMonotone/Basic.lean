@@ -6,9 +6,9 @@ module
 
 public import Mathlib.Analysis.Calculus.AbsolutelyMonotone
 public import Mathlib.Analysis.Calculus.Deriv.MeanValue
-public import Mathlib.Analysis.Calculus.IteratedDeriv.Lemmas
 public import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 public import Mathlib.Topology.Order.MonotoneConvergence
+public import TauCeti.Analysis.Calculus.IteratedDerivWithin
 
 /-!
 # Completely monotone functions
@@ -205,24 +205,6 @@ lemma le_of_tendsto_atTop (hcm : IsCompletelyMonotone f) {L : ℝ}
   simpa [hg₀, max_eq_left hT] using this
 
 end IsCompletelyMonotone
-
-/-- At a point `x` in the interior of a unique-differentiability set `s` (`s ∈ 𝓝 x`),
-the derivative of the `k`-th iterated derivative-within-`s` of a `C^(k+1)` function is the
-`(k+1)`-th iterated derivative-within-`s`. -/
-theorem ContDiffOn.hasDerivAt_iteratedDerivWithin
-    {𝕜 E : Type*} [NontriviallyNormedField 𝕜] [NormedAddCommGroup E] [NormedSpace 𝕜 E]
-    {g : 𝕜 → E} {s : Set 𝕜} {k : ℕ}
-    (hf : ContDiffOn 𝕜 ((k + 1 : ℕ) : WithTop ℕ∞) g s)
-    (hs : UniqueDiffOn 𝕜 s) {x : 𝕜} (hx : s ∈ nhds x) :
-    HasDerivAt (iteratedDerivWithin k g s) (iteratedDerivWithin (k + 1) g s x) x := by
-  have hklt : (k : WithTop ℕ∞) < ((k + 1 : ℕ) : WithTop ℕ∞) := by
-    exact_mod_cast (Nat.lt_succ_self k)
-  have hda := (hf.differentiableOn_iteratedDerivWithin
-    hklt hs).hasDerivAt hx
-  have hval : iteratedDerivWithin (k + 1) g s x =
-      deriv (iteratedDerivWithin k g s) x := by
-    rw [iteratedDerivWithin_succ, derivWithin_of_mem_nhds hx]
-  rw [hval]; exact hda
 
 namespace IsCompletelyMonotone
 

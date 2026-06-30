@@ -5,33 +5,29 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Mathlib.MeasureTheory.Integral.IntegralEqImproper
-public import Mathlib.MeasureTheory.Integral.IntervalIntegral.ContDiff
+public import TauCeti.Analysis.Calculus.IteratedDerivWithin
 public import TauCeti.Analysis.CompletelyMonotone.Basic
 
 /-!
-# Integral and analysis lemmas for completely monotone functions
+# Integral lemmas for completely monotone functions
 
-The generic completely-monotone integral/analysis layer: FTC, Taylor-remainder, and
-improper-integral facts about completely monotone functions.
+FTC wrappers, Taylor-remainder sign bounds, and improper-integral facts about completely monotone
+functions.
 
-These extend the object API in `CompletelyMonotone/Basic.lean` with derivative-within transfer
-on compact intervals, the sign of the Taylor integral remainder, finite-interval
-fundamental-theorem identities, and improper-integral facts for `-f'`.
+These extend the object API in `CompletelyMonotone/Basic.lean` with the sign of the Taylor
+integral remainder, finite-interval fundamental-theorem identities specialized to completely
+monotone functions, and improper-integral facts for the first derivative within `[0, ∞)`.
 
 ## Main declarations
 
-* `TauCeti.ContDiffAt.iteratedDerivWithin_Icc_eq_Ici`: iterated derivatives within `Icc x T`
-  and within `Ici a` agree at interior points.
-* `TauCeti.ContDiffOn.integral_neg_derivWithin_Icc`,
-  `TauCeti.ContDiffOn.integral_neg_derivWithin_Icc_zero_left`: finite-interval
-  fundamental-theorem identities for smooth functions.
 * `TauCeti.IsCompletelyMonotone.neg_one_pow_mul_taylor_remainder_nonneg`: the Taylor integral
   remainder has sign `(-1)ⁿ`.
-* `TauCeti.IsCompletelyMonotone.integral_neg_deriv`, `TauCeti.IsCompletelyMonotone.integral_mass`:
-  compatibility wrappers for the smooth finite-interval identities.
-* `TauCeti.IsCompletelyMonotone.neg_deriv_integrableOn`,
-  `TauCeti.IsCompletelyMonotone.integral_Ioi_neg_deriv`: integrability and the improper integral
-  of `-f'` on `(0, ∞)`.
+* `TauCeti.IsCompletelyMonotone.integral_neg_iteratedDerivWithin_one_Icc`,
+  `TauCeti.IsCompletelyMonotone.integral_mass`: compatibility wrappers for the smooth
+  finite-interval identities.
+* `TauCeti.IsCompletelyMonotone.neg_iteratedDerivWithin_one_integrableOn`,
+  `TauCeti.IsCompletelyMonotone.integral_Ioi_neg_iteratedDerivWithin_one`: integrability and the
+  improper integral of `-f'` on `(0, ∞)`, represented as `iteratedDerivWithin 1`.
 
 ## References
 
@@ -48,63 +44,6 @@ open MeasureTheory Set intervalIntegral Filter
 open scoped ContDiff Topology
 
 namespace TauCeti
-
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] {f : ℝ → E}
-
-/-- `iteratedDerivWithin` on `Icc x T` agrees with `iteratedDerivWithin` on `Ici a` at interior
-points, since both equal `iteratedDeriv n f t` under local smoothness at `t`. -/
-lemma ContDiffAt.iteratedDerivWithin_Icc_eq_Ici {n : ℕ}
-    {a x T t : ℝ} (hf : ContDiffAt ℝ (n : WithTop ℕ∞) f t) (ht_lo : a < t)
-    (ht : t ∈ Ioo x T) :
-    iteratedDerivWithin n f (Icc x T) t = iteratedDerivWithin n f (Ici a) t := by
-  have hxT : x < T := lt_trans ht.1 ht.2
-  rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hxT) hf
-        (Ioo_subset_Icc_self ht),
-      ← iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Ici a) hf
-        (mem_Ici.mpr ht_lo.le)]
-
-/-- The fundamental-theorem identity
-`f x - f T = ∫ₓᵀ -f'` on a compact interval, with derivatives taken within that interval. -/
-lemma ContDiffOn.integral_neg_derivWithin_Icc {x T : ℝ}
-    [CompleteSpace E] (hf : ContDiffOn ℝ 1 f (Icc x T)) (hxT : x ≤ T) :
-    f x - f T = ∫ t in x..T, -iteratedDerivWithin 1 f (Icc x T) t := by
-  have hFTC := intervalIntegral.integral_derivWithin_Icc_of_contDiffOn_Icc hf hxT
-  rw [iteratedDerivWithin_one]
-  rw [intervalIntegral.integral_neg, hFTC, neg_sub]
-
-/-- The zero-left specialization of `ContDiffOn.integral_neg_derivWithin_Icc`. -/
-lemma ContDiffOn.integral_neg_derivWithin_Icc_zero_left {T : ℝ}
-    [CompleteSpace E] (hf : ContDiffOn ℝ 1 f (Icc 0 T)) (hT : 0 ≤ T) :
-    ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Icc 0 T) t = f 0 - f T := by
-  exact (ContDiffOn.integral_neg_derivWithin_Icc hf hT).symm
-
-/-- The interval integral of `-f'` with the `T`-dependent set `Icc x T` equals the integral with
-the fixed set `Ici a`, under local smoothness at the strict interior points. -/
-lemma ContDiffOn.integral_neg_derivWithin_Icc_eq_Ici
-    {a x T : ℝ} (hf : ∀ t ∈ Ioo x T, ContDiffAt ℝ 1 f t) (hax : a ≤ x) (hxT : x ≤ T) :
-    ∫ t in x..T, -iteratedDerivWithin 1 f (Icc x T) t =
-    ∫ t in x..T, -iteratedDerivWithin 1 f (Ici a) t := by
-  apply intervalIntegral.integral_congr_uIoo
-  intro t ht
-  rw [uIoo_of_le hxT] at ht
-  have ha_lt : a < t := lt_of_le_of_lt hax ht.1
-  have hxT_pos : x < T := lt_trans ht.1 ht.2
-  have hcda : ContDiffAt ℝ 1 f t := hf t ht
-  simp only [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Icc hxT_pos) hcda
-      (Ioo_subset_Icc_self ht),
-    iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Ici a) hcda
-      (mem_Ici.mpr ha_lt.le)]
-
-/-- The total mass `∫ₐᵀ (-f') dt → f(a) - L` as `T → ∞`, assuming smoothness on `[a, ∞)`
-and convergence of `f` to `L` at infinity. -/
-lemma ContDiffOn.tendsto_total_mass
-    [CompleteSpace E] {a : ℝ} (hf : ContDiffOn ℝ 1 f (Ici a)) {L : E}
-    (hL : Tendsto f atTop (nhds L)) :
-    Tendsto (fun T => ∫ t in a..T, -iteratedDerivWithin 1 f (Icc a T) t) atTop
-        (nhds (f a - L)) := by
-  refine Tendsto.congr' (EventuallyEq.symm ?_) (Tendsto.sub tendsto_const_nhds hL)
-  exact (eventually_gt_atTop a).mono fun T hT =>
-    (ContDiffOn.integral_neg_derivWithin_Icc (hf.mono Icc_subset_Ici_self) hT.le).symm
 
 variable {f : ℝ → ℝ}
 
@@ -146,19 +85,20 @@ lemma neg_one_pow_mul_taylor_remainder_nonneg (hf : IsCompletelyMonotone f) {x T
   exact h_mem.mono fun t ht => by simp only [Pi.zero_apply]; exact hIoo t ht
 
 /-- For a completely monotone `f` the `n = 1` fundamental-theorem identity gives
-`f(x) - f(T) = ∫ₓᵀ (-f'(t)) dt`, with the integrand nonnegative by the sign condition. -/
-lemma integral_neg_deriv (hf : IsCompletelyMonotone f)
+`f(x) - f(T) = ∫ₓᵀ (-f'(t)) dt`, with `f'` represented by `iteratedDerivWithin 1` on
+`Icc x T`. -/
+lemma integral_neg_iteratedDerivWithin_one_Icc (hf : IsCompletelyMonotone f)
     (x T : ℝ) (hx : 0 ≤ x) (hxT : x ≤ T) :
     f x - f T = ∫ t in x..T, -iteratedDerivWithin 1 f (Icc x T) t := by
   have hsubset : Icc x T ⊆ Ici 0 := Icc_subset_Ici_self.trans (Ici_subset_Ici.mpr hx)
   have hcm_Icc : ContDiffOn ℝ 1 f (Icc x T) :=
     (hf.contDiffOn.mono hsubset).of_le (by exact_mod_cast le_top)
-  exact ContDiffOn.integral_neg_derivWithin_Icc hcm_Icc hxT
+  exact ContDiffOn.integral_neg_iteratedDerivWithin_one_Icc hcm_Icc hxT
 
 /-- The total mass identity `∫₀ᵀ (-f') = f(0) - f(T)` for a completely monotone function. -/
 lemma integral_mass (hf : IsCompletelyMonotone f) (T : ℝ) (hT : 0 ≤ T) :
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Icc 0 T) t = f 0 - f T := by
-  exact (hf.integral_neg_deriv 0 T le_rfl hT).symm
+  exact (hf.integral_neg_iteratedDerivWithin_one_Icc 0 T le_rfl hT).symm
 
 end IsCompletelyMonotone
 
@@ -175,11 +115,11 @@ private lemma IsCompletelyMonotone.iteratedDerivWithin_one_nonpos
 
 /-- The interval integral of `-f'` with the `T`-dependent set `Icc 0 T` equals the integral with
 the fixed set `Ici 0` (both agree a.e. by set transfer at interior points). -/
-lemma IsCompletelyMonotone.integral_neg_deriv_Ici
+lemma IsCompletelyMonotone.integral_neg_iteratedDerivWithin_one_Ici
     (hcm : IsCompletelyMonotone f) (T : ℝ) (hT : 0 ≤ T) :
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Icc 0 T) t =
     ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Ici 0) t := by
-  exact ContDiffOn.integral_neg_derivWithin_Icc_eq_Ici
+  exact ContDiffOn.integral_neg_iteratedDerivWithin_one_Icc_eq_Ici
     (fun t ht => (hcm.contDiffOn.contDiffAt (Ici_mem_nhds ht.1)).of_le (nat_le_top _))
     le_rfl hT
 
@@ -193,7 +133,8 @@ lemma IsCompletelyMonotone.tendsto_total_mass
 
 /-- `-f'` is integrable on `(0, ∞)` for a completely monotone function, where the derivative is
 taken within the closed half-line `[0, ∞)`. -/
-lemma IsCompletelyMonotone.neg_deriv_integrableOn (hcm : IsCompletelyMonotone f) :
+lemma IsCompletelyMonotone.neg_iteratedDerivWithin_one_integrableOn
+    (hcm : IsCompletelyMonotone f) :
     IntegrableOn (fun t => -iteratedDerivWithin 1 f (Ici 0) t) (Ioi 0) := by
   obtain ⟨L, hL, -⟩ := hcm.exists_nonneg_tendsto_atTop
   apply integrableOn_Ioi_of_intervalIntegral_norm_tendsto (f 0 - L) 0
@@ -213,20 +154,22 @@ lemma IsCompletelyMonotone.neg_deriv_integrableOn (hcm : IsCompletelyMonotone f)
           rw [uIoc_of_le hT.le] at ht
           simp only [Real.norm_eq_abs]
           rw [abs_of_nonneg (by linarith [hcm.iteratedDerivWithin_one_nonpos ht.1.le])])
-      rw [this, ← hcm.integral_neg_deriv_Ici T hT.le, hcm.integral_mass T hT.le]
+      rw [this, ← hcm.integral_neg_iteratedDerivWithin_one_Ici T hT.le,
+        hcm.integral_mass T hT.le]
     exact Tendsto.congr' (EventuallyEq.symm hnorm) (Tendsto.sub tendsto_const_nhds hL)
 
 /-- The improper integral `∫₀^∞ (-f') dt = f(0) - L` for completely monotone functions. -/
-lemma IsCompletelyMonotone.integral_Ioi_neg_deriv
+lemma IsCompletelyMonotone.integral_Ioi_neg_iteratedDerivWithin_one
     (hcm : IsCompletelyMonotone f) {L : ℝ} (hL : Tendsto f atTop (nhds L)) :
     ∫ t in Ioi 0, -iteratedDerivWithin 1 f (Ici 0) t = f 0 - L := by
-  have hint := hcm.neg_deriv_integrableOn
+  have hint := hcm.neg_iteratedDerivWithin_one_integrableOn
   have htend := intervalIntegral_tendsto_integral_Ioi 0 hint tendsto_id
   have htend2 : Tendsto (fun T => ∫ t in (0 : ℝ)..T,
       -iteratedDerivWithin 1 f (Ici 0) t) atTop (nhds (f 0 - L)) :=
     Tendsto.congr'
       ((eventually_gt_atTop 0).mono fun T hT =>
-        ((hcm.integral_neg_deriv_Ici T hT.le).symm.trans (hcm.integral_mass T hT.le)).symm)
+        ((hcm.integral_neg_iteratedDerivWithin_one_Ici T hT.le).symm.trans
+          (hcm.integral_mass T hT.le)).symm)
       (Tendsto.sub tendsto_const_nhds hL)
   exact tendsto_nhds_unique htend htend2
 
