@@ -17,7 +17,7 @@ completely monotone `f` the densities `ρ_n(t) = (-1)ⁿ/(n-1)! · tⁿ⁻¹ · 
 `[0, ∞)`, the positive support used by `chafaiMeasure`; they define finite measures whose total
 mass is bounded by `f(0) - f(∞)`, and after the rescaling `t ↦ (n-1)/t` give measures
 `chafaiRescaled f n` on `ℝ≥0` whose Laplace kernels `(1 - xp/(n-1))₊ⁿ⁻¹` converge to `e^{-xp}`.
-These feed the Prokhorov tightness argument.
+These feed the Prokhorov tightness argument in `BernsteinTheorem.lean`.
 
 These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean` and
 `CompletelyMonotone/Integral.lean`.
@@ -40,16 +40,23 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
   total-mass bound `≤ f(0) - L`.
 * `TauCeti.chafaiRescaled_lintegral_coe_le`: a uniform first-moment bound for the rescaled
   Chafaï measures, used for tightness.
-* `TauCeti.chafaiRescaled_prokhorov_mass_bound`,
-  `TauCeti.chafaiRescaled_tendsto_laplace_integral_of_weak`: Prokhorov-ready mass bounds and
-  the Laplace test-function specialization of weak convergence for the rescaled measures.
+* `TauCeti.chafaiRescaled_prokhorov_mass_bound`: a Prokhorov-ready mass bound for the rescaled
+  measures.
+* `TauCeti.chafai_identity`: the Chafaï reconstruction identity, identifying the Bernstein
+  kernel integral with the nonconstant part `f x - L`.
 
 ## References
 
 * Roadmap: `TauCetiRoadmap/OneParameterSemigroups/README.md`, Part B (Bernstein theorem milestone).
 
+* S. Bernstein, "Sur les fonctions absolument monotones" (1928).
+* D. V. Widder, *The Laplace Transform*, Princeton University Press, 1941, Chapter IV.
 * D. Chafaï, *Aspects of the Bernstein theorem* (2013).
 * R. Schilling, R. Song, Z. Vondraček, *Bernstein Functions* (de Gruyter, 2nd ed. 2012), Ch. 1.
+
+The Lean proof of the Chafaï reconstruction identity and the associated Bernstein-kernel
+estimates was adapted from our Hille-Yosida formalization,
+`HilleYosida/BernsteinChafai.lean`, and refit to the Tau Ceti completely monotone API.
 -/
 
 public section
@@ -426,7 +433,7 @@ the completely monotone function `t ↦ -f'(t)`, for `2 ≤ n`.
 This is the Chafaï-specific algebra behind the tightness tail bound: multiplication by the
 rescaled coordinate `(n - 1) / t` lowers the density order from `n` to `n - 1` for the negated
 derivative. -/
-lemma chafaiRescaled_lintegral_coe_eq_chafaiMeasure_neg_derivWithin
+private lemma chafaiRescaled_lintegral_coe_eq_chafaiMeasure_neg_derivWithin
     (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : 2 ≤ n) :
     ∫⁻ p : ℝ≥0, ENNReal.ofReal (p : ℝ) ∂(chafaiRescaled f n) =
       (chafaiMeasure (fun t => -derivWithin f (Ici 0) t) (n - 1)) univ := by
@@ -519,7 +526,7 @@ private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) {m : ℕ}
 /-- Monotonicity of the finite-interval Chafaï-density integrals in the order:
 for `2 ≤ k` and `0 ≤ T`, the integral of the `k`-th density on `[0,T]` is bounded above by the
 integral of the preceding density, assuming the endpoint has the required alternating sign. -/
-lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) {k : ℕ} (hk : 2 ≤ k)
+private lemma integral_chafaiDensity_le_pred (f : ℝ → ℝ) {k : ℕ} (hk : 2 ≤ k)
     (hf : ContDiffOn ℝ (k : WithTop ℕ∞) f (Ici 0))
     (T : ℝ) (hT : 0 ≤ T)
     (hsign : 0 ≤ (-1 : ℝ) ^ (k - 1) * iteratedDerivWithin (k - 1) f (Ici 0) T) :
@@ -645,7 +652,7 @@ private lemma chafaiMeasure_mass_le_of_tendsto (f : ℝ → ℝ)
 
 /-- **Total mass bound with a chosen limit**: `chafaiMeasure f n` is finite with total mass
 `≤ f(0) - L` whenever `f(t) → L` at infinity. -/
-lemma chafaiMeasure_finite_mass_of_tendsto (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
+private lemma chafaiMeasure_finite_mass_of_tendsto (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (n : ℕ) (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
     IsFiniteMeasure (chafaiMeasure f n) ∧
     (chafaiMeasure f n) univ ≤ ENNReal.ofReal (f 0 - L) := by
@@ -1217,7 +1224,12 @@ private lemma chafai_repeated_ibp (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
 
 /-- **Chafaï reconstruction identity.** For a completely monotone function with limit `L` at
 infinity, each rescaled Chafaï measure reconstructs the nonconstant part through the Bernstein
-kernel. -/
+kernel.
+
+This is the finite-difference/Bernstein-kernel identity used in Chafaï's 2013 proof of the
+Bernstein theorem, in the tradition of Bernstein's 1928 theorem and Widder's treatment in
+*The Laplace Transform*, Chapter IV. The Lean proof was adapted from our Hille-Yosida
+formalization, `HilleYosida/BernsteinChafai.lean`. -/
 lemma chafai_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (n : ℕ) (hn : 2 ≤ n) (x : ℝ) (hx : 0 ≤ x)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
@@ -1255,7 +1267,8 @@ lemma chafai_identity (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
 
 /-- On the nonnegative half-plane, the Bernstein kernel is dominated by the limiting Laplace
 kernel. -/
-lemma bernstein_kernel_le_exp {n : ℕ} (hn : 2 ≤ n) {x p : ℝ} (_hx : 0 ≤ x) (_hp : 0 ≤ p) :
+private lemma bernstein_kernel_le_exp {n : ℕ} (hn : 2 ≤ n) {x p : ℝ} (_hx : 0 ≤ x)
+    (_hp : 0 ≤ p) :
     bernstein_kernel n x p ≤ Real.exp (-(x * p)) := by
   rw [bernstein_kernel_of_two_le hn]
   by_cases h : 1 - x * p / ↑(n - 1) ≤ 0
@@ -1355,9 +1368,14 @@ private lemma kernel_uniform_conv_compact (x R ε : ℝ) (hx : 0 < x) (hR : 0 < 
     linarith
   linarith
 
-/-- **Uniform Bernstein-kernel convergence on the nonnegative half-line.** For fixed `x > 0`,
-`φ_n(x,p)` converges to `exp (-x p)` uniformly for `0 ≤ p`. -/
-lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < ε) :
+/-- Uniform Bernstein-kernel convergence to the Laplace kernel on the nonnegative half-line.
+
+For fixed `x > 0`, the Bernstein kernels
+`p ↦ max (1 - x * p / (n - 1)) 0 ^ (n - 1)` converge uniformly on `0 ≤ p` to
+`p ↦ exp (-x * p)`. This is the analytic Bernstein-to-Laplace replacement estimate used in
+Chafaï's finite-difference proof. The Lean proof was adapted from our Hille-Yosida
+formalization, `HilleYosida/BernsteinChafai.lean`. -/
+private lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < ε) :
     ∃ N : ℕ, ∀ n, N ≤ n → ∀ p, 0 ≤ p →
       |bernstein_kernel n x p - Real.exp (-(x * p))| < ε := by
   have htail : Tendsto (fun R => Real.exp (-(x * R))) atTop (nhds 0) := by
@@ -1382,8 +1400,11 @@ lemma kernel_uniform_conv (x : ℝ) (hx : 0 < x) (ε : ℝ) (hε : 0 < ε) :
       linarith [mul_le_mul_of_nonneg_left (le_of_lt hpR) hx.le]
     linarith [bernstein_kernel_nonneg n x p]
 
-/-- The Bernstein-to-Laplace replacement error tends to zero against any uniformly finite
-sequence of measures on `ℝ≥0`. -/
+/-- Bernstein-to-Laplace replacement against a uniformly finite sequence of measures.
+
+This is the measure-integral form of Chafaï's Bernstein-kernel convergence step: if the masses of
+`σ n` are uniformly bounded, replacing the Bernstein kernel by `exp (-x * p)` costs `o(1)`.
+The Lean proof was adapted from `HilleYosida/BernsteinChafai.lean`. -/
 lemma kernel_approx_error_tendsto
     (σ : ℕ → Measure ℝ≥0)
     (hfin : ∀ n, IsFiniteMeasure (σ n))
@@ -1431,18 +1452,5 @@ lemma kernel_approx_error_tendsto
             (le_trans (hmass n) (ENNReal.ofReal_le_ofReal (le_max_left C 1)))
       _ = ε / 2 := by field_simp
       _ < ε := half_lt_self hε
-
-/-- Weak convergence of the rescaled Chafaï measures specializes to the Laplace kernel:
-if all bounded-continuous test integrals for `chafaiRescaled f n` converge to those for `μ₀`,
-then the integrals of `p ↦ exp (-x * p)` converge for every `x ≥ 0`. -/
-lemma chafaiRescaled_tendsto_laplace_integral_of_weak
-    {μ₀ : Measure ℝ≥0} {l : Filter ℕ}
-    (hweak : ∀ g : BoundedContinuousFunction ℝ≥0 ℝ,
-        Tendsto (fun n => ∫ p, g p ∂(chafaiRescaled f n)) l
-          (nhds (∫ p, g p ∂μ₀)))
-    {x : ℝ} (hx : 0 ≤ x) :
-    Tendsto (fun n => ∫ p, Real.exp (-(x * (p : ℝ))) ∂(chafaiRescaled f n)) l
-      (nhds (∫ p, Real.exp (-(x * (p : ℝ))) ∂μ₀)) := by
-  simpa using hweak (laplaceKernelBoundedContinuous hx)
 
 end TauCeti
