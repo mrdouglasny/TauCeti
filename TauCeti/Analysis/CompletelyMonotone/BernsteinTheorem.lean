@@ -502,6 +502,76 @@ integrals should converge to `f t - L`. The extraction proof below adds the miss
       Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)) l
         (nhds (f t - L))
 
+/-- Residual Bernstein-kernel approximation step for the Chafaï measures.
+
+This is the remaining analytic core behind
+`ChafaiRescaledLaplaceConvergenceToNonconstantPart`: prove that the Bernstein kernels
+reconstruct the nonconstant part `f t - L`, and that replacing those kernels by the Laplace
+kernels costs `o(1)` against the varying rescaled Chafaï measures. -/
+@[expose] def ChafaiRescaledBernsteinApproximationToNonconstantPart (f : ℝ → ℝ) : Prop :=
+  ∃ L : ℝ, Tendsto f atTop (nhds L) ∧ 0 ≤ L ∧
+    ∀ {t : ℝ}, (ht : 0 ≤ t) →
+      Tendsto (fun n =>
+        ∫ p, (bernsteinKernelBoundedContinuous n ht) p ∂(chafaiRescaled f n)) atTop
+          (nhds (f t - L)) ∧
+      Tendsto (fun n =>
+        ∫ p, (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+          ∂(chafaiRescaled f n)) atTop (nhds 0)
+
+/-- The filter-general Chafaï Laplace convergence follows formally from the at-top
+Bernstein-kernel approximation step.
+
+All substantive analysis is isolated in
+`ChafaiRescaledBernsteinApproximationToNonconstantPart`: after that, this proof only splits the
+Laplace kernel as the Bernstein kernel plus the replacement error, and weakens `atTop` to any
+smaller filter. -/
+theorem chafaiRescaledLaplaceConvergenceToNonconstantPart_of_bernsteinApprox
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f)
+    (happrox : ChafaiRescaledBernsteinApproximationToNonconstantPart f) :
+    ChafaiRescaledLaplaceConvergenceToNonconstantPart f := by
+  obtain ⟨L, hL, hL_nonneg, happrox⟩ := happrox
+  obtain ⟨_L₀, _hL₀, _hL₀_nonneg, hfinite⟩ := chafaiRescaled_finite_mass f hcm
+  refine ⟨L, hL, hL_nonneg, fun {l} hl {t} ht => ?_⟩
+  obtain ⟨hbernstein, herr⟩ := happrox ht
+  let laplacePart := fun n : ℕ =>
+    ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)
+  let bernsteinPart := fun n : ℕ =>
+    ∫ p, (bernsteinKernelBoundedContinuous n ht) p ∂(chafaiRescaled f n)
+  let errorPart := fun n : ℕ =>
+    ∫ p, (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+      ∂(chafaiRescaled f n)
+  have hsplit : ∀ n, laplacePart n = bernsteinPart n + errorPart n := by
+    intro n
+    letI := (hfinite n).1
+    have h_exp : Integrable (fun p : ℝ≥0 => Real.exp (-(t * (p : ℝ))))
+        (chafaiRescaled f n) :=
+      integrable_laplaceKernel_of_nonneg _ ht
+    have h_bernstein : Integrable (fun p : ℝ≥0 => (bernsteinKernelBoundedContinuous n ht) p)
+        (chafaiRescaled f n) :=
+      (bernsteinKernelBoundedContinuous n ht).integrable (chafaiRescaled f n)
+    have h_error : Integrable (fun p : ℝ≥0 =>
+        Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+        (chafaiRescaled f n) :=
+      h_exp.sub h_bernstein
+    dsimp [laplacePart, bernsteinPart, errorPart]
+    calc
+      ∫ p : ℝ≥0, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)
+          = ∫ p : ℝ≥0,
+              (bernsteinKernelBoundedContinuous n ht) p +
+                (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+              ∂(chafaiRescaled f n) := by
+            refine integral_congr_ae (Filter.Eventually.of_forall fun p => ?_)
+            ring
+      _ = (∫ p : ℝ≥0, (bernsteinKernelBoundedContinuous n ht) p ∂(chafaiRescaled f n)) +
+            ∫ p : ℝ≥0,
+              (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+              ∂(chafaiRescaled f n) := by
+            rw [integral_add h_bernstein h_error]
+  have hsum :
+      Tendsto (fun n => bernsteinPart n + errorPart n) atTop (nhds (f t - L)) := by
+    simpa [bernsteinPart, errorPart] using hbernstein.add herr
+  exact (Tendsto.congr' (Filter.Eventually.of_forall fun n => (hsplit n).symm) hsum).mono_left hl
+
 /-- Existence of a finite representing measure for a function satisfying the existing strong
 `IsCompletelyMonotone` predicate.
 
