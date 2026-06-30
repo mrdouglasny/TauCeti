@@ -138,6 +138,95 @@ lemma of_isCompletelyMonotone (hf : IsCompletelyMonotone f) :
     IsClosedCompletelyMonotone f :=
   ⟨hf.contDiffOn.continuousOn, hf.isCompletelyMonotoneOnIoi⟩
 
+/-- A closed-half-line completely monotone function is nonincreasing on `(0, ∞)`. -/
+lemma antitoneOn_Ioi (hf : IsClosedCompletelyMonotone f) : AntitoneOn f (Ioi 0) := by
+  refine antitoneOn_of_deriv_nonpos (convex_Ioi 0)
+    hf.isCompletelyMonotoneOnIoi.contDiffOn.continuousOn
+    (by
+      simpa [interior_Ioi] using
+        hf.isCompletelyMonotoneOnIoi.contDiffOn.differentiableOn (by simp))
+    fun x hx => ?_
+  rw [interior_Ioi] at hx
+  exact hf.isCompletelyMonotoneOnIoi.deriv_nonpos hx
+
+/-- A closed-half-line completely monotone function is nonnegative at `0`. -/
+lemma nonneg_zero (hf : IsClosedCompletelyMonotone f) : 0 ≤ f 0 := by
+  have hy_tendsto_nhds : Tendsto (fun n : ℕ => 1 / ((n : ℝ) + 1)) atTop (nhds 0) := by
+    have hden : Tendsto (fun n : ℕ => (n : ℝ) + 1) atTop atTop := by
+      exact Filter.tendsto_atTop_add_const_right atTop 1
+        (tendsto_natCast_atTop_atTop (R := ℝ))
+    simpa using Filter.Tendsto.const_div_atTop hden (1 : ℝ)
+  have hy_mem : ∀ᶠ n : ℕ in atTop, 1 / ((n : ℝ) + 1) ∈ Ici (0 : ℝ) := by
+    filter_upwards with n
+    exact mem_Ici.mpr (by positivity)
+  have hy_tendsto : Tendsto (fun n : ℕ => 1 / ((n : ℝ) + 1)) atTop
+      (𝓝[Ici (0 : ℝ)] 0) := by
+    rw [nhdsWithin]
+    exact tendsto_inf.2 ⟨hy_tendsto_nhds, tendsto_principal.mpr hy_mem⟩
+  have hf_tendsto : Tendsto (fun n : ℕ => f (1 / ((n : ℝ) + 1))) atTop
+      (nhds (f 0)) :=
+    (hf.continuousOn.continuousWithinAt (mem_Ici.mpr le_rfl)).tendsto.comp hy_tendsto
+  refine ge_of_tendsto hf_tendsto ?_
+  filter_upwards with n
+  exact hf.isCompletelyMonotoneOnIoi.nonneg (by positivity)
+
+/-- A closed-half-line completely monotone function is nonnegative on `[0, ∞)`. -/
+lemma nonneg (hf : IsClosedCompletelyMonotone f) {t : ℝ} (ht : 0 ≤ t) : 0 ≤ f t := by
+  rcases ht.eq_or_lt with rfl | ht_pos
+  · exact hf.nonneg_zero
+  · exact hf.isCompletelyMonotoneOnIoi.nonneg ht_pos
+
+/-- A closed-half-line completely monotone function lies below its value at `0` on `[0, ∞)`. -/
+lemma le_zero (hf : IsClosedCompletelyMonotone f) {t : ℝ} (ht : 0 ≤ t) : f t ≤ f 0 := by
+  rcases ht.eq_or_lt with rfl | ht_pos
+  · exact le_rfl
+  have hy_tendsto_nhds : Tendsto (fun n : ℕ => t / ((n : ℝ) + 2)) atTop (nhds 0) := by
+    have hden : Tendsto (fun n : ℕ => (n : ℝ) + 2) atTop atTop := by
+      exact Filter.tendsto_atTop_add_const_right atTop 2
+        (tendsto_natCast_atTop_atTop (R := ℝ))
+    simpa using Filter.Tendsto.const_div_atTop hden t
+  have hy_mem : ∀ᶠ n : ℕ in atTop, t / ((n : ℝ) + 2) ∈ Ici (0 : ℝ) := by
+    filter_upwards with n
+    have hden_pos : 0 < (n : ℝ) + 2 := by positivity
+    exact mem_Ici.mpr (div_nonneg ht hden_pos.le)
+  have hy_tendsto : Tendsto (fun n : ℕ => t / ((n : ℝ) + 2)) atTop
+      (𝓝[Ici (0 : ℝ)] 0) := by
+    rw [nhdsWithin]
+    exact tendsto_inf.2 ⟨hy_tendsto_nhds, tendsto_principal.mpr hy_mem⟩
+  have hf_tendsto : Tendsto (fun n : ℕ => f (t / ((n : ℝ) + 2))) atTop
+      (nhds (f 0)) :=
+    (hf.continuousOn.continuousWithinAt (mem_Ici.mpr le_rfl)).tendsto.comp hy_tendsto
+  refine ge_of_tendsto hf_tendsto ?_
+  filter_upwards with n
+  have hden_pos : 0 < (n : ℝ) + 2 := by positivity
+  have hy_pos : 0 < t / ((n : ℝ) + 2) := div_pos ht_pos hden_pos
+  have hy_le : t / ((n : ℝ) + 2) ≤ t := by
+    have hden_ge_one : (1 : ℝ) ≤ (n : ℝ) + 2 := by
+      have hn : (0 : ℝ) ≤ n := by exact_mod_cast Nat.zero_le n
+      linarith
+    exact div_le_self ht hden_ge_one
+  exact hf.antitoneOn_Ioi (mem_Ioi.mpr hy_pos) (mem_Ioi.mpr ht_pos) hy_le
+
+/-- Positive right-translates of a closed-half-line completely monotone function satisfy the
+strong closed-half-line predicate. -/
+lemma shift_pos (hf : IsClosedCompletelyMonotone f) {a : ℝ} (ha : 0 < a) :
+    IsCompletelyMonotone (fun t : ℝ => f (t + a)) := by
+  refine ⟨?_, fun n t ht => ?_⟩
+  · have hmaps : MapsTo (fun t : ℝ => t + a) (Ici 0) (Ioi 0) := by
+      intro t ht
+      exact (by linarith [mem_Ici.mp ht] : 0 < t + a)
+    exact hf.isCompletelyMonotoneOnIoi.contDiffOn.comp (by fun_prop) hmaps
+  · have htpa : 0 < t + a := by linarith
+    have hcont : ContDiffAt ℝ (n : WithTop ℕ∞) (fun t : ℝ => f (t + a)) t := by
+      have hc : ContDiffAt ℝ (n : WithTop ℕ∞) f (t + a) :=
+        (hf.isCompletelyMonotoneOnIoi.contDiffOn.contDiffAt
+          (isOpen_Ioi.mem_nhds htpa)).of_le (by exact_mod_cast le_top)
+      simpa [Function.comp_def] using hc.comp t
+        (by fun_prop : ContDiffAt ℝ (n : WithTop ℕ∞) (fun t : ℝ => t + a) t)
+    rw [iteratedDerivWithin_eq_iteratedDeriv (uniqueDiffOn_Ici 0) hcont (mem_Ici.mpr ht),
+      iteratedDeriv_comp_add_const]
+    exact hf.isCompletelyMonotoneOnIoi.neg_one_pow_mul_iteratedDeriv_nonneg n htpa
+
 /-- Closed-half-line complete monotonicity is determined by values on `[0, ∞)`. -/
 lemma congr (hf : IsClosedCompletelyMonotone f) (h : EqOn g f (Ici 0)) :
     IsClosedCompletelyMonotone g := by
@@ -596,6 +685,117 @@ end RepresentsLaplace
 
 /-! ## Hard direction: extraction from the Chafaï measures -/
 
+/-- A finite family of finite measures is tight. -/
+private lemma isTightMeasureSet_range_finite
+    {ι : Type*} [Finite ι] (μ : ι → Measure ℝ≥0)
+    (hfin : ∀ i, IsFiniteMeasure (μ i)) :
+    IsTightMeasureSet (Set.range μ) := by
+  classical
+  letI := Fintype.ofFinite ι
+  rw [isTightMeasureSet_iff_exists_isCompact_measure_compl_le]
+  intro ε hε
+  have hchoose : ∀ i, ∃ K : Set ℝ≥0, IsCompact K ∧ (μ i) Kᶜ ≤ ε := by
+    intro i
+    haveI : IsFiniteMeasure (μ i) := hfin i
+    have htight : IsTightMeasureSet ({μ i} : Set (Measure ℝ≥0)) :=
+      isTightMeasureSet_singleton
+    obtain ⟨K, hKc, hKtail⟩ :=
+      isTightMeasureSet_iff_exists_isCompact_measure_compl_le.mp htight ε hε
+    exact ⟨K, hKc, hKtail (μ i) (by simp)⟩
+  choose K hK_comp hK_tail using hchoose
+  refine ⟨⋃ i, K i, isCompact_iUnion hK_comp, ?_⟩
+  intro ν hν
+  rcases hν with ⟨i, rfl⟩
+  exact (measure_mono (compl_subset_compl.mpr (subset_iUnion K i))).trans (hK_tail i)
+
+/-- A Laplace-representing measure for a positive shift has exponentially controlled tails.
+
+The estimate uses Markov's inequality on the bounded coordinate
+`p ↦ 1 - exp (-x * p)`. It is the tightness input for shifting the existing strong Chafaï
+existence theorem back to the closed-half-line theorem. -/
+private lemma shiftedMeasure_closedBall_compl_le
+    {f : ℝ → ℝ} {μ : Measure ℝ≥0} [IsFiniteMeasure μ]
+    {δ x R : ℝ} (hμ : RepresentsLaplace (fun t : ℝ => f (t + δ)) μ)
+    (hx : 0 < x) (hR : 0 < R) :
+    μ (Metric.closedBall (0 : ℝ≥0) R)ᶜ ≤
+      ENNReal.ofReal ((f δ - f (x + δ)) / (1 - Real.exp (-(x * R)))) := by
+  let coord : ℝ≥0 → ENNReal := fun p => ENNReal.ofReal (1 - Real.exp (-(x * (p : ℝ))))
+  let c : ℝ := 1 - Real.exp (-(x * R))
+  have hc_pos : 0 < c := by
+    have hxR : 0 < x * R := mul_pos hx hR
+    have hexp_lt : Real.exp (-(x * R)) < 1 := by
+      rw [← Real.exp_zero]
+      exact Real.exp_lt_exp.mpr (by linarith)
+    dsimp [c]
+    linarith
+  have hc_ne_zero : ENNReal.ofReal c ≠ 0 := ENNReal.ofReal_ne_zero_iff.mpr hc_pos
+  have hc_ne_top : ENNReal.ofReal c ≠ (∞ : ENNReal) := ENNReal.ofReal_ne_top
+  have hcoord_meas : AEMeasurable coord μ :=
+    (ENNReal.measurable_ofReal.comp
+      (by fun_prop : Measurable fun p : ℝ≥0 => 1 - Real.exp (-(x * (p : ℝ)))))
+        |>.aemeasurable
+  have hmarkov : μ {p : ℝ≥0 | ENNReal.ofReal c ≤ coord p} ≤
+      (∫⁻ p : ℝ≥0, coord p ∂μ) / ENNReal.ofReal c :=
+    meas_ge_le_lintegral_div hcoord_meas hc_ne_zero hc_ne_top
+  have hsubset : (Metric.closedBall (0 : ℝ≥0) R)ᶜ ⊆
+      {p : ℝ≥0 | ENNReal.ofReal c ≤ coord p} := by
+    intro p hp
+    have hpdist : R < dist p (0 : ℝ≥0) := by
+      simpa [Metric.mem_closedBall, not_le] using hp
+    have hdist : dist p (0 : ℝ≥0) = (p : ℝ) := by
+      simp [NNReal.dist_eq]
+    have hRp : R ≤ (p : ℝ) := by linarith
+    have hxp : x * R ≤ x * (p : ℝ) := mul_le_mul_of_nonneg_left hRp hx.le
+    have hexp_le : Real.exp (-(x * (p : ℝ))) ≤ Real.exp (-(x * R)) :=
+      Real.exp_le_exp.mpr (neg_le_neg hxp)
+    have hreal : c ≤ 1 - Real.exp (-(x * (p : ℝ))) := by
+      dsimp [c]
+      linarith
+    exact ENNReal.ofReal_le_ofReal hreal
+  have hlintegral :
+      ∫⁻ p : ℝ≥0, coord p ∂μ = ENNReal.ofReal (f δ - f (x + δ)) := by
+    have h_one : Integrable (fun _ : ℝ≥0 => (1 : ℝ)) μ := integrable_const 1
+    have h_exp : Integrable (fun p : ℝ≥0 => Real.exp (-(x * (p : ℝ)))) μ :=
+      integrable_laplaceKernel_of_nonneg μ hx.le
+    have h_nonneg : 0 ≤ᵐ[μ] fun p : ℝ≥0 => 1 - Real.exp (-(x * (p : ℝ))) := by
+      refine Filter.Eventually.of_forall fun p => ?_
+      have hxp_nonneg : 0 ≤ x * (p : ℝ) := mul_nonneg hx.le p.2
+      have hexp_le : Real.exp (-(x * (p : ℝ))) ≤ 1 := by
+        rw [Real.exp_le_one_iff]
+        exact neg_nonpos.mpr hxp_nonneg
+      exact sub_nonneg.mpr hexp_le
+    have hint : Integrable (fun p : ℝ≥0 => 1 - Real.exp (-(x * (p : ℝ)))) μ :=
+      h_one.sub h_exp
+    have h_int :
+        ∫ p : ℝ≥0, (1 - Real.exp (-(x * (p : ℝ)))) ∂μ = f δ - f (x + δ) := by
+      calc
+        ∫ p : ℝ≥0, (1 - Real.exp (-(x * (p : ℝ)))) ∂μ
+            = (∫ _p : ℝ≥0, (1 : ℝ) ∂μ) -
+                ∫ p : ℝ≥0, Real.exp (-(x * (p : ℝ))) ∂μ := by
+              rw [integral_sub h_one h_exp]
+        _ = μ.real univ - laplaceTransform μ x := by
+              simp [laplaceTransform]
+        _ = f δ - f (x + δ) := by
+              have h0 := hμ.eq_laplaceTransform (t := 0) le_rfl
+              have hxrep := hμ.eq_laplaceTransform (t := x) hx.le
+              have h0' : f δ = μ.real univ := by
+                simpa [laplaceTransform_zero] using h0
+              rw [← h0', ← hxrep]
+    calc
+      ∫⁻ p : ℝ≥0, coord p ∂μ
+          = ∫⁻ p : ℝ≥0, ENNReal.ofReal (1 - Real.exp (-(x * (p : ℝ)))) ∂μ := rfl
+      _ = ENNReal.ofReal
+            (∫ p : ℝ≥0, (1 - Real.exp (-(x * (p : ℝ)))) ∂μ) := by
+            rw [ofReal_integral_eq_lintegral_ofReal hint h_nonneg]
+      _ = ENNReal.ofReal (f δ - f (x + δ)) := by rw [h_int]
+  calc
+    μ (Metric.closedBall (0 : ℝ≥0) R)ᶜ
+        ≤ μ {p : ℝ≥0 | ENNReal.ofReal c ≤ coord p} := measure_mono hsubset
+    _ ≤ (∫⁻ p : ℝ≥0, coord p ∂μ) / ENNReal.ofReal c := hmarkov
+    _ = ENNReal.ofReal (f δ - f (x + δ)) / ENNReal.ofReal c := by rw [hlintegral]
+    _ = ENNReal.ofReal ((f δ - f (x + δ)) / c) := by
+          rw [ENNReal.ofReal_div_of_pos hc_pos]
+
 /-- Uniform tightness of the Chafaï rescaled approximating measures. -/
 @[expose] def ChafaiRescaledTight (f : ℝ → ℝ) : Prop :=
   IsTightMeasureSet (Set.range (chafaiRescaled f))
@@ -880,6 +1080,176 @@ theorem exists_laplaceTransform_of_isCompletelyMonotone_of_chafai
     _ = (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ) + L := by rw [hμ_laplace]
     _ = laplaceTransform ν t := hν_laplace.symm
 
+/-- Existence of a finite representing measure for the closed-half-line predicate.
+
+The existing Chafaï construction is applied to the positive shifts `t ↦ f (t + a)`, which satisfy
+the stronger Tau Ceti predicate. As `a ↓ 0`, the representing measures are uniformly tight by an
+elementary Laplace-kernel tail estimate and hence have a weak cluster point. Continuity at `0`
+then identifies that cluster point as a representing measure for the original closed-half-line
+function. -/
+theorem exists_laplaceTransform_of_isClosedCompletelyMonotone
+    {f : ℝ → ℝ} (hf : IsClosedCompletelyMonotone f) :
+    ∃ μ : Measure ℝ≥0, RepresentsLaplace f μ := by
+  classical
+  let a : ℕ → ℝ := fun n => 1 / ((n : ℝ) + 1)
+  have ha_pos : ∀ n, 0 < a n := by
+    intro n
+    dsimp [a]
+    positivity
+  have ha_tendsto_nhds : Tendsto a atTop (nhds 0) := by
+    have hden : Tendsto (fun n : ℕ => (n : ℝ) + 1) atTop atTop := by
+      exact Filter.tendsto_atTop_add_const_right atTop 1
+        (tendsto_natCast_atTop_atTop (R := ℝ))
+    simpa [a] using Filter.Tendsto.const_div_atTop hden (1 : ℝ)
+  have ha_mem : ∀ᶠ n : ℕ in atTop, a n ∈ Ici (0 : ℝ) := by
+    filter_upwards with n
+    exact mem_Ici.mpr (ha_pos n).le
+  have ha_tendsto_Ici : Tendsto a atTop (𝓝[Ici (0 : ℝ)] 0) := by
+    rw [nhdsWithin]
+    exact tendsto_inf.2 ⟨ha_tendsto_nhds, tendsto_principal.mpr ha_mem⟩
+  have hshift_cm : ∀ n, IsCompletelyMonotone (fun t : ℝ => f (t + a n)) :=
+    fun n => hf.shift_pos (ha_pos n)
+  choose μ hμ using fun n =>
+    exists_laplaceTransform_of_isCompletelyMonotone_of_chafai (hshift_cm n)
+  have hμ_fin : ∀ n, IsFiniteMeasure (μ n) := fun n => (hμ n).isFiniteMeasure
+  let C : ℝ≥0 := ⟨f 0, hf.nonneg_zero⟩
+  have hmass : ∀ n, (μ n) univ ≤ (C : ENNReal) := by
+    intro n
+    haveI : IsFiniteMeasure (μ n) := hμ_fin n
+    have h0 := (hμ n).eq_laplaceTransform (t := 0) le_rfl
+    have hreal : (μ n).real univ = f (a n) := by
+      simpa [laplaceTransform_zero] using h0.symm
+    have hle : (μ n).real univ ≤ f 0 := by
+      rw [hreal]
+      exact hf.le_zero (ha_pos n).le
+    calc
+      (μ n) univ = ENNReal.ofReal ((μ n).real univ) := by
+        rw [ofReal_measureReal]
+      _ ≤ ENNReal.ofReal (f 0) := ENNReal.ofReal_le_ofReal hle
+      _ = (C : ENNReal) := by
+        change ENNReal.ofReal (C : ℝ) = (C : ENNReal)
+        exact ENNReal.ofReal_coe_nnreal
+  have hf_tendsto0 : Tendsto (fun n => f (a n)) atTop (nhds (f 0)) :=
+    (hf.continuousOn.continuousWithinAt (mem_Ici.mpr le_rfl)).tendsto.comp
+      ha_tendsto_Ici
+  have htight : IsTightMeasureSet (Set.range μ) := by
+    rw [isTightMeasureSet_iff_exists_isCompact_measure_compl_le]
+    intro ε hε
+    by_cases hε_top : ε = (∞ : ENNReal)
+    · refine ⟨∅, isCompact_empty, ?_⟩
+      intro ν _hν
+      rw [hε_top]
+      exact le_top
+    have hε_real_pos : 0 < ε.toReal := ENNReal.toReal_pos hε.ne' hε_top
+    let c0 : ℝ := 1 - Real.exp (-1)
+    have hc0_pos : 0 < c0 := by
+      have hexp_lt : Real.exp (-1) < 1 := by
+        rw [← Real.exp_zero]
+        exact Real.exp_lt_exp.mpr (by norm_num)
+      dsimp [c0]
+      linarith
+    have heta_pos : 0 < ε.toReal * c0 / 2 := by
+      positivity
+    have hnear := (Metric.tendsto_nhds.mp hf_tendsto0)
+      (ε.toReal * c0 / 2) heta_pos
+    obtain ⟨m, hm⟩ := eventually_atTop.1 hnear
+    let x : ℝ := a m
+    have hx_pos : 0 < x := ha_pos m
+    have hx_mem : x ∈ Ici (0 : ℝ) := mem_Ici.mpr hx_pos.le
+    have hx_close : dist (f x) (f 0) < ε.toReal * c0 / 2 := by
+      exact hm m le_rfl
+    have hgap_limit_lt : f 0 - f x < ε.toReal * c0 / 2 := by
+      rw [Real.dist_eq] at hx_close
+      have hx_abs := abs_lt.mp hx_close
+      linarith
+    have hx_a_tendsto_nhds : Tendsto (fun n => x + a n) atTop (nhds x) := by
+      simpa [add_zero] using tendsto_const_nhds.add ha_tendsto_nhds
+    have hx_a_mem : ∀ᶠ n : ℕ in atTop, x + a n ∈ Ici (0 : ℝ) := by
+      filter_upwards with n
+      exact mem_Ici.mpr (add_nonneg hx_pos.le (ha_pos n).le)
+    have hx_a_tendsto_Ici : Tendsto (fun n => x + a n) atTop (𝓝[Ici (0 : ℝ)] x) := by
+      rw [nhdsWithin]
+      exact tendsto_inf.2 ⟨hx_a_tendsto_nhds, tendsto_principal.mpr hx_a_mem⟩
+    have hfx_tendsto : Tendsto (fun n => f (x + a n)) atTop (nhds (f x)) :=
+      (hf.continuousOn.continuousWithinAt hx_mem).tendsto.comp hx_a_tendsto_Ici
+    have hgap_tendsto :
+        Tendsto (fun n => f (a n) - f (x + a n)) atTop (nhds (f 0 - f x)) :=
+      hf_tendsto0.sub hfx_tendsto
+    have hlim_lt : f 0 - f x < ε.toReal * c0 := by
+      nlinarith [hgap_limit_lt, hε_real_pos, hc0_pos]
+    have hgap_event :
+        ∀ᶠ n : ℕ in atTop, (f (a n) - f (x + a n)) / c0 ≤ ε.toReal := by
+      filter_upwards [hgap_tendsto.eventually_lt_const hlim_lt] with n hn
+      rw [div_le_iff₀ hc0_pos]
+      exact le_of_lt hn
+    obtain ⟨N, hN⟩ := eventually_atTop.1 hgap_event
+    let μfin : {n // n < N} → Measure ℝ≥0 := fun n => μ n
+    have hfin_tight : IsTightMeasureSet (Set.range μfin) :=
+      isTightMeasureSet_range_finite μfin (fun n => hμ_fin n)
+    obtain ⟨Kfin, hKfin_comp, hKfin_tail⟩ :=
+      isTightMeasureSet_iff_exists_isCompact_measure_compl_le.mp hfin_tight ε hε
+    let R : ℝ := x⁻¹
+    have hR_pos : 0 < R := inv_pos.mpr hx_pos
+    refine ⟨Kfin ∪ Metric.closedBall (0 : ℝ≥0) R,
+      hKfin_comp.union (isCompact_closedBall _ _), ?_⟩
+    intro ν hν
+    rcases hν with ⟨n, rfl⟩
+    by_cases hnlt : n < N
+    · have hmem_fin : μ n ∈ Set.range μfin := ⟨⟨n, hnlt⟩, rfl⟩
+      have hsubset : (Kfin ∪ Metric.closedBall (0 : ℝ≥0) R)ᶜ ⊆ Kfinᶜ :=
+        compl_subset_compl.mpr (subset_union_left)
+      exact (measure_mono hsubset).trans (hKfin_tail (μ n) hmem_fin)
+    · have hNn : N ≤ n := le_of_not_gt hnlt
+      have hball_subset :
+          (Kfin ∪ Metric.closedBall (0 : ℝ≥0) R)ᶜ ⊆
+            (Metric.closedBall (0 : ℝ≥0) R)ᶜ :=
+        compl_subset_compl.mpr (subset_union_right)
+      have htail :=
+        shiftedMeasure_closedBall_compl_le (hμ n) hx_pos hR_pos
+      have hden : 1 - Real.exp (-(x * R)) = c0 := by
+        dsimp [R, c0]
+        rw [mul_inv_cancel₀ hx_pos.ne']
+      have hquot :
+          ENNReal.ofReal
+            ((f (a n) - f (x + a n)) / (1 - Real.exp (-(x * R)))) ≤ ε := by
+        rw [hden]
+        exact ENNReal.ofReal_le_of_le_toReal (hN n hNn)
+      calc
+        μ n (Kfin ∪ Metric.closedBall (0 : ℝ≥0) R)ᶜ
+            ≤ μ n (Metric.closedBall (0 : ℝ≥0) R)ᶜ := measure_mono hball_subset
+        _ ≤ ENNReal.ofReal
+              ((f (a n) - f (x + a n)) / (1 - Real.exp (-(x * R)))) := htail
+        _ ≤ ε := hquot
+  obtain ⟨μ₀, U, hUle, hμ₀_fin, _hmass₀, hweak⟩ :=
+    finite_measure_cluster_limit (σ := μ) C hmass htight
+  refine ⟨μ₀, hμ₀_fin, fun t ht => ?_⟩
+  have ht_a_tendsto_nhds : Tendsto (fun n => t + a n) atTop (nhds t) := by
+    simpa [add_zero] using tendsto_const_nhds.add ha_tendsto_nhds
+  have ht_a_mem : ∀ᶠ n : ℕ in atTop, t + a n ∈ Ici (0 : ℝ) := by
+    filter_upwards with n
+    exact mem_Ici.mpr (add_nonneg ht (ha_pos n).le)
+  have ht_a_tendsto_Ici : Tendsto (fun n => t + a n) atTop (𝓝[Ici (0 : ℝ)] t) := by
+    rw [nhdsWithin]
+    exact tendsto_inf.2 ⟨ht_a_tendsto_nhds, tendsto_principal.mpr ht_a_mem⟩
+  have hf_arg_atTop : Tendsto (fun n => f (t + a n)) atTop (nhds (f t)) :=
+    (hf.continuousOn.continuousWithinAt (mem_Ici.mpr ht)).tendsto.comp ht_a_tendsto_Ici
+  have hf_arg_U : Tendsto (fun n => f (t + a n)) (U : Filter ℕ) (nhds (f t)) :=
+    hf_arg_atTop.mono_left hUle
+  have hlaplace_U :
+      Tendsto (fun n => laplaceTransform (μ n) t) (U : Filter ℕ) (nhds (f t)) := by
+    exact Tendsto.congr'
+      (Filter.Eventually.of_forall fun n => (hμ n).eq_laplaceTransform (t := t) ht)
+      hf_arg_U
+  have hshift_laplace :
+      Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(μ n)) (U : Filter ℕ)
+        (nhds (f t)) := by
+    simpa [laplaceTransform] using hlaplace_U
+  have hweak_laplace :
+      Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(μ n)) (U : Filter ℕ)
+        (nhds (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ₀)) := by
+    simpa using hweak (laplaceKernelBoundedContinuous ht)
+  exact tendsto_nhds_unique hshift_laplace hweak_laplace
+
 /-! ## Uniqueness -/
 
 private noncomputable def laplaceExpGenerator : ℝ≥0 →ᵇ ℝ :=
@@ -1023,6 +1393,21 @@ theorem bernstein_unique_of_bernstein
       (laplaceTransform_unique (f := f) (μ := μ) (ν := ν) hμ hν).symm⟩
   · rintro ⟨μ, hμ, _huniq⟩
     exact (hbernstein f).mpr ⟨μ, hμ⟩
+
+/-- Hausdorff--Bernstein--Widder theorem, finite-measure version on `ℝ≥0`.
+
+A function is continuous on `[0, ∞)` and completely monotone on `(0, ∞)` if and only if it is
+the Laplace transform of a finite positive measure on `ℝ≥0`. -/
+theorem bernstein : BernsteinTheorem :=
+  bernstein_of_exists_of_laplaceTransform
+    (fun _f hf => exists_laplaceTransform_of_isClosedCompletelyMonotone hf)
+    (fun μ hμ => by
+      letI := hμ
+      exact laplaceTransform_isClosedCompletelyMonotone μ)
+
+/-- Unique-existence form of the Hausdorff--Bernstein--Widder theorem. -/
+theorem bernstein_unique : BernsteinUniqueTheorem :=
+  bernstein_unique_of_bernstein bernstein
 
 /-- Strong-predicate unique-existence corollary supplied by the Chafaï construction. -/
 theorem bernstein_unique_of_isCompletelyMonotone_of_chafai
