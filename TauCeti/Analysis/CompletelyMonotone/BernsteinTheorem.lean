@@ -491,7 +491,7 @@ only converge to `f t - L` in general. The representing measure must then add th
     Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)) l
       (nhds (f t))
 
-/-- Residual analytic Chafaï convergence in its correct nonconstant-part form.
+/-- Analytic Chafaï convergence in its correct nonconstant-part form.
 
 If `f(t) → L` at infinity, the Chafaï densities have total mass `f 0 - L`; their Laplace
 integrals should converge to `f t - L`. The extraction proof below adds the missing atom
@@ -502,9 +502,9 @@ integrals should converge to `f t - L`. The extraction proof below adds the miss
       Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)) l
         (nhds (f t - L))
 
-/-- Residual Bernstein-kernel approximation step for the Chafaï measures.
+/-- Bernstein-kernel approximation step for the Chafaï measures.
 
-This is the remaining analytic core behind
+This is the analytic core behind
 `ChafaiRescaledLaplaceConvergenceToNonconstantPart`: prove that the Bernstein kernels
 reconstruct the nonconstant part `f t - L`, and that replacing those kernels by the Laplace
 kernels costs `o(1)` against the varying rescaled Chafaï measures. -/
@@ -517,6 +517,57 @@ kernels costs `o(1)` against the varying rescaled Chafaï measures. -/
       Tendsto (fun n =>
         ∫ p, (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
           ∂(chafaiRescaled f n)) atTop (nhds 0)
+
+/-- The Chafaï Bernstein-kernel approximation reconstructs the nonconstant part of a completely
+monotone function, and the Bernstein kernels may be replaced by Laplace kernels at `o(1)` cost. -/
+theorem chafaiRescaledBernsteinApproximationToNonconstantPart
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) :
+    ChafaiRescaledBernsteinApproximationToNonconstantPart f := by
+  obtain ⟨L, hL, hL_nonneg, hfinite⟩ := chafaiRescaled_finite_mass f hcm
+  refine ⟨L, hL, hL_nonneg, fun {t} ht => ?_⟩
+  constructor
+  · have hconst : ∀ᶠ n in atTop,
+        (∫ p, (bernsteinKernelBoundedContinuous n ht) p ∂(chafaiRescaled f n)) =
+          f t - L := by
+      filter_upwards [eventually_ge_atTop 2] with n hn
+      simpa using (chafai_identity f hcm n hn t ht L hL).symm
+    exact Tendsto.congr' (EventuallyEq.symm hconst) tendsto_const_nhds
+  · have hkernel :
+        Tendsto (fun n => ∫ p : ℝ≥0,
+          (bernstein_kernel n t (p : ℝ) - Real.exp (-(t * (p : ℝ))))
+            ∂(chafaiRescaled f n)) atTop (nhds 0) :=
+      kernel_approx_error_tendsto (σ := chafaiRescaled f) (C := f 0 - L)
+        (fun n => (hfinite n).1) (fun n => (hfinite n).2) t ht
+    have hneg :
+        Tendsto (fun n => -∫ p : ℝ≥0,
+          (bernstein_kernel n t (p : ℝ) - Real.exp (-(t * (p : ℝ))))
+            ∂(chafaiRescaled f n)) atTop (nhds 0) := by
+      simpa using hkernel.neg
+    refine Tendsto.congr' ?_ hneg
+    filter_upwards with n
+    letI := (hfinite n).1
+    have h_exp : Integrable (fun p : ℝ≥0 => Real.exp (-(t * (p : ℝ))))
+        (chafaiRescaled f n) :=
+      integrable_laplaceKernel_of_nonneg _ ht
+    have h_bernstein : Integrable (fun p : ℝ≥0 =>
+        (bernsteinKernelBoundedContinuous n ht) p) (chafaiRescaled f n) :=
+      (bernsteinKernelBoundedContinuous n ht).integrable (chafaiRescaled f n)
+    calc
+      -∫ p : ℝ≥0,
+          (bernstein_kernel n t (p : ℝ) - Real.exp (-(t * (p : ℝ))))
+            ∂(chafaiRescaled f n)
+          = ∫ p : ℝ≥0,
+              -(bernstein_kernel n t (p : ℝ) - Real.exp (-(t * (p : ℝ))))
+                ∂(chafaiRescaled f n) := by
+            simpa using (integral_neg
+              (f := fun p : ℝ≥0 =>
+                bernstein_kernel n t (p : ℝ) - Real.exp (-(t * (p : ℝ))))
+              (μ := chafaiRescaled f n)).symm
+      _ = ∫ p : ℝ≥0,
+          (Real.exp (-(t * (p : ℝ))) - (bernsteinKernelBoundedContinuous n ht) p)
+            ∂(chafaiRescaled f n) := by
+            refine integral_congr_ae (Filter.Eventually.of_forall fun p => ?_)
+            simp
 
 /-- The filter-general Chafaï Laplace convergence follows formally from the at-top
 Bernstein-kernel approximation step.
@@ -572,6 +623,14 @@ theorem chafaiRescaledLaplaceConvergenceToNonconstantPart_of_bernsteinApprox
     simpa [bernsteinPart, errorPart] using hbernstein.add herr
   exact (Tendsto.congr' (Filter.Eventually.of_forall fun n => (hsplit n).symm) hsum).mono_left hl
 
+/-- Chafaï Laplace convergence for a completely monotone function, with the constant limit split
+off as the missing atom at zero. -/
+theorem chafaiRescaledLaplaceConvergenceToNonconstantPart
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) :
+    ChafaiRescaledLaplaceConvergenceToNonconstantPart f :=
+  chafaiRescaledLaplaceConvergenceToNonconstantPart_of_bernsteinApprox hcm
+    (chafaiRescaledBernsteinApproximationToNonconstantPart hcm)
+
 /-- Existence of a finite representing measure for a function satisfying the existing strong
 `IsCompletelyMonotone` predicate.
 
@@ -579,9 +638,10 @@ This is the part of the hard direction that the Part-1 Chafaï infrastructure is
 use the mass bound, prove tightness, extract a weak cluster point, and identify the Laplace
 integrals of the limit. -/
 theorem exists_laplaceTransform_of_isCompletelyMonotone_of_chafai
-    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f)
-    (hconv : ChafaiRescaledLaplaceConvergenceToNonconstantPart f) :
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) :
     ∃ μ : Measure ℝ≥0, RepresentsLaplace f μ := by
+  have hconv : ChafaiRescaledLaplaceConvergenceToNonconstantPart f :=
+    chafaiRescaledLaplaceConvergenceToNonconstantPart hcm
   obtain ⟨L, _hL, hL_nonneg, hconv⟩ := hconv
   obtain ⟨_L, C, _hL, _hL_nonneg, _hC, hmass⟩ :=
     chafaiRescaled_prokhorov_mass_bound f hcm
@@ -779,13 +839,12 @@ theorem bernstein_unique_of_bernstein
   · rintro ⟨μ, hμ, _huniq⟩
     exact (hbernstein f).mpr ⟨μ, hμ⟩
 
-/-- Strong-predicate unique-existence corollary, conditional on Chafaï Laplace convergence. -/
+/-- Strong-predicate unique-existence corollary supplied by the Chafaï construction. -/
 theorem bernstein_unique_of_isCompletelyMonotone_of_chafai
-    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f)
-    (hconv : ChafaiRescaledLaplaceConvergenceToNonconstantPart f) :
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) :
     ∃! μ : Measure ℝ≥0, RepresentsLaplace f μ := by
   obtain ⟨μ, hμ⟩ :=
-    exists_laplaceTransform_of_isCompletelyMonotone_of_chafai hcm hconv
+    exists_laplaceTransform_of_isCompletelyMonotone_of_chafai hcm
   exact ⟨μ, hμ, fun ν hν =>
     (laplaceTransform_unique (f := f) (μ := μ) (ν := ν) hμ hν).symm⟩
 
