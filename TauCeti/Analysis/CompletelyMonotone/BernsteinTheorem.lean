@@ -105,15 +105,8 @@ monotone on `(0, ∞)`. -/
   ∀ μ : Measure ℝ≥0, IsFiniteMeasure μ →
     IsCompletelyMonotoneOnIoi (laplaceTransform μ)
 
-/-- Gap statement: finite measures with all moments finite satisfy the stronger existing
-`IsCompletelyMonotone` predicate for their Laplace transforms.
-
-Missing argument: closed-half-line differentiation under the integral with moment domination at
-`0`. The Mathlib full-neighborhood wrapper
-`hasDerivAt_integral_of_dominated_loc_of_deriv_le` is not enough at the endpoint; this needs a
-within-set analogue, e.g.
-`hasDerivWithinAt_integral_of_dominated_loc_of_deriv_le`, or an equivalent filter-level dominated
-convergence proof for the right derivative. -/
+/-- Proposition packaging the strong easy direction: finite measures with all moments finite
+satisfy the existing `IsCompletelyMonotone` predicate for their Laplace transforms. -/
 @[expose] def LaplaceTransformCompletelyMonotoneOfMoments : Prop :=
   ∀ μ : Measure ℝ≥0, IsFiniteMeasure μ →
     (∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ) →
@@ -234,6 +227,26 @@ lemma integrable_laplaceMomentTransform (μ : Measure ℝ≥0) [IsFiniteMeasure 
   refine Filter.Eventually.of_forall fun x => ?_
   simpa [norm_mul, norm_pow, Real.norm_eq_abs, abs_of_nonneg x.2] using hC (x : ℝ) x.2
 
+/-- Moment integrability controls the signed Laplace moment kernel on the closed half-line. -/
+lemma integrable_laplaceMomentTransform_of_nonneg (μ : Measure ℝ≥0)
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ) (n : ℕ) {t : ℝ}
+    (ht : 0 ≤ t) :
+    Integrable (fun x : ℝ≥0 => (-(x : ℝ)) ^ n * Real.exp (-(t * (x : ℝ)))) μ := by
+  refine (hmom n).mono' (by fun_prop) ?_
+  refine Filter.Eventually.of_forall fun x => ?_
+  have hx : 0 ≤ (x : ℝ) := x.2
+  have hpow : 0 ≤ (x : ℝ) ^ n := pow_nonneg hx n
+  have hexp_le : Real.exp (-(t * (x : ℝ))) ≤ 1 := by
+    rw [Real.exp_le_one_iff]
+    exact neg_nonpos.mpr (mul_nonneg ht hx)
+  calc
+    ‖(-(x : ℝ)) ^ n * Real.exp (-(t * (x : ℝ)))‖
+        = (x : ℝ) ^ n * Real.exp (-(t * (x : ℝ))) := by
+          rw [norm_mul, norm_pow, Real.norm_eq_abs, abs_neg, abs_of_nonneg hx,
+            Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    _ ≤ (x : ℝ) ^ n := by
+          simpa [mul_one] using mul_le_mul_of_nonneg_left hexp_le hpow
+
 /-- Differentiation under the integral for the signed Laplace moment kernels on `(0, ∞)`. -/
 lemma hasDerivAt_laplaceMomentTransform (μ : Measure ℝ≥0) [IsFiniteMeasure μ]
     (n : ℕ) {t : ℝ} (ht : 0 < t) :
@@ -301,6 +314,161 @@ lemma hasDerivAt_laplaceMomentTransform (μ : Measure ℝ≥0) [IsFiniteMeasure 
     ∫ x : ℝ≥0, (-(x : ℝ)) ^ n * Real.exp (-(y * (x : ℝ))) ∂μ)
     (∫ x : ℝ≥0, (-(x : ℝ)) ^ (n + 1) * Real.exp (-(t * (x : ℝ))) ∂μ) t
   simpa [laplaceMomentTransform] using h.2
+
+private lemma abs_exp_neg_sub_one_le {a : ℝ} (ha : 0 ≤ a) :
+    |Real.exp (-a) - 1| ≤ a := by
+  have hexp_le : Real.exp (-a) ≤ 1 := by
+    rw [Real.exp_le_one_iff]
+    exact neg_nonpos.mpr ha
+  have hlinear := Real.add_one_le_exp (-a)
+  rw [abs_of_nonpos (sub_nonpos.mpr hexp_le)]
+  linarith
+
+private lemma norm_laplaceMomentKernel_slope_zero_le (n : ℕ) {y : ℝ} (hy : 0 ≤ y)
+    (x : ℝ≥0) :
+    ‖slope (fun z : ℝ => (-(x : ℝ)) ^ n * Real.exp (-(z * (x : ℝ)))) 0 y‖ ≤
+      (x : ℝ) ^ (n + 1) := by
+  by_cases hy_zero : y = 0
+  · subst y
+    simp
+  have hy_pos : 0 < y := lt_of_le_of_ne' hy hy_zero
+  have hx : 0 ≤ (x : ℝ) := x.2
+  have harg_nonneg : 0 ≤ y * (x : ℝ) := mul_nonneg hy hx
+  have hpow_abs : |(-(x : ℝ)) ^ n| = (x : ℝ) ^ n := by
+    rw [abs_pow, abs_neg, abs_of_nonneg hx]
+  have hquot :
+      |(Real.exp (-(y * (x : ℝ))) - 1) / y| ≤ (x : ℝ) := by
+    rw [abs_div, abs_of_pos hy_pos]
+    exact (div_le_iff₀ hy_pos).mpr
+      (by simpa [mul_comm, mul_left_comm, mul_assoc] using
+        abs_exp_neg_sub_one_le harg_nonneg)
+  have hpow_nonneg : 0 ≤ (x : ℝ) ^ n := pow_nonneg hx n
+  calc
+    ‖slope (fun z : ℝ => (-(x : ℝ)) ^ n * Real.exp (-(z * (x : ℝ)))) 0 y‖
+        = |(-(x : ℝ)) ^ n| * |(Real.exp (-(y * (x : ℝ))) - 1) / y| := by
+          rw [Real.norm_eq_abs, slope_def_field]
+          simp only [sub_zero, zero_mul, neg_zero, Real.exp_zero, mul_one]
+          rw [show (((-(x : ℝ)) ^ n * Real.exp (-(y * (x : ℝ))) -
+                (-(x : ℝ)) ^ n) / y) =
+              (-(x : ℝ)) ^ n * ((Real.exp (-(y * (x : ℝ))) - 1) / y) by ring,
+            abs_mul]
+    _ ≤ (x : ℝ) ^ n * (x : ℝ) := by
+          simpa [hpow_abs] using mul_le_mul_of_nonneg_left hquot hpow_nonneg
+    _ = (x : ℝ) ^ (n + 1) := by rw [pow_succ]
+
+private lemma hasDerivWithinAt_laplaceMomentTransform_zero (μ : Measure ℝ≥0)
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ) (n : ℕ) :
+    HasDerivWithinAt (laplaceMomentTransform μ n) (laplaceMomentTransform μ (n + 1) 0)
+      (Ici 0) 0 := by
+  let l : Filter ℝ := 𝓝[Ici (0 : ℝ) \ {0}] (0 : ℝ)
+  let K : ℝ → ℝ≥0 → ℝ := fun y x =>
+    (-(x : ℝ)) ^ n * Real.exp (-(y * (x : ℝ)))
+  have hlim :
+      Tendsto (fun y : ℝ => ∫ x : ℝ≥0, slope (fun z : ℝ => K z x) 0 y ∂μ) l
+        (𝓝 (∫ x : ℝ≥0, (-(x : ℝ)) ^ (n + 1) ∂μ)) := by
+    refine tendsto_integral_filter_of_dominated_convergence
+      (μ := μ) (l := l) (bound := fun x : ℝ≥0 => (x : ℝ) ^ (n + 1))
+      ?_ ?_ (hmom (n + 1)) ?_
+    · exact Filter.Eventually.of_forall fun y => by
+        simpa [slope_def_field] using
+          (by fun_prop : AEStronglyMeasurable
+            (fun x : ℝ≥0 => (K y x - K 0 x) / (y - 0)) μ)
+    · filter_upwards [eventually_mem_nhdsWithin] with y hy
+      refine Filter.Eventually.of_forall fun x => ?_
+      exact norm_laplaceMomentKernel_slope_zero_le n hy.1 x
+    · refine Filter.Eventually.of_forall fun x => ?_
+      have hderiv :
+          HasDerivWithinAt (fun y : ℝ => K y x) ((-(x : ℝ)) ^ (n + 1)) (Ici 0) 0 := by
+        have hlin : HasDerivAt (fun y : ℝ => -(y * (x : ℝ))) (-(x : ℝ)) 0 := by
+          exact (hasDerivAt_mul_const (x : ℝ)).neg
+        have hder := hlin.exp.const_mul ((-(x : ℝ)) ^ n)
+        simpa [K, pow_succ, mul_assoc, mul_comm, mul_left_comm] using hder.hasDerivWithinAt
+      exact (hasDerivWithinAt_iff_tendsto_slope.mp hderiv)
+  have hslope :
+      (fun y : ℝ => slope (laplaceMomentTransform μ n) 0 y)
+        =ᶠ[l] fun y : ℝ => ∫ x : ℝ≥0, slope (fun z : ℝ => K z x) 0 y ∂μ := by
+    filter_upwards [eventually_mem_nhdsWithin] with y hy
+    have hy_nonneg : 0 ≤ y := hy.1
+    have hKy : Integrable (fun x : ℝ≥0 => K y x) μ :=
+      integrable_laplaceMomentTransform_of_nonneg μ hmom n hy_nonneg
+    have hK0 : Integrable (fun x : ℝ≥0 => K 0 x) μ :=
+      integrable_laplaceMomentTransform_of_nonneg μ hmom n le_rfl
+    calc
+      slope (laplaceMomentTransform μ n) 0 y
+          = (y - 0)⁻¹ *
+              ((∫ x : ℝ≥0, K y x ∂μ) - ∫ x : ℝ≥0, K 0 x ∂μ) := by
+                simp [slope_def_field, laplaceMomentTransform, K, div_eq_inv_mul]
+      _ = (y - 0)⁻¹ * (∫ x : ℝ≥0, K y x - K 0 x ∂μ) := by
+            rw [integral_sub hKy hK0]
+      _ = ∫ x : ℝ≥0, (y - 0)⁻¹ * (K y x - K 0 x) ∂μ := by
+            rw [integral_const_mul]
+      _ = ∫ x : ℝ≥0, slope (fun z : ℝ => K z x) 0 y ∂μ := by
+            congr with x
+  rw [hasDerivWithinAt_iff_tendsto_slope]
+  have hlim' :
+      Tendsto (fun y : ℝ => ∫ x : ℝ≥0, slope (fun z : ℝ => K z x) 0 y ∂μ) l
+        (𝓝 (laplaceMomentTransform μ (n + 1) 0)) := by
+    simpa [laplaceMomentTransform] using hlim
+  simpa [l] using Tendsto.congr' hslope.symm hlim'
+
+/-- Differentiation under the integral for signed Laplace moment kernels within `[0, ∞)`.
+
+At positive parameters this is the existing open-neighbourhood differentiation theorem; at `0`
+it is the one-sided dominated-convergence argument using the next moment as a bound. -/
+lemma hasDerivWithinAt_laplaceMomentTransform_Ici (μ : Measure ℝ≥0) [IsFiniteMeasure μ]
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ)
+    (n : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    HasDerivWithinAt (laplaceMomentTransform μ n) (laplaceMomentTransform μ (n + 1) t)
+      (Ici 0) t := by
+  by_cases ht_pos : 0 < t
+  · exact (hasDerivAt_laplaceMomentTransform μ n ht_pos).hasDerivWithinAt
+  have ht_zero : t = 0 := le_antisymm (le_of_not_gt ht_pos) ht
+  subst t
+  exact hasDerivWithinAt_laplaceMomentTransform_zero μ hmom n
+
+/-- The derivative within `[0, ∞)` of the `n`-th signed Laplace moment kernel is the next
+signed moment kernel. -/
+lemma derivWithin_laplaceMomentTransform_eq (μ : Measure ℝ≥0) [IsFiniteMeasure μ]
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ)
+    (n : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    derivWithin (laplaceMomentTransform μ n) (Ici 0) t =
+      laplaceMomentTransform μ (n + 1) t := by
+  exact (hasDerivWithinAt_laplaceMomentTransform_Ici μ hmom n ht).derivWithin
+    ((uniqueDiffOn_Ici (0 : ℝ)) t (mem_Ici.mpr ht))
+
+/-- On the closed half-line, the iterated within-derivatives of a finite-measure Laplace transform
+with all moments finite are the signed moment kernel integrals. -/
+lemma iteratedDerivWithin_laplaceTransform_eq_laplaceMomentTransform_Ici
+    (μ : Measure ℝ≥0) [IsFiniteMeasure μ]
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ)
+    (n : ℕ) {t : ℝ} (ht : 0 ≤ t) :
+    iteratedDerivWithin n (laplaceTransform μ) (Ici 0) t =
+      laplaceMomentTransform μ n t := by
+  induction n generalizing t with
+  | zero => simp [laplaceMomentTransform, laplaceTransform]
+  | succ n ih =>
+      rw [iteratedDerivWithin_succ]
+      calc
+        derivWithin (iteratedDerivWithin n (laplaceTransform μ) (Ici 0)) (Ici 0) t
+            = derivWithin (laplaceMomentTransform μ n) (Ici 0) t := by
+              exact derivWithin_congr (fun y hy => ih hy) (ih ht)
+        _ = laplaceMomentTransform μ (n + 1) t :=
+              derivWithin_laplaceMomentTransform_eq μ hmom n ht
+
+/-- If all moments of the representing measure are finite, its Laplace transform is smooth on the
+closed half-line in the existing `iteratedDerivWithin` sense. -/
+lemma laplaceTransform_contDiffOn_Ici_of_moments
+    (μ : Measure ℝ≥0) [IsFiniteMeasure μ]
+    (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ) :
+    ContDiffOn ℝ (⊤ : ℕ∞) (laplaceTransform μ) (Ici 0) := by
+  refine contDiffOn_of_differentiableOn_deriv (𝕜 := ℝ) (n := (⊤ : ℕ∞))
+    (s := Ici (0 : ℝ)) (f := laplaceTransform μ) ?_
+  intro m _hm
+  have hdiff_moment : DifferentiableOn ℝ (laplaceMomentTransform μ m) (Ici 0) := by
+    intro t ht
+    exact (hasDerivWithinAt_laplaceMomentTransform_Ici μ hmom m ht).differentiableWithinAt
+  exact hdiff_moment.congr fun t ht =>
+    iteratedDerivWithin_laplaceTransform_eq_laplaceMomentTransform_Ici μ hmom m ht
 
 /-- On the open half-line, the iterated within-derivatives of a finite-measure Laplace transform
 are the signed moment kernel integrals. -/
@@ -379,14 +547,31 @@ theorem laplaceTransform_isClosedCompletelyMonotone
     IsClosedCompletelyMonotone (laplaceTransform μ) :=
   ⟨laplaceTransform_continuousOn_halfLine μ, laplaceTransform_isCompletelyMonotoneOnIoi μ⟩
 
-/-- Conditional strong easy direction: with all moments finite, the Laplace transform satisfies the
-stronger existing `IsCompletelyMonotone` predicate using derivatives within `[0, ∞)`. -/
+/-- Strong easy direction: with all moments finite, the Laplace transform satisfies the existing
+`IsCompletelyMonotone` predicate using derivatives within `[0, ∞)`. -/
 theorem laplaceTransform_isCompletelyMonotone_of_moments
-    (hapi : LaplaceTransformCompletelyMonotoneOfMoments)
     (μ : Measure ℝ≥0) [hμ : IsFiniteMeasure μ]
     (hmom : ∀ n : ℕ, Integrable (fun x : ℝ≥0 => (x : ℝ) ^ n) μ) :
-    IsCompletelyMonotone (laplaceTransform μ) :=
-  hapi μ hμ hmom
+    IsCompletelyMonotone (laplaceTransform μ) := by
+  refine ⟨laplaceTransform_contDiffOn_Ici_of_moments μ hmom, fun n t ht => ?_⟩
+  rw [iteratedDerivWithin_laplaceTransform_eq_laplaceMomentTransform_Ici μ hmom n ht]
+  rw [laplaceMomentTransform]
+  rw [← integral_const_mul]
+  refine integral_nonneg fun x => ?_
+  have hx : 0 ≤ (x : ℝ) := x.2
+  have hpow : 0 ≤ (x : ℝ) ^ n := pow_nonneg hx n
+  have hexp : 0 ≤ Real.exp (-(t * (x : ℝ))) := Real.exp_nonneg _
+  have heq : (-1 : ℝ) ^ n * ((-(x : ℝ)) ^ n * Real.exp (-(t * (x : ℝ)))) =
+      (x : ℝ) ^ n * Real.exp (-(t * (x : ℝ))) := by
+    rw [← mul_assoc, ← mul_pow, neg_one_mul, neg_neg]
+  simpa [heq] using mul_nonneg hpow hexp
+
+/-- The strong finite-moment Laplace-transform easy direction is discharged unconditionally. -/
+theorem laplaceTransformCompletelyMonotoneOfMoments :
+    LaplaceTransformCompletelyMonotoneOfMoments := by
+  intro μ hμ hmom
+  letI := hμ
+  exact laplaceTransform_isCompletelyMonotone_of_moments μ hmom
 
 /-! ## Representation predicate -/
 
