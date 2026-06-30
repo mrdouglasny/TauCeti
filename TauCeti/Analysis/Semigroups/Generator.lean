@@ -244,7 +244,7 @@ private theorem StronglyContinuousSemigroup.local_integral_shift_identity
         exact hu.1
       have h_semigroup_apply :
           S.realOperator h (S.realOperator u x) = S.realOperator (u + h) x := by
-        rw [← ContinuousLinearMap.comp_apply, ← S.semigroup h u hh.le hu_nonneg, add_comm]
+        rw [← ContinuousLinearMap.comp_apply, ← S.realOperator_add h u hh.le hu_nonneg, add_comm]
       simpa [f] using h_semigroup_apply
   have h_sub :
       (∫ u in h..t + h, f u) - ∫ u in (0 : ℝ)..t, f u =

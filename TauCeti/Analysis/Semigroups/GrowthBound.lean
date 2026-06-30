@@ -76,7 +76,7 @@ theorem StronglyContinuousSemigroup.existsGrowthBound
       exact ContinuousLinearMap.norm_id_le
     | succ k ih =>
       have : (↑(k + 1) : ℝ) = 1 + ↑k := by push_cast; ring
-      rw [this, S.semigroup 1 ↑k (by linarith) (Nat.cast_nonneg k)]
+      rw [this, S.realOperator_add 1 ↑k (by linarith) (Nat.cast_nonneg k)]
       calc ‖(S.realOperator 1).comp (S.realOperator ↑k)‖
           ≤ ‖S.realOperator 1‖ * ‖S.realOperator ↑k‖ :=
             ContinuousLinearMap.opNorm_comp_le _ _
@@ -89,7 +89,7 @@ theorem StronglyContinuousSemigroup.existsGrowthBound
   have hfrac_le1 : t - ↑n ≤ 1 := by
     have := Nat.lt_floor_add_one t; linarith
   have h_eq : (t - ↑n) + ↑n = t := by ring
-  have h_sg := S.semigroup (t - ↑n) ↑n hfrac_nn (Nat.cast_nonneg n)
+  have h_sg := S.realOperator_add (t - ↑n) ↑n hfrac_nn (Nat.cast_nonneg n)
   rw [h_eq] at h_sg
   rw [h_sg]
   calc ‖(S.realOperator (t - ↑n)).comp (S.realOperator ↑n)‖

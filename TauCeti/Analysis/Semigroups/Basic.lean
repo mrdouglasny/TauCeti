@@ -129,7 +129,7 @@ theorem realOperator_zero (S : StronglyContinuousSemigroup X) :
 
 omit [CompleteSpace X] in
 /-- The real-time shim satisfies the semigroup law at nonnegative real times. -/
-theorem semigroup (S : StronglyContinuousSemigroup X) (s t : ℝ) (hs : 0 ≤ s) (ht : 0 ≤ t) :
+theorem realOperator_add (S : StronglyContinuousSemigroup X) (s t : ℝ) (hs : 0 ≤ s) (ht : 0 ≤ t) :
     S.realOperator (s + t) = (S.realOperator s).comp (S.realOperator t) := by
   rw [realOperator, realOperator, realOperator, Real.toNNReal_add hs ht]
   exact S.map_add' s.toNNReal t.toNNReal
@@ -257,7 +257,7 @@ private theorem StronglyContinuousSemigroup.pointwiseBoundedOnUnitInterval
           linarith
         have htd_lt : t - δ < (↑k + 1) * δ := by
           push_cast [Nat.succ_eq_add_one] at ht_ub; linarith
-        have h_sg := S.semigroup δ (t - δ) (le_of_lt hδ_pos) htd_nn
+        have h_sg := S.realOperator_add δ (t - δ) (le_of_lt hδ_pos) htd_nn
         have h_delta_add_sub : δ + (t - δ) = t := by ring
         rw [h_delta_add_sub] at h_sg
         calc ‖S.realOperator t x‖
@@ -317,7 +317,7 @@ private theorem StronglyContinuousSemigroup.normBoundedOnInterval
         push_cast [Nat.succ_eq_add_one] at htn; linarith
       have hk_nn : (0 : ℝ) ≤ ↑k := Nat.cast_nonneg k
       have h_eq : t = (t - ↑k) + ↑k := by ring
-      have h_sg := S.semigroup (t - ↑k) ↑k htk_nn hk_nn
+      have h_sg := S.realOperator_add (t - ↑k) ↑k htk_nn hk_nn
       rw [← h_eq] at h_sg
       rw [h_sg]
       calc ‖(S.realOperator (t - ↑k)).comp (S.realOperator ↑k)‖
@@ -347,7 +347,7 @@ private theorem StronglyContinuousSemigroup.strongContWithinAt_left
   simp only [Set.mem_Icc] at ht_mem
   have ht₀t_nn : 0 ≤ t₀ - t := by linarith [ht_mem.2]
   have h_sg_eq : S.realOperator t₀ = (S.realOperator t).comp (S.realOperator (t₀ - t)) := by
-    have := S.semigroup t (t₀ - t) ht_mem.1 ht₀t_nn
+    have := S.realOperator_add t (t₀ - t) ht_mem.1 ht₀t_nn
     rwa [add_sub_cancel] at this
   have h_diff : S.realOperator t x - S.realOperator t₀ x =
       S.realOperator t (x - S.realOperator (t₀ - t) x) := by
@@ -399,7 +399,7 @@ private theorem StronglyContinuousSemigroup.strongContWithinAt_right
   filter_upwards [self_mem_nhdsWithin] with t ht
   simp only [Set.mem_Ici] at ht
   have ht_nn : 0 ≤ t - t₀ := by linarith
-  have h_sg := S.semigroup t₀ (t - t₀) ht₀ ht_nn
+  have h_sg := S.realOperator_add t₀ (t - t₀) ht₀ ht_nn
   have h_add_sub_t0 : t₀ + (t - t₀) = t := by ring
   rw [h_add_sub_t0] at h_sg
   rw [h_sg, ContinuousLinearMap.comp_apply]
