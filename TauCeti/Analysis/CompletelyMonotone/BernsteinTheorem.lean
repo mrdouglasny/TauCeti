@@ -409,17 +409,68 @@ end RepresentsLaplace
 
 /-! ## Hard direction: extraction from the Chafaï measures -/
 
-/-- Gap statement: uniform tightness of the Chafaï rescaled approximating measures.
-
-Part 1 supplies a uniform mass bound. Prokhorov extraction additionally needs this tail estimate on
-`ℝ≥0`.
-
-Missing argument: the Chafaï tail estimate proving
-`lim_R sup_n (chafaiRescaled f n) {p | R < p} = 0`, usable with
-`isTightMeasureSet_range_of_tendsto_limsup_measure_norm_gt`. The Mathlib tightness wrapper exists;
-the missing input is the project-side Chafaï tail bound. -/
+/-- Uniform tightness of the Chafaï rescaled approximating measures. -/
 @[expose] def ChafaiRescaledTight (f : ℝ → ℝ) : Prop :=
   IsTightMeasureSet (Set.range (chafaiRescaled f))
+
+private lemma chafaiRescaled_closedBall_compl_le
+    {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) {r : ℝ} (hr : 0 < r) (n : ℕ) :
+    (chafaiRescaled f n) (Metric.closedBall (0 : ℝ≥0) r)ᶜ ≤
+      ENNReal.ofReal (-derivWithin f (Ici 0) 0 / r) := by
+  let coord : ℝ≥0 → ENNReal := fun p => ENNReal.ofReal (p : ℝ)
+  have hcoord_meas : AEMeasurable coord (chafaiRescaled f n) :=
+    (ENNReal.measurable_ofReal.comp (by fun_prop : Measurable fun p : ℝ≥0 => (p : ℝ)))
+      |>.aemeasurable
+  have hε0 : ENNReal.ofReal r ≠ 0 := ENNReal.ofReal_ne_zero_iff.mpr hr
+  have hεtop : ENNReal.ofReal r ≠ (∞ : ENNReal) := ENNReal.ofReal_ne_top
+  have hmarkov : (chafaiRescaled f n) {p : ℝ≥0 | ENNReal.ofReal r ≤ coord p} ≤
+      (∫⁻ p : ℝ≥0, coord p ∂(chafaiRescaled f n)) / ENNReal.ofReal r :=
+    meas_ge_le_lintegral_div hcoord_meas hε0 hεtop
+  have hsubset :
+      (Metric.closedBall (0 : ℝ≥0) r)ᶜ ⊆ {p : ℝ≥0 | ENNReal.ofReal r ≤ coord p} := by
+    intro p hp
+    have hpdist : r < dist p (0 : ℝ≥0) := by
+      simpa [Metric.mem_closedBall, not_le] using hp
+    have hdist : dist p (0 : ℝ≥0) = (p : ℝ) := by
+      simp [NNReal.dist_eq]
+    have hle : r ≤ (p : ℝ) := by linarith
+    exact ENNReal.ofReal_le_ofReal hle
+  calc
+    (chafaiRescaled f n) (Metric.closedBall (0 : ℝ≥0) r)ᶜ
+        ≤ (chafaiRescaled f n) {p : ℝ≥0 | ENNReal.ofReal r ≤ coord p} :=
+          measure_mono hsubset
+    _ ≤ (∫⁻ p : ℝ≥0, coord p ∂(chafaiRescaled f n)) / ENNReal.ofReal r := hmarkov
+    _ ≤ ENNReal.ofReal (-derivWithin f (Ici 0) 0) / ENNReal.ofReal r :=
+          ENNReal.div_le_div_right (chafaiRescaled_lintegral_coe_le f hcm n) _
+    _ = ENNReal.ofReal (-derivWithin f (Ici 0) 0 / r) := by
+          rw [ENNReal.ofReal_div_of_pos hr]
+
+/-- Completely monotone functions give a tight family of rescaled Chafaï measures.
+
+The proof uses the Chafaï first-moment bound from `BernsteinMeasures` and Markov's inequality.
+Since the measure space is `ℝ≥0` rather than a normed additive group, it applies Mathlib's
+closed-ball tightness criterion. -/
+theorem chafaiRescaledTight {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f) :
+    ChafaiRescaledTight f := by
+  refine isTightMeasureSet_of_tendsto_measure_compl_closedBall
+    (S := Set.range (chafaiRescaled f)) (x := (0 : ℝ≥0)) ?_
+  rw [ENNReal.tendsto_nhds_zero]
+  intro ε hε
+  have hreal : Tendsto (fun r : ℝ => -derivWithin f (Ici 0) 0 / r) atTop (nhds 0) :=
+    Filter.Tendsto.const_div_atTop tendsto_id _
+  have henn : Tendsto (fun r : ℝ => ENNReal.ofReal (-derivWithin f (Ici 0) 0 / r))
+      atTop (nhds (0 : ENNReal)) := by
+    simpa using ENNReal.tendsto_ofReal hreal
+  have hsmall := (ENNReal.tendsto_nhds_zero.mp henn) ε hε
+  filter_upwards [eventually_gt_atTop (0 : ℝ), hsmall] with r hr hsmallr
+  have hbound :
+      (⨆ μ ∈ Set.range (chafaiRescaled f), μ (Metric.closedBall (0 : ℝ≥0) r)ᶜ) ≤
+        ENNReal.ofReal (-derivWithin f (Ici 0) 0 / r) := by
+    rw [iSup₂_le_iff]
+    intro μ hμ
+    rcases hμ with ⟨n, rfl⟩
+    exact chafaiRescaled_closedBall_compl_le hcm hr n
+  exact hbound.trans hsmallr
 
 /-- Gap statement: the Chafaï rescaled measures have Laplace integrals converging back to `f`.
 
@@ -427,11 +478,27 @@ This is the analytic identification step before passing to a Prokhorov weak limi
 
 Missing argument: identify the rescaled kernel integrals with the Chafaï/Taylor remainder
 expressions and prove their limit is `f t`; the existing weak-convergence specialization only
-identifies the Laplace integrals of an already extracted weak cluster point. -/
+identifies the Laplace integrals of an already extracted weak cluster point.
+
+This over-strong formulation is not used below: for a completely monotone function with
+`f(t) → L`, the Chafaï densities represent the nonconstant part, so the rescaled integrals can
+only converge to `f t - L` in general. The representing measure must then add the missing atom
+`L δ₀`. -/
 @[expose] def ChafaiRescaledLaplaceConvergence (f : ℝ → ℝ) : Prop :=
   ∀ {l : Filter ℕ}, l ≤ atTop → ∀ {t : ℝ}, 0 ≤ t →
     Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)) l
       (nhds (f t))
+
+/-- Residual analytic Chafaï convergence in its correct nonconstant-part form.
+
+If `f(t) → L` at infinity, the Chafaï densities have total mass `f 0 - L`; their Laplace
+integrals should converge to `f t - L`. The extraction proof below adds the missing atom
+`L δ₀`, whose Laplace transform is the constant `L`. -/
+@[expose] def ChafaiRescaledLaplaceConvergenceToNonconstantPart (f : ℝ → ℝ) : Prop :=
+  ∃ L : ℝ, Tendsto f atTop (nhds L) ∧ 0 ≤ L ∧
+    ∀ {l : Filter ℕ}, l ≤ atTop → ∀ {t : ℝ}, 0 ≤ t →
+      Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n)) l
+        (nhds (f t - L))
 
 /-- Existence of a finite representing measure for a function satisfying the existing strong
 `IsCompletelyMonotone` predicate.
@@ -441,15 +508,24 @@ use the mass bound, prove tightness, extract a weak cluster point, and identify 
 integrals of the limit. -/
 theorem exists_laplaceTransform_of_isCompletelyMonotone_of_chafai
     {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f)
-    (htight : ChafaiRescaledTight f)
-    (hconv : ChafaiRescaledLaplaceConvergence f) :
+    (hconv : ChafaiRescaledLaplaceConvergenceToNonconstantPart f) :
     ∃ μ : Measure ℝ≥0, RepresentsLaplace f μ := by
+  obtain ⟨L, _hL, hL_nonneg, hconv⟩ := hconv
   obtain ⟨_L, C, _hL, _hL_nonneg, _hC, hmass⟩ :=
     chafaiRescaled_prokhorov_mass_bound f hcm
   obtain ⟨μ, U, hUle, hμ_fin, _hμ_mass, hweak⟩ :=
     finite_measure_cluster_limit (σ := chafaiRescaled f) C
-      (fun n => (hmass n).2) htight
-  refine ⟨μ, hμ_fin, fun t ht => ?_⟩
+      (fun n => (hmass n).2) (chafaiRescaledTight hcm)
+  let ν : Measure ℝ≥0 := μ + ENNReal.ofReal L • Measure.dirac (0 : ℝ≥0)
+  have hatom_fin : IsFiniteMeasure (ENNReal.ofReal L • Measure.dirac (0 : ℝ≥0)) := by
+    refine ⟨?_⟩
+    simp
+  letI := hatom_fin
+  have hν_fin : IsFiniteMeasure ν := by
+    dsimp [ν]
+    infer_instance
+  refine ⟨ν, hν_fin, fun t ht => ?_⟩
+  letI := hν_fin
   have hweak_laplace :
       Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n))
         (U : Filter ℕ)
@@ -458,9 +534,34 @@ theorem exists_laplaceTransform_of_isCompletelyMonotone_of_chafai
       (μ₀ := μ) (l := (U : Filter ℕ)) hweak ht
   have hchafai :
       Tendsto (fun n => ∫ p, Real.exp (-(t * (p : ℝ))) ∂(chafaiRescaled f n))
-        (U : Filter ℕ) (nhds (f t)) :=
+        (U : Filter ℕ) (nhds (f t - L)) :=
     hconv hUle ht
-  simpa [laplaceTransform] using tendsto_nhds_unique hchafai hweak_laplace
+  have hμ_laplace :
+      f t - L = ∫ p, Real.exp (-(t * (p : ℝ))) ∂μ :=
+    tendsto_nhds_unique hchafai hweak_laplace
+  have hν_laplace :
+      laplaceTransform ν t = (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ) + L := by
+    have hμ_int : Integrable (fun p : ℝ≥0 => Real.exp (-(t * (p : ℝ)))) μ :=
+      integrable_laplaceKernel_of_nonneg μ ht
+    have hatom_int : Integrable (fun p : ℝ≥0 => Real.exp (-(t * (p : ℝ))))
+        (ENNReal.ofReal L • Measure.dirac (0 : ℝ≥0)) := by
+      letI := hatom_fin
+      exact integrable_laplaceKernel_of_nonneg _ ht
+    calc
+      laplaceTransform ν t
+          = ∫ p, Real.exp (-(t * (p : ℝ))) ∂ν := rfl
+      _ = (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ) +
+            ∫ p, Real.exp (-(t * (p : ℝ))) ∂(ENNReal.ofReal L •
+              Measure.dirac (0 : ℝ≥0)) := by
+            dsimp [ν]
+            rw [integral_add_measure hμ_int hatom_int]
+      _ = (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ) + L := by
+            rw [integral_smul_measure, integral_dirac]
+            simp [hL_nonneg]
+  calc
+    f t = (f t - L) + L := by ring
+    _ = (∫ p, Real.exp (-(t * (p : ℝ))) ∂μ) + L := by rw [hμ_laplace]
+    _ = laplaceTransform ν t := hν_laplace.symm
 
 /-! ## Uniqueness -/
 
@@ -530,16 +631,15 @@ theorem bernstein_unique_of_bernstein_of_injective
   · rintro ⟨μ, hμ, _huniq⟩
     exact (hbernstein f).mpr ⟨μ, hμ⟩
 
-/-- Strong-predicate unique-existence corollary, conditional on the remaining Chafaï and
-Laplace-injectivity gaps. -/
+/-- Strong-predicate unique-existence corollary, conditional on Chafaï Laplace convergence and
+Laplace injectivity. -/
 theorem bernstein_unique_of_isCompletelyMonotone_of_chafai
     (hinj : LaplaceTransformInjectiveOnFiniteMeasures)
     {f : ℝ → ℝ} (hcm : IsCompletelyMonotone f)
-    (htight : ChafaiRescaledTight f)
-    (hconv : ChafaiRescaledLaplaceConvergence f) :
+    (hconv : ChafaiRescaledLaplaceConvergenceToNonconstantPart f) :
     ∃! μ : Measure ℝ≥0, RepresentsLaplace f μ := by
   obtain ⟨μ, hμ⟩ :=
-    exists_laplaceTransform_of_isCompletelyMonotone_of_chafai hcm htight hconv
+    exists_laplaceTransform_of_isCompletelyMonotone_of_chafai hcm hconv
   exact ⟨μ, hμ, fun ν hν =>
     (laplaceTransform_unique (f := f) (μ := μ) (ν := ν) hinj hμ hν).symm⟩
 

@@ -6,6 +6,7 @@ module
 
 public import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
 public import Mathlib.Topology.ContinuousMap.Bounded.Basic
+public import TauCeti.Analysis.CompletelyMonotone.Closure
 public import TauCeti.Analysis.CompletelyMonotone.Integral
 
 /-!
@@ -37,6 +38,8 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
   measures and mass preservation.
 * `TauCeti.chafaiMeasure_finite_mass`, `TauCeti.chafaiRescaled_finite_mass`: finiteness and the
   total-mass bound `≤ f(0) - L`.
+* `TauCeti.chafaiRescaled_lintegral_coe_le`: a uniform first-moment bound for the rescaled
+  Chafaï measures, used for tightness.
 * `TauCeti.chafaiRescaled_prokhorov_mass_bound`,
   `TauCeti.chafaiRescaled_tendsto_laplace_integral_of_weak`: Prokhorov-ready mass bounds and
   the Laplace test-function specialization of weak convergence for the rescaled measures.
@@ -360,6 +363,99 @@ lemma chafaiRescaled_mass_eq (f : ℝ → ℝ) (n : ℕ) :
   unfold chafaiRescaled
   rw [Measure.map_apply (measurable_chafaiRescaling n) MeasurableSet.univ, Set.preimage_univ]
 
+private lemma aemeasurable_chafaiDensity_ofReal (f : ℝ → ℝ)
+    (hcm : IsCompletelyMonotone f) (n : ℕ) :
+    AEMeasurable (fun t => ENNReal.ofReal (chafaiDensity f n t))
+      (volume.restrict (Ioi 0)) := by
+  have hcont : ContinuousOn (chafaiDensity f n) (Ici 0) :=
+    continuousOn_chafaiDensity (n := n) (hcm.contDiffOn.of_le (nat_le_top n))
+  exact ((hcont.mono Ioi_subset_Ici_self).aemeasurable measurableSet_Ioi).ennreal_ofReal
+
+private lemma chafaiDensity_neg_derivWithin_pred (f : ℝ → ℝ)
+    {n : ℕ} (hn : 2 ≤ n) {t : ℝ} (ht : 0 < t) :
+    chafaiDensity (fun t => -derivWithin f (Ici 0) t) (n - 1) t =
+      ((n : ℝ) - 1) / t * chafaiDensity f n t := by
+  have hn0 : n ≠ 0 := by omega
+  have hn10 : n - 1 ≠ 0 := by omega
+  rw [chafaiDensity_of_ne_zero hn10, chafaiDensity_of_ne_zero hn0]
+  have hiter : iteratedDerivWithin (n - 1)
+        (fun t => -derivWithin f (Ici 0) t) (Ici 0) t =
+      -iteratedDerivWithin n f (Ici 0) t := by
+    change iteratedDerivWithin (n - 1) (-(derivWithin f (Ici 0))) (Ici 0) t =
+      -iteratedDerivWithin n f (Ici 0) t
+    rw [iteratedDerivWithin_neg]
+    congr 1
+    rw [← iteratedDerivWithin_succ']
+    congr 1
+    omega
+  rw [hiter]
+  have hfact : ((n - 1).factorial : ℝ) =
+      ((n - 1 : ℕ) : ℝ) * ((n - 2).factorial : ℝ) := by
+    rw [show n - 1 = (n - 2) + 1 by omega, Nat.factorial_succ]
+    norm_num
+  rw [hfact]
+  have hnp : ((n - 1 : ℕ) : ℝ) = (n : ℝ) - 1 := by
+    norm_num [Nat.cast_sub (by omega : 1 ≤ n)]
+  have hsub : n - 1 - 1 = n - 2 := by omega
+  have hpow' : t ^ (n - 2) * t = t ^ (n - 1) := by
+    rw [show n - 1 = (n - 2) + 1 by omega, pow_succ]
+  have hsign : -((-1 : ℝ) ^ (n - 1)) = (-1 : ℝ) ^ n := by
+    have hpow : ((-1 : ℝ) ^ n) = (-1 : ℝ) ^ ((n - 1) + 1) := by
+      congr
+      omega
+    rw [hpow, pow_succ]
+    ring
+  have hden : (n : ℝ) - 1 ≠ 0 := by
+    have hnR : (2 : ℝ) ≤ n := by exact_mod_cast hn
+    nlinarith
+  rw [hnp, hsub]
+  field_simp [ht.ne', hden]
+  calc
+    -(((-1 : ℝ) ^ (n - 1) * t ^ (n - 2) *
+          iteratedDerivWithin n f (Ici 0) t * t))
+        = -((-1 : ℝ) ^ (n - 1)) * (t ^ (n - 2) * t) *
+            iteratedDerivWithin n f (Ici 0) t := by ring
+    _ = (-1 : ℝ) ^ n * t ^ (n - 1) *
+            iteratedDerivWithin n f (Ici 0) t := by rw [hsign, hpow']
+    _ = iteratedDerivWithin n f (Ici 0) t * (-1 : ℝ) ^ n * t ^ (n - 1) := by
+          ring
+
+/-- The first moment of `chafaiRescaled f n` is the mass of the previous Chafaï measure for
+the completely monotone function `t ↦ -f'(t)`, for `2 ≤ n`.
+
+This is the Chafaï-specific algebra behind the tightness tail bound: multiplication by the
+rescaled coordinate `(n - 1) / t` lowers the density order from `n` to `n - 1` for the negated
+derivative. -/
+lemma chafaiRescaled_lintegral_coe_eq_chafaiMeasure_neg_derivWithin
+    (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f) {n : ℕ} (hn : 2 ≤ n) :
+    ∫⁻ p : ℝ≥0, ENNReal.ofReal (p : ℝ) ∂(chafaiRescaled f n) =
+      (chafaiMeasure (fun t => -derivWithin f (Ici 0) t) (n - 1)) univ := by
+  rw [chafaiRescaled_eq_map]
+  rw [lintegral_map]
+  swap
+  · exact ENNReal.measurable_ofReal.comp (by fun_prop : Measurable fun p : ℝ≥0 => (p : ℝ))
+  swap
+  · exact measurable_chafaiRescaling n
+  rw [chafaiMeasure_eq_withDensity]
+  rw [lintegral_withDensity_eq_lintegral_mul₀]
+  swap
+  · exact aemeasurable_chafaiDensity_ofReal f hcm n
+  swap
+  · exact ((NNReal.continuous_coe.measurable.comp (measurable_chafaiRescaling n)).aemeasurable)
+      |>.ennreal_ofReal
+  rw [chafaiMeasure_eq_withDensity, withDensity_apply _ MeasurableSet.univ]
+  simp only [Measure.restrict_univ]
+  refine lintegral_congr_ae ?_
+  filter_upwards [ae_restrict_mem measurableSet_Ioi] with t ht
+  have htpos : 0 < t := ht
+  have hscale : (chafaiRescaling n t : ℝ) = ((n : ℝ) - 1) / t :=
+    chafaiRescaling_coe_of_pos (by omega : 1 ≤ n) htpos
+  have hdens_nonneg : 0 ≤ chafaiDensity f n t :=
+    chafaiDensity_nonneg htpos.le (hcm.neg_one_pow_mul_iteratedDerivWithin_nonneg n htpos.le)
+  have hdens_eq := chafaiDensity_neg_derivWithin_pred f hn htpos
+  simp only [Pi.mul_apply]
+  rw [hscale, ← ENNReal.ofReal_mul hdens_nonneg, mul_comm, ← hdens_eq]
+
 /-- **IBP identity** for the CM density:
 `∫₀ᵀ ρ_{m+2}(t) dt = B_{m+2}(T) + ∫₀ᵀ ρ_{m+1}(t) dt`. -/
 private lemma chafaiDensity_ibp_identity (f : ℝ → ℝ) {m : ℕ}
@@ -593,6 +689,39 @@ lemma chafaiRescaled_finite_mass (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f
   · exact ⟨by rw [hmass]; exact (hfinite n).1.measure_univ_lt_top⟩
   · rw [hmass]
     exact (hfinite n).2
+
+/-- Uniform first-moment bound for the rescaled Chafaï measures.
+
+For a completely monotone `f`, every `chafaiRescaled f n` has
+`∫ p, p dσ_n ≤ -f'(0)`. In `ENNReal` form this supplies a Markov tail estimate uniform in `n`,
+which is the tightness input for the Prokhorov extraction. -/
+lemma chafaiRescaled_lintegral_coe_le (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f) :
+    ∀ n,
+      ∫⁻ p : ℝ≥0, ENNReal.ofReal (p : ℝ) ∂(chafaiRescaled f n) ≤
+        ENNReal.ofReal (-derivWithin f (Ici 0) 0) := by
+  intro n
+  have hderiv_nonneg : 0 ≤ -derivWithin f (Ici 0) 0 := by
+    linarith [hcm.derivWithin_nonpos le_rfl]
+  rcases lt_or_ge n 2 with hn | hn
+  · interval_cases n
+    · rw [chafaiRescaled_zero]
+      simp
+    · rw [chafaiRescaled_eq_map, lintegral_map]
+      swap
+      · exact ENNReal.measurable_ofReal.comp
+          (by fun_prop : Measurable fun p : ℝ≥0 => (p : ℝ))
+      swap
+      · exact measurable_chafaiRescaling 1
+      simp [chafaiRescaling]
+  · obtain ⟨L, _hL, hL_nonneg, hfinite⟩ :=
+      chafaiMeasure_finite_mass (fun t => -derivWithin f (Ici 0) t) hcm.neg_derivWithin
+    calc
+      ∫⁻ p : ℝ≥0, ENNReal.ofReal (p : ℝ) ∂(chafaiRescaled f n)
+          = (chafaiMeasure (fun t => -derivWithin f (Ici 0) t) (n - 1)) univ :=
+              chafaiRescaled_lintegral_coe_eq_chafaiMeasure_neg_derivWithin f hcm hn
+      _ ≤ ENNReal.ofReal (-derivWithin f (Ici 0) 0 - L) := (hfinite (n - 1)).2
+      _ ≤ ENNReal.ofReal (-derivWithin f (Ici 0) 0) :=
+          ENNReal.ofReal_le_ofReal (by linarith)
 
 /-- Prokhorov-ready mass bound for the rescaled Chafaï measures: a completely monotone function
 supplies a nonnegative real mass constant `C = f(0) - L`, where `L` is the limit of `f` at
