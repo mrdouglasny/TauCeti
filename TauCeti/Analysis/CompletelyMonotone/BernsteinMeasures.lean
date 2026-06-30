@@ -26,8 +26,10 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
 * `TauCeti.chafaiDensity`, `TauCeti.chafaiMeasure`: the approximating densities and measures.
 * `TauCeti.bernstein_kernel`, `TauCeti.continuous_bernstein_kernel`,
   `TauCeti.bernstein_kernel_nonneg`, `TauCeti.bernstein_kernel_le_one`,
-  `TauCeti.bernsteinKernelBCF`, `TauCeti.bernsteinKernelBCF_apply`,
-  `TauCeti.laplaceKernelBCF`, `TauCeti.laplaceKernelBCF_apply`,
+  `TauCeti.bernsteinKernelBoundedContinuous`,
+  `TauCeti.bernsteinKernelBoundedContinuous_apply`,
+  `TauCeti.laplaceKernelBoundedContinuous`,
+  `TauCeti.laplaceKernelBoundedContinuous_apply`,
   `TauCeti.bernstein_kernel_tendsto`: the rescaled Laplace kernel, its bundled
   bounded-continuous `p`-dependence on the nonnegative half-line, and its bundled pointwise
   limit `e^{-xp}`.
@@ -213,7 +215,8 @@ lemma bernstein_kernel_le_one {n : ℕ} {x p : ℝ} (hx : 0 ≤ x) (hp : 0 ≤ p
 
 /-- The Bernstein kernel as a bundled bounded continuous test function of the nonnegative
 variable `p`, for fixed `n` and nonnegative `x`. -/
-noncomputable def bernsteinKernelBCF (n : ℕ) {x : ℝ} (hx : 0 ≤ x) : ℝ≥0 →ᵇ ℝ where
+noncomputable def bernsteinKernelBoundedContinuous (n : ℕ) {x : ℝ} (hx : 0 ≤ x) :
+    ℝ≥0 →ᵇ ℝ where
   toFun := fun p => bernstein_kernel n x (p : ℝ)
   continuous_toFun := (continuous_bernstein_kernel n x).comp continuous_subtype_val
   map_bounded' :=
@@ -227,13 +230,13 @@ noncomputable def bernsteinKernelBCF (n : ℕ) {x : ℝ} (hx : 0 ≤ x) : ℝ≥
 
 /-- The bundled Bernstein kernel evaluates to the unbundled kernel on `ℝ≥0`. -/
 @[simp]
-lemma bernsteinKernelBCF_apply (n : ℕ) {x : ℝ} (hx : 0 ≤ x) (p : ℝ≥0) :
-    bernsteinKernelBCF n hx p = bernstein_kernel n x (p : ℝ) := by
-  rw [bernsteinKernelBCF]; rfl
+lemma bernsteinKernelBoundedContinuous_apply (n : ℕ) {x : ℝ} (hx : 0 ≤ x) (p : ℝ≥0) :
+    bernsteinKernelBoundedContinuous n hx p = bernstein_kernel n x (p : ℝ) := by
+  rw [bernsteinKernelBoundedContinuous]; rfl
 
 /-- The limiting Laplace kernel as a bundled bounded continuous test function of the
 nonnegative variable `p`, for fixed nonnegative `x`. -/
-noncomputable def laplaceKernelBCF {x : ℝ} (hx : 0 ≤ x) : ℝ≥0 →ᵇ ℝ where
+noncomputable def laplaceKernelBoundedContinuous {x : ℝ} (hx : 0 ≤ x) : ℝ≥0 →ᵇ ℝ where
   toFun := fun p => Real.exp (-(x * (p : ℝ)))
   continuous_toFun := Real.continuous_exp.comp ((continuous_const.mul continuous_subtype_val).neg)
   map_bounded' :=
@@ -251,9 +254,9 @@ noncomputable def laplaceKernelBCF {x : ℝ} (hx : 0 ≤ x) : ℝ≥0 →ᵇ ℝ
 
 /-- The bundled limiting Laplace kernel evaluates to the usual exponential kernel on `ℝ≥0`. -/
 @[simp]
-lemma laplaceKernelBCF_apply {x : ℝ} (hx : 0 ≤ x) (p : ℝ≥0) :
-    laplaceKernelBCF hx p = Real.exp (-(x * (p : ℝ))) := by
-  rw [laplaceKernelBCF]; rfl
+lemma laplaceKernelBoundedContinuous_apply {x : ℝ} (hx : 0 ≤ x) (p : ℝ≥0) :
+    laplaceKernelBoundedContinuous hx p = Real.exp (-(x * (p : ℝ))) := by
+  rw [laplaceKernelBoundedContinuous]; rfl
 
 /-- The Bernstein kernel is measurable in `p` for fixed `n` and `x`. -/
 lemma measurable_bernstein_kernel (n : ℕ) (x : ℝ) : Measurable (bernstein_kernel n x) := by
@@ -450,7 +453,8 @@ private lemma integral_chafaiDensity_one_eq (f : ℝ → ℝ) (hcm : IsCompletel
       ∫ t in (0 : ℝ)..T, -iteratedDerivWithin 1 f (Ici 0) t :=
     intervalIntegral.integral_congr_ae
       (Filter.Eventually.of_forall fun t _ => chafaiDensity_one t)
-  rw [h1, ← hcm.integral_neg_deriv_Ici T hT.le, hcm.integral_mass T hT.le]
+  rw [h1, ← hcm.integral_neg_iteratedDerivWithin_one_Ici T hT.le,
+    hcm.integral_mass T hT.le]
 
 private lemma integral_chafaiDensity_le_sub (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (j : ℕ) (hj : 1 ≤ j) (T : ℝ) (hT : 0 < T) :

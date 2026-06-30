@@ -45,7 +45,6 @@ convergence along an ultrafilter `U ≤ atTop`, which is enough for diagonal lim
 not require a metrizability instance for `FiniteMeasure α`. -/
 lemma finite_measure_cluster_limit
     (σ : ℕ → Measure α) (C : ℝ≥0)
-    [hfin : ∀ n, IsFiniteMeasure (σ n)]
     (hmass : ∀ n, (σ n) univ ≤ (C : ENNReal))
     (hTight : IsTightMeasureSet (Set.range σ)) :
     ∃ (μ₀ : Measure α) (U : Ultrafilter ℕ), (U : Filter ℕ) ≤ atTop ∧ IsFiniteMeasure μ₀ ∧
@@ -53,6 +52,8 @@ lemma finite_measure_cluster_limit
       ∀ g : BoundedContinuousFunction α ℝ,
         Tendsto (fun n => ∫ x, g x ∂(σ n)) (U : Filter ℕ)
           (nhds (∫ x, g x ∂μ₀)) := by
+  have hfin : ∀ n, IsFiniteMeasure (σ n) := fun n =>
+    ⟨(hmass n).trans_lt ENNReal.coe_lt_top⟩
   let σf : ℕ → FiniteMeasure α := fun n => ⟨σ n, hfin n⟩
   obtain ⟨u, -, hu_pos, hu_lim⟩ :
       ∃ u : ℕ → ℝ≥0, StrictAnti u ∧ (∀ n, 0 < u n) ∧ Tendsto u atTop (𝓝 0) :=
@@ -106,7 +107,6 @@ lemma finite_measure_cluster_limit
 lemma finite_measure_subseq_limit
     [FirstCountableTopology (FiniteMeasure α)]
     (σ : ℕ → Measure α) (C : ℝ≥0)
-    [hfin : ∀ n, IsFiniteMeasure (σ n)]
     (hmass : ∀ n, (σ n) univ ≤ (C : ENNReal))
     (hTight : IsTightMeasureSet (Set.range σ)) :
     ∃ (μ₀ : Measure α) (φ : ℕ → ℕ), IsFiniteMeasure μ₀ ∧ StrictMono φ ∧
@@ -116,6 +116,8 @@ lemma finite_measure_subseq_limit
           (nhds (∫ x, g x ∂μ₀)) := by
   obtain ⟨μ₀, U, hUle, hμ₀_fin, hmass_μ₀, hweakU⟩ :=
     finite_measure_cluster_limit (α := α) σ C hmass hTight
+  have hfin : ∀ n, IsFiniteMeasure (σ n) := fun n =>
+    ⟨(hmass n).trans_lt ENNReal.coe_lt_top⟩
   let σf : ℕ → FiniteMeasure α := fun n => ⟨σ n, hfin n⟩
   let μf : FiniteMeasure α := ⟨μ₀, hμ₀_fin⟩
   have hUtend : Tendsto σf (U : Filter ℕ) (nhds μf) := by
