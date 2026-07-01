@@ -911,40 +911,6 @@ private lemma ibp_finite_interval (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
     intervalIntegral.integral_congr_ae (ae_of_all _ fun t _ => by rw [hu'_eq])
   linarith
 
-private lemma tail_setIntegral_tendsto_zero {g : ℝ → ℝ} {a : ℝ}
-    (hg : IntegrableOn g (Ioi a)) :
-    Tendsto (fun T => ∫ t in Ioi T, g t) atTop (nhds 0) := by
-  set I := ∫ t in Ioi a, g t
-  have h_total : Tendsto (fun T => ∫ t in a..T, g t) atTop (nhds I) :=
-    (intervalIntegral_tendsto_integral_Ioi a hg tendsto_id).congr fun _ => by simp [id]
-  have hsub : Tendsto (fun T => I - ∫ t in a..T, g t) atTop (nhds 0) := by
-    convert tendsto_const_nhds.sub h_total using 1
-    simp
-  apply hsub.congr'
-  filter_upwards [eventually_gt_atTop a] with T hT
-  symm
-  have hdisj : Disjoint (Ioc a T) (Ioi T) := by
-    rw [disjoint_left]
-    intro y hy1 hy2
-    simp at hy1 hy2
-    linarith
-  have hunion : Ioc a T ∪ Ioi T = Ioi a := by
-    ext y
-    simp only [mem_union, mem_Ioc, mem_Ioi]
-    constructor
-    · rintro (⟨hy, _⟩ | hy) <;> linarith
-    · intro hy
-      by_cases hyT : y ≤ T
-      · left
-        exact ⟨hy, hyT⟩
-      · right
-        linarith
-  have hd := setIntegral_union hdisj measurableSet_Ioi
-    (hg.mono_set Ioc_subset_Ioi_self) (hg.mono_set (Ioi_subset_Ioi hT.le))
-  rw [hunion] at hd
-  rw [intervalIntegral.integral_of_le hT.le]
-  linarith
-
 private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone f)
     (k : ℕ) (hk : k ≠ 0) (x : ℝ) (hx : 0 ≤ x)
     (L : ℝ) (hL : Tendsto f atTop (nhds L)) :
@@ -986,7 +952,7 @@ private lemma boundary_term_decay (f : ℝ → ℝ) (hcm : IsCompletelyMonotone 
       chafaiDensity_integrableOn_Ioi_of_tendsto f hcm k hk1 L hL
     have htail : Tendsto (fun S : ℝ => ∫ t in Ioi S, chafaiDensity f k t)
         atTop (nhds 0) :=
-      tail_setIntegral_tendsto_zero hint_density
+      tendsto_integral_Ioi_zero tendsto_id
     have htail_half : Tendsto (fun T : ℝ => ∫ t in Ioi (T / 2), chafaiDensity f k t)
         atTop (nhds 0) := by
       have hhalf_map : Tendsto (fun T : ℝ => (1 / 2 : ℝ) * T) atTop atTop :=
