@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
-public import Mathlib.Topology.ContinuousMap.Bounded.Basic
 public import TauCeti.Analysis.CompletelyMonotone.Integral
 
 /-!
@@ -35,6 +34,10 @@ These build on the `IsCompletelyMonotone` API in `CompletelyMonotone/Basic.lean`
   limit `e^{-xp}`.
 * `TauCeti.chafaiRescaled`, `TauCeti.chafaiRescaled_mass_eq`: the `ℝ≥0`-valued pushed-forward
   measures and mass preservation.
+* `TauCeti.chafaiRescaled_integral_bernsteinKernel`,
+  `TauCeti.chafaiRescaled_integral_bernsteinKernelBoundedContinuous`,
+  `TauCeti.ae_nonneg_bernsteinKernel_chafaiRescaled`: characteristic lemmas pairing the
+  rescaled Chafaï measures with the Bernstein kernel without unfolding either definition.
 * `TauCeti.chafaiMeasure_finite_mass`, `TauCeti.chafaiRescaled_finite_mass`: finiteness and the
   total-mass bound `≤ f(0) - L`.
 * `TauCeti.chafaiRescaled_prokhorov_mass_bound`,
@@ -341,6 +344,59 @@ lemma chafaiRescaled_integral (f : ℝ → ℝ) (n : ℕ) {g : ℝ≥0 → ℝ}
       ∫ t, g (chafaiRescaling n t) ∂(chafaiMeasure f n) := by
   rw [chafaiRescaled_eq_map] at hg ⊢
   exact MeasureTheory.integral_map (measurable_chafaiRescaling n).aemeasurable hg
+
+/-- On positive source points, pulling the Bernstein kernel back along the Chafaï rescaling
+gives the classical finite-order kernel `(max (1 - x / t) 0) ^ (n - 1)`. -/
+@[simp]
+lemma bernsteinKernel_chafaiRescaling_of_pos {n : ℕ} (hn : 2 ≤ n) (x : ℝ) {t : ℝ}
+    (ht : 0 < t) :
+    bernsteinKernel n x (chafaiRescaling n t : ℝ) = (max (1 - x / t) 0) ^ (n - 1) := by
+  rw [bernsteinKernel_of_two_le hn]
+  rw [chafaiRescaling_coe_of_pos (by omega : 1 ≤ n) ht]
+  congr 2
+  have hcast : ((n : ℝ) - 1) = (↑(n - 1) : ℝ) := by
+    norm_num [Nat.cast_sub (by omega : 1 ≤ n)]
+  have hn1 : (↑(n - 1) : ℝ) ≠ 0 := by
+    exact_mod_cast (by omega : n - 1 ≠ 0)
+  rw [hcast]
+  field_simp [hn1, ht.ne']
+
+/-- The Bernstein kernel is nonnegative almost everywhere against every rescaled Chafaï measure.
+This is the public positivity lemma consumers need before using monotone or positivity facts for
+the kernel pairing. -/
+@[simp]
+lemma ae_nonneg_bernsteinKernel_chafaiRescaled (f : ℝ → ℝ) (n : ℕ) (x : ℝ) :
+    0 ≤ᵐ[chafaiRescaled f n] fun p : ℝ≥0 => bernsteinKernel n x (p : ℝ) := by
+  exact Filter.Eventually.of_forall fun p => bernsteinKernel_nonneg n x (p : ℝ)
+
+/-- Bundled version of `ae_nonneg_bernsteinKernel_chafaiRescaled` for the bounded-continuous
+Bernstein kernel. -/
+@[simp]
+lemma ae_nonneg_bernsteinKernelBoundedContinuous_chafaiRescaled
+    (f : ℝ → ℝ) (n : ℕ) {x : ℝ} (hx : 0 ≤ x) :
+    0 ≤ᵐ[chafaiRescaled f n] fun p : ℝ≥0 => bernsteinKernelBoundedContinuous n hx p := by
+  exact ae_nonneg_bernsteinKernel_chafaiRescaled f n x
+
+/-- Characteristic pairing of the rescaled Chafaï measure with the Bernstein kernel: integrating
+`p ↦ φ_n(x,p)` against `chafaiRescaled f n` is the same as integrating its Chafaï-rescaling
+pullback against the original Chafaï measure. -/
+@[simp]
+lemma chafaiRescaled_integral_bernsteinKernel (f : ℝ → ℝ) (n : ℕ) (x : ℝ) :
+    ∫ p, bernsteinKernel n x (p : ℝ) ∂(chafaiRescaled f n) =
+      ∫ t, bernsteinKernel n x (chafaiRescaling n t : ℝ) ∂(chafaiMeasure f n) := by
+  exact chafaiRescaled_integral f n
+    (((continuous_bernsteinKernel n x).comp continuous_subtype_val).measurable.aestronglyMeasurable)
+
+/-- Bounded-continuous characteristic pairing of the rescaled Chafaï measure with the Bernstein
+kernel. This lets weak-convergence consumers use the bundled test function while the right-hand
+side is the concrete pullback along the Chafaï rescaling. -/
+lemma chafaiRescaled_integral_bernsteinKernelBoundedContinuous
+    (f : ℝ → ℝ) (n : ℕ) {x : ℝ} (hx : 0 ≤ x) :
+    ∫ p, bernsteinKernelBoundedContinuous n hx p ∂(chafaiRescaled f n) =
+      ∫ t, bernsteinKernel n x (chafaiRescaling n t : ℝ) ∂(chafaiMeasure f n) := by
+  rw [chafaiRescaled_integral f n
+    ((bernsteinKernelBoundedContinuous n hx).continuous.measurable.aestronglyMeasurable)]
+  simp
 
 /-- `chafaiMeasure f n` lives on `(0, ∞)`: its complement has zero mass. -/
 @[simp]
