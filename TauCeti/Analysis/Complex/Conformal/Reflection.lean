@@ -15,8 +15,13 @@ Schwarz-reflection layer.  Mathlib already proves the pointwise fact
 `DifferentiableAt.conj_conj`: if `f` is complex differentiable at `conj z`, then
 `z ↦ conj (f (conj z))` is complex differentiable at `z`.  The lemmas here package the
 corresponding within-set statement for reflected images, which is the form needed before the
-real-axis Schwarz reflection principle.  The private semilinear within-set helper adapts the
-proof pattern of Mathlib's `HasFDerivAt.comp_semilinear`.
+real-axis Schwarz reflection principle.
+
+It also names the standard real-axis Schwarz-reflection extension
+`z ↦ if 0 ≤ z.im then f z else conj (f (conj z))`, together with the pointwise API for the
+upper and lower half-planes and the conjugation symmetry forced by real boundary values.
+The private semilinear within-set helper adapts the proof pattern of Mathlib's
+`HasFDerivAt.comp_semilinear`.
 -/
 
 public section
@@ -27,6 +32,80 @@ open Complex Filter Set
 open scoped ComplexConjugate
 
 variable {f : ℂ → ℂ} {S : Set ℂ}
+
+/--
+The explicit real-axis Schwarz-reflection extension of a function from the closed upper
+half-plane to the plane.
+
+On `0 ≤ z.im` this is `f z`; on the lower half-plane it is `conj (f (conj z))`.
+-/
+noncomputable def schwarzReflection (f : ℂ → ℂ) (z : ℂ) : ℂ :=
+  if 0 ≤ z.im then f z else (starRingEnd ℂ) (f ((starRingEnd ℂ) z))
+
+/-- The Schwarz-reflection extension is the explicit upper/lower half-plane witness. -/
+theorem schwarzReflection_def (f : ℂ → ℂ) (z : ℂ) :
+    schwarzReflection f z =
+      if 0 ≤ z.im then f z else (starRingEnd ℂ) (f ((starRingEnd ℂ) z)) := by
+  rw [schwarzReflection]
+
+/-- On the closed upper half-plane, Schwarz reflection agrees with the original function. -/
+@[simp]
+lemma schwarzReflection_of_im_nonneg {z : ℂ} (hz : 0 ≤ z.im) :
+    schwarzReflection f z = f z := by
+  simp [schwarzReflection, hz]
+
+/-- On the lower half-plane, Schwarz reflection is `z ↦ conj (f (conj z))`. -/
+@[simp]
+lemma schwarzReflection_of_im_neg {z : ℂ} (hz : z.im < 0) :
+    schwarzReflection f z = (starRingEnd ℂ) (f ((starRingEnd ℂ) z)) := by
+  simp [schwarzReflection, not_le.mpr hz]
+
+/-- On the real axis, Schwarz reflection agrees with the original function. -/
+@[simp]
+lemma schwarzReflection_of_im_zero {z : ℂ} (hz : z.im = 0) :
+    schwarzReflection f z = f z := by
+  exact schwarzReflection_of_im_nonneg (f := f) (z := z) hz.ge
+
+/-- Conjugating a point in the upper half-plane evaluates the reflected lower branch. -/
+lemma schwarzReflection_conj_of_im_pos {z : ℂ} (hz : 0 < z.im) :
+    schwarzReflection f ((starRingEnd ℂ) z) = (starRingEnd ℂ) (f z) := by
+  have hneg : ((starRingEnd ℂ) z).im < 0 := by
+    rw [starRingEnd_apply, Complex.star_def, Complex.conj_im]
+    exact neg_neg_of_pos hz
+  simpa [starRingEnd_self_apply] using
+    schwarzReflection_of_im_neg (f := f) (z := (starRingEnd ℂ) z) hneg
+
+/-- Conjugating the lower-half-plane value recovers the original function at `conj z`. -/
+lemma conj_schwarzReflection_of_im_neg {z : ℂ} (hz : z.im < 0) :
+    (starRingEnd ℂ) (schwarzReflection f z) = f ((starRingEnd ℂ) z) := by
+  rw [schwarzReflection_of_im_neg (f := f) hz, starRingEnd_self_apply]
+
+/--
+The Schwarz-reflection extension is conjugation-symmetric when the original function has real
+value at the real-axis point under consideration.
+-/
+lemma schwarzReflection_conj
+    (z : ℂ) (hreal : z.im = 0 → ((f z).im = 0)) :
+    schwarzReflection f ((starRingEnd ℂ) z) =
+      (starRingEnd ℂ) (schwarzReflection f z) := by
+  rcases lt_trichotomy z.im 0 with hneg | hzero | hpos
+  · rw [schwarzReflection_of_im_neg (f := f) hneg]
+    have hnonneg : 0 ≤ ((starRingEnd ℂ) z).im := by
+      rw [starRingEnd_apply, Complex.star_def, Complex.conj_im]
+      exact neg_nonneg.mpr hneg.le
+    rw [schwarzReflection_of_im_nonneg (f := f) hnonneg]
+    simp
+  · rw [schwarzReflection_of_im_zero (f := f) hzero]
+    have hconj_im : ((starRingEnd ℂ) z).im = 0 := by
+      rw [starRingEnd_apply, Complex.star_def, Complex.conj_im, hzero, neg_zero]
+    rw [schwarzReflection_of_im_zero (f := f) hconj_im]
+    have hzconj : (starRingEnd ℂ) z = z := by
+      rw [starRingEnd_apply, Complex.star_def, Complex.conj_eq_iff_im]
+      exact hzero
+    rw [hzconj]
+    exact (Complex.conj_eq_iff_im.mpr (hreal hzero)).symm
+  · rw [schwarzReflection_conj_of_im_pos (f := f) hpos]
+    rw [schwarzReflection_of_im_nonneg (f := f) hpos.le]
 
 private lemma starRingEnd_eq_starL (z : ℂ) :
     (starRingEnd ℂ) z = (starL ℂ : ℂ ≃L⋆[ℂ] ℂ) z := by
