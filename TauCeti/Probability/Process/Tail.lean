@@ -148,6 +148,24 @@ theorem measurable_futureFiltration_of_le {X : (k : ℕ) → Ω → β k}
   rw [futureFiltration_apply]
   exact measurable_tailFamily_of_le hnk
 
+variable {α : Type*} [MeasurableSpace α]
+
+/-- The path-space tail σ-algebra, i.e. the tail of the coordinate process on `ℕ → α`. -/
+abbrev pathTail (α : Type*) [MeasurableSpace α] : MeasurableSpace (ℕ → α) :=
+  tailProcess (fun k (x : ℕ → α) => x k)
+
+/-- Normal form for the path-space tail σ-algebra. -/
+@[simp]
+theorem pathTail_eq_tailProcess :
+    pathTail α = tailProcess (fun k (x : ℕ → α) => x k) :=
+  rfl
+
+/-- The path-space tail σ-algebra is contained in every future path σ-algebra from time `n`
+onward. -/
+theorem pathTail_le_tailFamily (n : ℕ) :
+    pathTail α ≤ tailFamily (fun k (x : ℕ → α) => x k) n :=
+  tailProcess_le_tailFamily _ n
+
 /-! ## Cons and tail of sequence-valued random variables
 
 `processCons` / `processTail` prepend / drop the leading coordinate of a sequence-valued random
@@ -159,8 +177,6 @@ factorisation.  The definitions are not `@[expose]`; their characteristic API is
 
 Adapted from `cameronfreer/exchangeability` (`DeFinetti/ViaMartingale/ShiftOperations.lean`, pin
 `e0532e59ceff23edab44dda9ab0655debbc9cc22`). -/
-
-variable {α : Type*} [MeasurableSpace α]
 
 /-- Cons a head random variable onto a sequence-valued one (a pointwise `Stream'.cons`):
 `processCons x t = [x, t 0, t 1, …]`. -/
